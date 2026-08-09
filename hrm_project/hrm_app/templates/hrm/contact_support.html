@@ -1,0 +1,122 @@
+{% extends 'hrm/base.html' %}
+
+{% block title %}Contact Support — Luminous HRM{% endblock %}
+
+{% block content %}
+
+<!-- Top Header -->
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
+  <div>
+    <h1 style="font-size:28px; font-weight:700; color:var(--ink); margin:0;">Contact Support</h1>
+    <div style="font-size:14px; color:var(--muted); margin-top:4px;">Home · Support & Help</div>
+  </div>
+
+  <button onclick="history.back()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">← Back</button>
+</div>
+
+<!-- Orange Banner -->
+<div style="background:linear-gradient(90deg, #FF6B00, #FF8C3A); color:white; border-radius:12px; padding:16px 20px; margin-bottom:28px; display:flex; align-items:center; gap:16px;">
+  <div style="background:rgba(255,255,255,0.25); width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2.01 2.01 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2" />
+    </svg>
+  </div>
+  <div>
+    <strong style="font-size:16px;">We are here to help</strong><br>
+    <span style="opacity:0.95;">Submit a ticket, start a live chat, or reach us directly.</span>
+  </div>
+</div>
+
+<!-- Contact Cards -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px; margin-bottom:32px;">
+
+  <!-- Email -->
+  <div class="card pad" style="text-align:center;">
+    <div style="margin-bottom:12px;">
+      <div style="background:#F3F4F6; width:56px; height:56px; border-radius:12px; margin:auto; display:flex; align-items:center; justify-content:center; font-size:28px;">✉️</div>
+    </div>
+    <strong>Email</strong><br>
+    <span style="color:var(--muted);">support@luminouslabsbd.com</span><br><br>
+    <a href="mailto:support@luminouslabsbd.com" class="btn" style="width:100%;">Send Email</a>
+  </div>
+
+  <!-- Live Chat -->
+  <div class="card pad" style="text-align:center;">
+    <div style="margin-bottom:12px;">
+      <div style="background:#F3F4F6; width:56px; height:56px; border-radius:12px; margin:auto; display:flex; align-items:center; justify-content:center; font-size:28px;">🔔</div>
+    </div>
+    <strong>Live Chat</strong><br>
+    <span style="color:var(--muted);">Avg. reply 3 min · Online</span><br><br>
+    <button onclick="startLiveChat()" class="btn" style="width:100%; background:#22C55E; color:white;">Start Chat</button>
+  </div>
+
+  <!-- Hours -->
+  <div class="card pad" style="text-align:center;">
+    <div style="margin-bottom:12px;">
+      <div style="background:#F3F4F6; width:56px; height:56px; border-radius:12px; margin:auto; display:flex; align-items:center; justify-content:center; font-size:28px;">🕒</div>
+    </div>
+    <strong>Hours</strong><br>
+    <span style="color:var(--muted);">Sun–Thu, 9am–6pm (GMT+6)</span><br><br>
+    <a href="{% url 'user_guide_faq' %}" class="btn ghost" style="width:100%;">Read FAQ</a>
+  </div>
+
+</div>
+
+<!-- Submit Ticket -->
+<div class="card pad">
+  <h3 style="margin-bottom:20px;">Submit a Support Ticket</h3>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+    <div>
+      <label style="display:block; margin-bottom:8px; font-weight:600;">Subject</label>
+      <input type="text" id="subject" class="input" placeholder="Brief summary" style="width:100%;">
+    </div>
+    <div>
+      <label style="display:block; margin-bottom:8px; font-weight:600;">Priority</label>
+      <select id="priority" class="input" style="width:100%;">
+        <option>Low</option>
+        <option selected>Medium</option>
+        <option>High</option>
+        <option>Urgent</option>
+      </select>
+    </div>
+  </div>
+
+  <label style="display:block; margin:20px 0 8px; font-weight:600;">Category</label>
+  <select id="category" class="input" style="width:100%;">
+    <option>Payroll</option>
+    <option>Attendance</option>
+    <option>Account / Login</option>
+    <option>Bug Report</option>
+    <option>Other</option>
+  </select>
+
+  <label style="display:block; margin:20px 0 8px; font-weight:600;">Describe your issue</label>
+  <textarea id="description" class="input" rows="5" placeholder="Tell us what is happening..."></textarea>
+
+  <div style="margin-top:24px; display:flex; gap:12px;">
+    <button onclick="submitTicket()" class="btn" style="background:#FF6B00; color:white; flex:1;">Submit Ticket</button>
+    <button onclick="attachFile()" class="btn ghost" style="flex:1;">Attach File</button>
+  </div>
+</div>
+
+<script>
+function startLiveChat() {
+  alert("✅ Live Chat started!\n\nConnecting you to support agent...");
+}
+
+function submitTicket() {
+  const subject = document.getElementById('subject').value.trim();
+  if (!subject) {
+    alert("Please enter a subject!");
+    return;
+  }
+  alert("✅ Ticket submitted successfully!\n\nTicket ID: SUP-" + Math.floor(100000 + Math.random() * 900000));
+}
+
+function attachFile() {
+  alert("📎 File upload dialog opened.\n\n(You can attach screenshots or documents)");
+}
+</script>
+
+{% endblock %}

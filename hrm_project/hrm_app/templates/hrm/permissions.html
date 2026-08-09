@@ -1,0 +1,100 @@
+{% extends 'hrm/base.html' %}
+{% block title %}Roles & Permissions — Luminous HRM{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Roles & Permissions</h1><div class="crumb">Manage user roles and access permissions</div></div>
+</div>
+
+<div class="grid cols-3">
+  <div class="card pad">
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="width:60px;height:60px;background:var(--brand-l);border-radius:50%;display:grid;place-items:center;margin:0 auto 12px">
+        <svg class="ico" style="width:30px;height:30px;color:var(--brand)" viewBox="0 0 24 24"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z"/></svg>
+      </div>
+      <h3>Super Admin</h3>
+      <p class="sub">Full system access</p>
+    </div>
+    <div class="section-title">Permissions</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div class="flex"><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Manage all users</div>
+      <div class="flex"><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Configure system</div>
+      <div class="flex"><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Manage payroll</div>
+      <div class="flex"><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Full reports access</div>
+    </div>
+  </div>
+
+  <div class="card pad">
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="width:60px;height:60px;background:#dbeafe;border-radius:50%;display:grid;place-items:center;margin:0 auto 12px">
+        <svg class="ico" style="width:30px;height:30px;color:var(--blue)" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <h3>Manager</h3>
+      <p class="sub">Team management</p>
+    </div>
+    <div class="section-title">Permissions</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div class="flex"><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> View team members</div>
+      <div class="flex"><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Approve leaves</div>
+      <div class="flex"><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Review attendance</div>
+      <div class="flex"><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Assign tasks</div>
+    </div>
+  </div>
+
+  <div class="card pad">
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="width:60px;height:60px;background:#eef1f6;border-radius:50%;display:grid;place-items:center;margin:0 auto 12px">
+        <svg class="ico" style="width:30px;height:30px;color:var(--muted)" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <h3>Employee</h3>
+      <p class="sub">Self-service access</p>
+    </div>
+    <div class="section-title">Permissions</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div class="flex"><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> View own profile</div>
+      <div class="flex"><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Apply for leave</div>
+      <div class="flex"><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> View own attendance</div>
+      <div class="flex"><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> View assigned tasks</div>
+    </div>
+  </div>
+</div>
+
+{% if user.role == 'super_admin' %}
+<div class="card pad" style="margin-top:18px">
+  <div class="section-title">Custom Permission Rules</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Rule Name</th>
+        <th>Event</th>
+        <th>Channels</th>
+        <th>Recipients</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for rule in notification_rules %}
+      <tr>
+        <td><b>{{ rule.name }}</b></td>
+        <td>{{ rule.event }}</td>
+        <td>{{ rule.channels }}</td>
+        <td>{{ rule.recipients }}</td>
+        <td>
+          {% if rule.is_active %}
+          <span class="tag t-green">Active</span>
+          {% else %}
+          <span class="tag t-gray">Inactive</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="{% url 'notif_rule_toggle' rule.pk %}" class="btn ghost sm">Toggle</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px">No custom rules configured.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

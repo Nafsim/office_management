@@ -1,0 +1,76 @@
+{% extends 'hrm/base.html' %}
+
+{% block title %}Files & Credentials — Luminous HRM{% endblock %}
+
+{% block content %}
+
+<!-- Top Header -->
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
+  <div>
+    <h1 style="font-size:28px; font-weight:700; color:var(--ink); margin:0;">Files & Credentials</h1>
+    <div style="font-size:14px; color:var(--muted); margin-top:4px;">Home · System · Files & Credentials</div>
+  </div>
+
+  <div style="display:flex; gap:10px;">
+    <button onclick="history.back()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">← Back</button>
+    <button type="button" data-export-url="{% url 'files_export' %}" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">Export</button>
+    {% if user.role == 'super_admin' or user.role == 'manager' %}
+    <a href="{% url 'file_upload' %}" class="btn" style="background:#FF6B00; color:white;">+ Add Credential</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Orange Banner -->
+<div style="background:linear-gradient(90deg, #FF6B00, #FF8C3A); color:white; border-radius:12px; padding:16px 20px; margin-bottom:28px; display:flex; align-items:center; gap:16px;">
+  <div style="background:rgba(255,255,255,0.25); width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+    🔐
+  </div>
+  <div>
+    <strong style="font-size:16px;">Secure shared resources</strong><br>
+    <span style="opacity:0.95;">Store client resources and team credentials with role-based access. Values stay masked until an authorised user reveals them.</span>
+  </div>
+</div>
+
+<!-- Stored Credentials -->
+<div class="card">
+  <div style="padding:18px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;">
+    <strong>Stored Credentials</strong>
+    <span style="font-size:14px; color:var(--muted);">{{ files|length }} items</span>
+  </div>
+  
+  <table>
+    <thead>
+      <tr>
+        <th>Resource</th>
+        <th>Type</th>
+        <th>Access Group</th>
+        <th>Secret</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for file in files %}
+      <tr>
+        <td><b>{{ file.name }}</b></td>
+        <td><span class="tag t-gray">{{ file.file.name|slice:"-4:"|upper }}</span></td>
+        <td>Engineering / IT</td>
+        <td>
+          <span style="font-family:monospace; letter-spacing:2px;">••••••••</span>
+        </td>
+        <td>
+          <button onclick="this.textContent = this.textContent === 'Reveal' ? 'Hide' : 'Reveal'" 
+                  class="btn ghost sm">Reveal</button>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5" style="text-align:center; padding:60px 20px; color:var(--muted);">
+          No credentials stored yet.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

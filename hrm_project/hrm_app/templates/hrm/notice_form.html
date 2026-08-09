@@ -1,0 +1,171 @@
+{% extends 'hrm/base.html' %}
+
+{% block title %}Create Notice — Luminous HRM{% endblock %}
+
+{% block content %}
+
+<div class="card pad" style="max-width:750px;margin:auto;">
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:25px;">
+        <h2 style="margin:0;font-size:24px;">
+            New Notice / Announcement
+        </h2>
+
+        <a href="{% url 'notice_list' %}" 
+           style="font-size:25px;color:#777;text-decoration:none;">
+            ×
+        </a>
+    </div>
+
+
+    <form method="POST">
+        {% csrf_token %}
+
+
+        <!-- Title -->
+        <div style="margin-bottom:20px;">
+            <label style="font-weight:600;">
+                Title
+            </label>
+
+            <input type="text"
+                   name="title"
+                   placeholder="Notice title"
+                   required
+                   style="
+                   width:100%;
+                   padding:12px;
+                   margin-top:8px;
+                   border:1px solid #ddd;
+                   border-radius:10px;
+                   font-size:15px;">
+        </div>
+
+
+
+        <!-- Category -->
+        <div style="margin-bottom:20px;">
+
+            <label style="font-weight:600;">
+                Category
+            </label>
+
+            <select name="category"
+                    style="
+                    width:100%;
+                    padding:12px;
+                    margin-top:8px;
+                    border:1px solid #ddd;
+                    border-radius:10px;
+                    font-size:15px;">
+
+                <option value="Policy">
+                    Policy
+                </option>
+
+                <option value="Announcement">
+                    Announcement
+                </option>
+
+                <option value="Event">
+                    Event
+                </option>
+
+                <option value="Update">
+                    Update
+                </option>
+
+            </select>
+
+        </div>
+
+
+
+        <!-- Message -->
+        <div style="margin-bottom:20px;">
+
+            <label style="font-weight:600;">
+                Message
+            </label>
+
+            <textarea name="body"
+          rows="6"
+          placeholder="Write notice message..."
+          required
+          style="
+          width:100%;
+          padding:12px;
+          margin-top:8px;
+          border:1px solid #ddd;
+          border-radius:10px;
+          font-size:15px;
+          resize:none;"></textarea>
+
+        </div>
+
+
+
+        <!-- Options -->
+        <div style="
+        display:flex;
+        gap:25px;
+        margin-bottom:25px;">
+
+            <label style="display:flex;align-items:center;gap:8px;">
+                <input type="checkbox"
+                       name="pinned">
+                Pin to top
+            </label>
+
+
+            <label style="display:flex;align-items:center;gap:8px;">
+                <input type="checkbox"
+                       name="notify">
+                Notify all employees
+            </label>
+
+        </div>
+
+
+
+
+        <!-- Buttons -->
+        <div style="
+        display:flex;
+        justify-content:flex-end;
+        gap:12px;">
+
+            <a href="{% url 'notice_list' %}"
+               style="
+               padding:12px 25px;
+               border-radius:10px;
+               background:#eee;
+               color:#555;
+               text-decoration:none;
+               font-weight:600;">
+                Cancel
+            </a>
+
+
+            <button type="submit"
+                    style="
+                    padding:12px 30px;
+                    border:none;
+                    border-radius:10px;
+                    background:#ef6a4f;
+                    color:white;
+                    font-weight:700;
+                    cursor:pointer;
+                    font-size:15px;">
+                Publish
+            </button>
+
+        </div>
+
+
+    </form>
+
+</div>
+
+
+{% endblock %}

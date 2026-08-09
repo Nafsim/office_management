@@ -1,0 +1,125 @@
+{% extends 'hrm/base.html' %}
+
+{% block title %}Asset Management — Luminous HRM{% endblock %}
+
+{% block content %}
+
+<!-- Top Header -->
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
+  <div>
+    <h1 style="font-size:28px; font-weight:700; color:var(--ink); margin:0;">Asset Management</h1>
+    <div style="font-size:14px; color:var(--muted); margin-top:4px;">Home · Finance · Assets</div>
+  </div>
+
+  <div style="display:flex; gap:10px; align-items:center;">
+    <button onclick="history.back()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">← Back</button>
+    <button id="exportAssetsBtn" type="button" data-export-url="{% url 'asset_export' %}" class="btn" style="background:#FF6B00; color:white; border:none; display:flex; align-items:center; gap:6px; cursor:pointer;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+      </svg>
+      Export
+    </button>
+    {% if user.role == 'super_admin' or user.role == 'manager' %}
+    <a href="{% url 'asset_create' %}" class="btn" style="background:#FF6B00; color:white;">Add Asset</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Orange Banner -->
+<div style="background:linear-gradient(90deg, #FF6B00, #FF8C3A); color:white; border-radius:12px; padding:16px 20px; margin-bottom:28px; display:flex; align-items:center; gap:16px;">
+  <div style="background:rgba(255,255,255,0.25); width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2" />
+    </svg>
+  </div>
+  <div>
+    <strong style="font-size:16px;">Know where everything is</strong><br>
+    <span style="opacity:0.95;">Register assets, assign them to employees, track status and get alerts on overdue returns.</span>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="grid cols-4" style="margin-bottom:22px">
+  <div class="stat">
+    <div class="ic tint-i"><svg class="ico" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/></svg></div>
+    <h3>{{ total_assets|default:0 }}</h3><p>Total Assets</p>
+  </div>
+  <div class="stat">
+    <div class="ic tint-g"><svg class="ico" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/></svg></div>
+    <h3>{{ assigned_assets|default:0 }}</h3><p>Assigned</p>
+  </div>
+  <div class="stat">
+    <div class="ic tint-a"><svg class="ico" viewBox="0 0 24 24"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z"/></svg></div>
+    <h3>{{ available_assets|default:0 }}</h3><p>Available</p>
+  </div>
+  <div class="stat">
+    <div class="ic tint-r"><svg class="ico" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg></div>
+    <h3>{{ maintenance_assets|default:0 }}</h3><p>Maintenance</p>
+  </div>
+</div>
+
+<!-- Filter -->
+<form method="get" class="toolbar">
+  <input class="input" name="q" value="{{ q }}" placeholder="Search assets..." style="flex:1;max-width:300px">
+  <select class="input" name="status" style="max-width:150px">
+    <option value="">All Status</option>
+    <option value="Available" {% if status == 'Available' %}selected{% endif %}>Available</option>
+    <option value="In Use" {% if status == 'In Use' %}selected{% endif %}>Assigned</option>
+    <option value="Maintenance" {% if status == 'Maintenance' %}selected{% endif %}>Maintenance</option>
+    <option value="Retired" {% if status == 'Retired' %}selected{% endif %}>Retired</option>
+  </select>
+  <button type="submit" class="btn">Filter</button>
+  {% if q or status %}<a href="{% url 'asset_list' %}" class="btn ghost">Clear</a>{% endif %}
+</form>
+
+<!-- Assets Table -->
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th>Asset ID</th>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Assigned To</th>
+        <th>Purchase Date</th>
+        <th>Cost</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for asset in assets %}
+      <tr>
+        <td><span class="tag t-gray">{{ asset.asset_id }}</span></td>
+        <td><b>{{ asset.name }}</b></td>
+        <td>{{ asset.asset_type }}</td>
+        <td>
+          {% if asset.assigned_to %}
+          <div class="flex">
+            <div class="avatar-sm" style="background:var(--brand)">{{ asset.assigned_to.user.first_name|slice:":1" }}{{ asset.assigned_to.user.last_name|slice:":1" }}</div>
+            <span>{{ asset.assigned_to.user.get_full_name }}</span>
+          </div>
+          {% else %}
+          <span class="sub">—</span>
+          {% endif %}
+        </td>
+        <td>{{ asset.purchase_date|date:"d M Y" }}</td>
+        <td>৳{{ asset.purchase_cost|default:0 }}</td>
+        <td>
+          <span class="tag t-{% if asset.status == 'Available' %}green{% elif asset.status == 'In Use' %}blue{% elif asset.status == 'Maintenance' %}amber{% else %}red{% endif %}">{{ asset.status }}</span>
+        </td>
+        <td>
+          <a href="{% url 'asset_edit' asset.pk %}" class="btn ghost sm">Edit</a>
+          {% if user.role == 'super_admin' %}
+          <a href="{% url 'asset_delete' asset.pk %}" class="btn ghost sm red" onclick="return confirm('Delete this asset?')">Delete</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" style="text-align:center;color:var(--muted);padding:30px">No assets found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

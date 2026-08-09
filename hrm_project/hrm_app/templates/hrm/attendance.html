@@ -1,0 +1,803 @@
+{% extends 'hrm/base.html' %}
+
+{% block title %}Attendance Management - Luminous HRM{% endblock %}
+
+{% block content %}
+<style>
+  .attendance-shell { display: grid; gap: 20px; }
+  .attendance-tabs {
+    display: flex; gap: 24px; flex-wrap: wrap;
+    border-bottom: 1px solid var(--line); padding-bottom: 8px;
+  }
+  .attendance-tabs a {
+    text-decoration: none; font-weight: 700; padding: 10px 0;
+    color: var(--muted); border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+  }
+  .attendance-tabs a.active {
+    color: #FF6B00; border-bottom-color: #FF6B00;
+  }
+
+  .attendance-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+  }
+
+  .tab-panel[hidden] {
+    display: none;
+  }
+
+  .muted-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 12px; border-radius: 999px;
+    background: #F8FAFC; border: 1px solid var(--line);
+    color: #0F172A; font-size: 13px; font-weight: 600;
+  }
+
+  .subtle-card {
+    background: #F8FAFC; border: 1px solid var(--line);
+    border-radius: 14px; padding: 16px;
+  }
+
+  .report-card {
+    background: #FFF7ED; border: 1px solid #FED7AA;
+    border-radius: 14px; padding: 16px;
+  }
+
+  .tab-panel {
+    display: block;
+  }
+
+  .metric-card {
+    background: white; border: 1px solid var(--line);
+    border-radius: 16px; padding: 20px; box-shadow: 0 10px 30px rgba(15,23,42,0.05);
+  }
+  .metric-value { font-size: 36px; font-weight: 800; margin: 0; }
+  .metric-label { color: var(--muted); font-size: 13.5px; margin-top: 6px; }
+
+  .section-card {
+    background: white; border: 1px solid var(--line);
+    border-radius: 18px; overflow: hidden; box-shadow: 0 10px 30px rgba(15,23,42,0.06);
+  }
+  .section-header {
+    padding: 20px; border-bottom: 1px solid var(--line);
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+  }
+  .section-title { font-size: 19px; font-weight: 700; margin: 0; }
+
+  .input-shell { position: relative; }
+  .input-shell svg {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    width: 18px; height: 18px; color: var(--muted); pointer-events: none;
+  }
+  .input-shell input, .input-shell select { padding-left: 42px; }
+
+  .orange-btn {
+    background: #FF6B00; color: white; border: none; font-weight: 700;
+    display: flex; align-items: center; gap: 8px;
+  }
+</style>
+
+<div class="attendance-shell">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;">
+    <div>
+      <h1 style="font-size:28px; font-weight:800; color:var(--ink); margin:0;">Attendance Management</h1>
+      <div style="font-size:14px; color:var(--muted); margin-top:4px;">Home / Time & Attendance / Attendance</div>
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <button onclick="history.back()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand); display:flex; align-items:center; gap:6px;">
+        <svg class="ico" style="width:16px;height:16px;" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back
+      </button>
+
+      <button type="button" data-export-url="{% url 'attendance_export' %}?month={{ today|date:'m' }}&year={{ today|date:'Y' }}" class="btn" style="border-color:#FED7AA; background:#FFF7ED; color:#9A3412; display:flex; align-items:center; gap:6px; text-decoration:none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Export
+      </button>
+
+      {% if current_employee %}
+      <form method="POST" action="{% url 'attendance_checkin' %}" style="margin:0;">
+        {% csrf_token %}
+        <input type="hidden" name="return_tab" value="{{ active_tab }}">
+        <button type="submit" id="checkInButton" class="btn" style="background:#16A34A; border:none; color:white; display:flex; align-items:center; gap:6px; font-weight:700;">
+          <svg class="ico" style="width:16px;height:16px;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+          Check In
+        </button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <div id="actionStatus" style="display:none; background:white; border:1px solid var(--line); border-radius:8px; padding:8px 12px; font-size:13px; color:var(--ink); box-shadow:0 2px 8px rgba(0,0,0,0.1); position:fixed; bottom:20px; right:20px; z-index:1000;"></div>
+
+  {% if messages %}
+  <script>
+    window.onload = function() {
+      {% for message in messages %}
+      var status = document.getElementById('actionStatus');
+      if (status) {
+        status.style.display = 'block';
+        status.textContent = '{{ message }}';
+        setTimeout(function() {
+          status.style.display = 'none';
+        }, 5000);
+      }
+      {% endfor %}
+    };
+  </script>
+  {% endif %}
+</div>
+
+  <div class="section-card" style="background:linear-gradient(90deg,#FF6B00,#FF8C3A); color:white; border:none;">
+    <div style="padding:18px 20px; display:flex; align-items:center; gap:16px;">
+      <div style="background:rgba(255,255,255,0.18); width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+        <svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      </div>
+      <div>
+        <strong style="font-size:16px;">Today, Manual Entry, and Reports</strong><br>
+        <span style="opacity:0.95;">Use these options without leaving this page.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="attendance-tabs">
+    <a href="{% url 'attendance_list' %}?tab=today" class="{% if active_tab == 'today' %}active{% endif %}" style="display:flex; align-items:center; gap:8px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+      Today
+    </a>
+    <a href="{% url 'attendance_list' %}?tab=manual" class="{% if active_tab == 'manual' %}active{% endif %}" style="display:flex; align-items:center; gap:8px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Manual Entry
+    </a>
+    
+    <a href="{% url 'attendance_list' %}?tab=reports" class="{% if active_tab == 'reports' %}active{% endif %}" style="display:flex; align-items:center; gap:8px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+      Reports
+    </a>
+  </div>
+
+  <div id="today-panel" class="tab-panel" {% if active_tab != 'today' %}hidden{% endif %}>
+    <div class="section-card">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Today — {{ today|date:"j F Y" }}</div>
+        </div>
+      </div>
+
+      <div style="padding:20px; display:grid; gap:18px;">
+        <div class="attendance-grid">
+          <div class="metric-card"><p class="metric-value">{{ present_count }}</p><div class="metric-label">Present</div></div>
+          <div class="metric-card"><p class="metric-value">{{ late_count }}</p><div class="metric-label">Late</div></div>
+          <div class="metric-card"><p class="metric-value">{{ on_leave_count }}</p><div class="metric-label">On Leave</div></div>
+          <div class="metric-card"><p class="metric-value">{{ absent_count }}</p><div class="metric-label">Absent Today</div></div>
+        </div>
+
+        <div style="overflow:auto; border:1px solid var(--line); border-radius:14px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Check In</th>
+                <th>Check Out</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in attendance_rows %}
+              <tr>
+                <td>
+                  <strong>{{ row.employee.user.get_full_name|default:row.employee.user.username }}</strong><br>
+                  <small>{{ row.employee.emp_id }}</small>
+                </td>
+                <td>{{ row.check_in|time:"h:i A"|default:"—" }}</td>
+                <td>{{ row.check_out|time:"h:i A"|default:"—" }}</td>
+                <td><span class="tag t-{{ row.status_class }}">{{ row.status_label }}</span></td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" style="text-align:center; color:var(--muted); padding:24px;">No attendance rows found for today.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="manual-panel" class="tab-panel" {% if active_tab != 'manual' %}hidden{% endif %}>
+    <div class="section-card">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Manual Entry</div>
+          <div class="section-subtitle">Save attendance records directly when a punch is missed.</div>
+        </div>
+      </div>
+
+      <div style="padding:20px; display:grid; grid-template-columns:minmax(320px, 1fr) minmax(320px, 1fr); gap:18px;">
+        <form method="POST" action="{% url 'attendance_manual' %}">
+          {% csrf_token %}
+          <input type="hidden" name="return_tab" value="manual">
+          <div style="display:grid; gap:14px;">
+            <div>
+              <label>Employee</label>
+              <div class="input-shell">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
+                <select name="employee" class="input" required>
+                  <option value="">Select employee</option>
+                  {% for emp in employees %}
+                  <option value="{{ emp.pk }}">{{ emp.user.get_full_name|default:emp.user.username }} ({{ emp.emp_id }})</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label>Date</label>
+              <div class="input-shell">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                <input type="date" name="date" class="input" value="{{ today|date:'Y-m-d' }}" required>
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+              <div>
+                <label>Check In</label>
+                <input type="time" name="check_in" class="input">
+              </div>
+              <div>
+                <label>Check Out</label>
+                <input type="time" name="check_out" class="input">
+              </div>
+            </div>
+
+            <div>
+              <label>Status</label>
+              <select name="status" class="input" required>
+                <option value="Present">Present</option>
+                <option value="Late">Late</option>
+                <option value="Absent">Absent</option>
+                <option value="Leave">Leave</option>
+              </select>
+            </div>
+
+            <div>
+              <label>Reason / Note</label>
+              <textarea name="note" class="input" rows="3" placeholder="Device error, forgot to punch, approved leave..."></textarea>
+            </div>
+
+            <button type="submit" class="btn orange-btn" style="padding:14px 24px; font-size:15px;">Save Manual Entry</button>
+          </div>
+        </form>
+
+        <div>
+          <h3 style="margin:0 0 12px 0; font-size:16px;">Recent Manual Entries</h3>
+          <div style="max-height:520px; overflow:auto; display:grid; gap:12px;">
+            {% for entry in manual_entries %}
+            <div style="background:#F8FAFC; border:1px solid var(--line); border-radius:12px; padding:14px;">
+              <div style="display:flex; justify-content:space-between; gap:12px;">
+                <div>
+                  <strong>{{ entry.employee.user.get_full_name|default:entry.employee.user.username }}</strong><br>
+                  <small>{{ entry.date|date:"d M Y" }}</small>
+                </div>
+                <span class="tag t-{{ entry.status|lower }}">{{ entry.status }}</span>
+              </div>
+              <div style="margin-top:8px; font-size:13px; color:var(--muted);">
+                {{ entry.check_in|time:"h:i A"|default:"—" }} / {{ entry.check_out|time:"h:i A"|default:"—" }}
+              </div>
+              {% if entry.note %}<div style="margin-top:6px; font-size:13px;">{{ entry.note }}</div>{% endif %}
+            </div>
+            {% empty %}
+            <p style="color:var(--muted); text-align:center; padding:40px 0;">No manual entries yet.</p>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="reports-panel" class="tab-panel" {% if active_tab != 'reports' %}hidden{% endif %}>
+    <div class="section-card">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Generate Attendance Report</div>
+        </div>
+      </div>
+
+      <div style="padding:20px; display:grid; gap:18px;">
+        <form id="reportForm" method="GET" action="{% url 'attendance_list' %}" class="subtle-card" style="display:grid; gap:16px;">
+          <input type="hidden" name="tab" value="reports">
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; align-items:end;">
+            <div>
+              <label>From</label>
+              <div class="input-shell">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                <input type="date" name="report_from" class="input" value="{{ report_from|date:'Y-m-d' }}">
+              </div>
+            </div>
+            <div>
+              <label>To</label>
+              <div class="input-shell">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                <input type="date" name="report_to" class="input" value="{{ report_to|date:'Y-m-d' }}">
+              </div>
+            </div>
+            <div>
+              <label>Department</label>
+              <select name="report_department" class="input">
+                <option value="" {% if not report_department_id %}selected{% endif %}>All</option>
+                {% for dept in report_departments %}
+                <option value="{{ dept.pk }}" {% if report_department_id == dept.pk|stringformat:'s' %}selected{% endif %}>{{ dept.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <button type="submit" class="btn orange-btn" style="height:46px; padding:0 20px; justify-content:center;" onclick="showGenerateOptions(); return false;">Generate</button>
+            
+          </div>
+        </form>
+
+        <div class="attendance-grid">
+          <div class="metric-card"><p class="metric-value">{{ report_present_count }}</p><div class="metric-label">Present</div></div>
+          <div class="metric-card"><p class="metric-value">{{ report_late_count }}</p><div class="metric-label">Late</div></div>
+          <div class="metric-card"><p class="metric-value">{{ report_leave_count }}</p><div class="metric-label">On Leave</div></div>
+          <div class="metric-card"><p class="metric-value">{{ report_absent_count }}</p><div class="metric-label">Absent</div></div>
+        </div>
+<div style="overflow:auto; border:1px solid var(--line); border-radius:14px;">
+
+<table>
+
+<thead>
+
+<tr>
+
+{% if report_type == 'absent' %}
+
+<th>Employee</th>
+<th>Employee ID</th>
+<th>Department</th>
+<th>Absent Days</th>
+
+{% elif report_type == 'overtime' %}
+
+<th>Employee</th>
+<th>Date</th>
+<th>Check In</th>
+<th>Check Out</th>
+<th>Overtime Hours</th>
+
+{% elif report_type == 'summary' %}
+
+<th>Employee</th>
+<th>Present</th>
+<th>Late</th>
+<th>Leave</th>
+<th>Absent</th>
+<th>Working Hours</th>
+<th>Overtime</th>
+
+{% else %}
+
+<th>Employee</th>
+<th>Date</th>
+<th>Check In</th>
+<th>Check Out</th>
+<th>Status</th>
+
+{% endif %}
+
+</tr>
+
+</thead>
+
+
+<tbody>
+
+
+{% if report_type == 'absent' %}
+
+{% for row in absent_rows %}
+
+<tr>
+
+<td>
+{{ row.employee.user.get_full_name|default:row.employee.user.username }}
+</td>
+
+<td>
+{{ row.employee.emp_id }}
+</td>
+
+<td>
+{{ row.employee.department.name|default:"-" }}
+</td>
+
+<td>
+{{ row.absent }}
+</td>
+
+</tr>
+
+{% empty %}
+
+<tr>
+<td colspan="4">No absent employees found.</td>
+</tr>
+
+{% endfor %}
+
+
+
+{% elif report_type == 'overtime' %}
+
+
+{% for row in overtime_rows %}
+
+<tr>
+
+<td>
+{{ row.employee.user.get_full_name|default:row.employee.user.username }}
+</td>
+
+<td>
+{{ row.date|date:"d M Y" }}
+</td>
+
+<td>
+{{ row.check_in|time:"h:i A" }}
+</td>
+
+<td>
+{{ row.check_out|time:"h:i A" }}
+</td>
+
+<td>
+{{ row.overtime }} hrs
+</td>
+
+
+</tr>
+
+{% empty %}
+
+<tr>
+<td colspan="5">
+No overtime records found.
+</td>
+</tr>
+
+
+{% endfor %}
+
+
+
+{% elif report_type == 'summary' %}
+
+
+
+{% for row in monthly_summary_rows %}
+
+<tr>
+
+<td>
+{{ row.employee.user.get_full_name|default:row.employee.user.username }}
+</td>
+
+
+<td>
+{{ row.present }}
+</td>
+
+
+<td>
+{{ row.late }}
+</td>
+
+
+<td>
+{{ row.leave }}
+</td>
+
+
+<td>
+{{ row.absent }}
+</td>
+
+
+<td>
+{{ row.working_hours }} hrs
+</td>
+
+
+<td>
+{{ row.overtime_hours }} hrs
+</td>
+
+
+</tr>
+
+
+{% empty %}
+
+<tr>
+<td colspan="7">
+No summary data found.
+</td>
+</tr>
+
+
+{% endfor %}
+
+
+
+{% endif %}
+
+
+</tbody>
+
+</table>
+</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px;">
+          
+          <div class="report-card">
+            <strong>Monthly Summary</strong>
+            <p style="margin:8px 0 0; color:#9A3412; font-size:13px;">{{ report_total_count }} rows from {{ report_from|date:"d M Y" }} to {{ report_to|date:"d M Y" }}.</p>
+            <div style="display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;">
+              <button 
+type="button" 
+class="btn orange-btn" 
+style="padding:10px 16px;"
+onclick="showReportGenerateModal('summary')">
+Generate
+</button>
+              <button type="button" data-export-url="{% url 'attendance_export' %}?report_from={{ report_from|date:'Y-m-d' }}&report_to={{ report_to|date:'Y-m-d' }}&report_department={{ report_department_id }}&report_type=summary" class="btn" style="padding:10px 16px; border:1px solid var(--line); background:white; color:var(--ink);">Export</button>
+            </div>
+          </div>
+          <div class="report-card">
+            <strong>Absent Report</strong>
+            <p style="margin:8px 0 0; color:#9A3412; font-size:13px;">{{ report_absent_count }} employees without attendance in the selected range.</p>
+            <div style="display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;">
+              <button type="button" class="btn orange-btn" style="padding:10px 16px;" onclick="showReportGenerateModal('absent')">Generate</button>
+              <button type="button" data-export-url="{% url 'attendance_export' %}?report_from={{ report_from|date:'Y-m-d' }}&report_to={{ report_to|date:'Y-m-d' }}&report_department={{ report_department_id }}&report_type=absent" class="btn" style="padding:10px 16px; border:1px solid var(--line); background:white; color:var(--ink);">Export</button>
+            </div>
+          </div>
+          <div class="report-card">
+            <strong>Overtime Report</strong>
+            <p style="margin:8px 0 0; color:#9A3412; font-size:13px;">{{ report_overtime_count }} attendance rows with extra hours.</p>
+            <div style="display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;">
+              <button type="button" class="btn orange-btn" style="padding:10px 16px;" onclick="showReportGenerateModal('overtime')">Generate</button>
+              <button type="button" data-export-url="{% url 'attendance_export' %}?report_from={{ report_from|date:'Y-m-d' }}&report_to={{ report_to|date:'Y-m-d' }}&report_department={{ report_department_id }}&report_type=overtime" class="btn" style="padding:10px 16px; border:1px solid var(--line); background:white; color:var(--ink);">Export</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function showExportMessage() {
+  var status = document.getElementById('actionStatus');
+  if (status) {
+    status.style.display = 'block';
+    status.textContent = 'Downloading...';
+    setTimeout(function() {
+      status.textContent = 'Export downloaded successfully';
+      setTimeout(function() {
+        status.style.display = 'none';
+      }, 3000);
+    }, 2000);
+  }
+}
+
+function prepareCheckIn(button) {
+  if (button) {
+    button.disabled = true;
+  }
+  var status = document.getElementById('actionStatus');
+  if (status) {
+    status.style.display = 'block';
+    status.textContent = 'Processing check in...';
+  }
+  return true; 
+}
+
+function showGenerateMessage() {
+  var status = document.getElementById('actionStatus');
+  if (status) {
+    status.style.display = 'block';
+    status.textContent = 'Generating report...';
+    setTimeout(function() {
+      status.textContent = 'Report generated successfully';
+      setTimeout(function() {
+        status.style.display = 'none';
+      }, 3000);
+    }, 2000);
+  }
+}
+
+function showGenerateOptions() {
+  document.getElementById('generateOptionsModal').style.display = 'flex';
+}
+
+function closeGenerateOptions() {
+  document.getElementById('generateOptionsModal').style.display = 'none';
+}
+
+function selectGenerateOption(option) {
+  closeGenerateOptions();
+  if (option === 'manual') {
+    // Switch to manual entry tab
+    window.location.href = "{% url 'attendance_list' %}?tab=manual";
+  } else if (option === 'sync') {
+    // Sync attendance data
+    var status = document.getElementById('actionStatus');
+    if (status) {
+      status.style.display = 'block';
+      status.textContent = 'Syncing attendance data...';
+      setTimeout(function() {
+        status.textContent = 'Sync completed successfully';
+        setTimeout(function() {
+          status.style.display = 'none';
+        }, 3000);
+      }, 2000);
+    }
+  }
+}
+function showReportGenerateModal(reportType) {
+  var modal = document.getElementById('reportGenerateModal');
+  var modalTitle = document.getElementById('reportGenerateModalTitle');
+  var modalTime = document.getElementById('reportGenerateModalTime');
+  var manualBtn = document.getElementById('reportGenerateManualBtn');
+  var syncBtn = document.getElementById('reportGenerateSyncBtn');
+  
+  // Set current time
+  var now = new Date();
+  modalTime.textContent = now.toLocaleTimeString();
+  
+  // Set title based on report type
+  if (reportType === 'summary') {
+    modalTitle.textContent = 'Generate Monthly Summary';
+  } else if (reportType === 'absent') {
+    modalTitle.textContent = 'Generate Absent Report';
+  } else if (reportType === 'overtime') {
+    modalTitle.textContent = 'Generate Overtime Report';
+  }
+  
+  // Store report type for later use
+  modal.setAttribute('data-report-type', reportType);
+  
+  // Show modal
+  modal.style.display = 'flex';
+}
+
+function closeReportGenerateModal() {
+  document.getElementById('reportGenerateModal').style.display = 'none';
+}
+
+function selectReportGenerateOption(option) {
+  var modal = document.getElementById('reportGenerateModal');
+  var reportType = modal.getAttribute('data-report-type');
+  closeReportGenerateModal();
+  
+  if (option === 'manual') {
+    // Switch to manual entry tab
+    window.location.href = "{% url 'attendance_list' %}?tab=manual";
+  } else if (option === 'sync') {
+    // Sync attendance data
+    var status = document.getElementById('actionStatus');
+    if (status) {
+      status.style.display = 'block';
+      status.textContent = 'Syncing attendance data...';
+      setTimeout(function() {
+        status.textContent = 'Sync completed successfully';
+        setTimeout(function() {
+          status.style.display = 'none';
+        }, 3000);
+      }, 2000);
+    }
+  }
+}
+
+function generateReportType(type){
+
+    var form = document.getElementById('reportForm');
+
+
+    var oldInput = form.querySelector(
+        'input[name="report_type"]'
+    );
+
+    if(oldInput){
+        oldInput.remove();
+    }
+
+
+    var input = document.createElement("input");
+
+    input.type = "hidden";
+    input.name = "report_type";
+    input.value = type;
+
+
+    form.appendChild(input);
+
+
+    form.submit();
+
+}
+function downloadReportExportWithFormat(btn) {
+  var fromVal = document.querySelector('[name="report_from"]').value;
+  var toVal = document.querySelector('[name="report_to"]').value;
+  var deptVal = document.querySelector('[name="report_department"]').value;
+  var formatVal = document.getElementById('exportFormat').value;
+  var url = "{% url 'attendance_export' %}?report_from=" + fromVal + "&report_to=" + toVal + "&report_department=" + deptVal + "&report_type=summary&format=" + formatVal;
+  window.location.href = url;
+  showExportMessage();
+}
+
+function downloadReportExport(btn, reportType) {
+  var fromVal = document.querySelector('[name="report_from"]').value;
+  var toVal = document.querySelector('[name="report_to"]').value;
+  var deptVal = document.querySelector('[name="report_department"]').value;
+  var url = "{% url 'attendance_export' %}?report_from=" + fromVal + "&report_to=" + toVal + "&report_department=" + deptVal + "&report_type=" + reportType + "&format=xlsx";
+  window.location.href = url;
+  showExportMessage();
+}
+</script>
+
+<!-- Generate Options Modal -->
+<div id="generateOptionsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:9999;">
+  <div style="background:white; width:400px; border-radius:16px; padding:24px; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+    <h2 style="margin:0 0 16px 0; font-size:20px; color:var(--ink);">Generate Attendance</h2>
+    <p style="color:var(--muted); margin-bottom:20px;">Choose how you want to generate attendance data:</p>
+    
+    <div style="display:grid; gap:12px;">
+      <button onclick="selectGenerateOption('manual')" class="btn" style="background:#FF6B00; color:white; padding:14px; border:none; display:flex; align-items:center; gap:10px; cursor:pointer;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+        Manual Entry
+      </button>
+      
+      <button onclick="selectGenerateOption('sync')" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand); padding:14px; display:flex; align-items:center; gap:10px; cursor:pointer;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        Sync with Device
+      </button>
+    </div>
+    
+    <button onclick="closeGenerateOptions()" class="btn" style="margin-top:16px; background:#F1F5F9; color:var(--muted); border:none; width:100%; padding:12px; cursor:pointer;">Cancel</button>
+  </div>
+</div>
+
+<!-- Report Generate Modal -->
+<div id="reportGenerateModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:9999;">
+  <div style="background:white; width:400px; border-radius:16px; padding:24px; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+    <h2 id="reportGenerateModalTitle" style="margin:0 0 8px 0; font-size:20px; color:var(--ink);">Generate Report</h2>
+    <p id="reportGenerateModalTime" style="color:var(--muted); margin-bottom:20px; font-size:14px;">Current Time</p>
+    
+    <p style="color:var(--muted); margin-bottom:20px;">Choose how you want to generate this report:</p>
+    
+    <div style="display:grid; gap:12px;">
+      <button id="reportGenerateManualBtn" onclick="selectReportGenerateOption('manual')" class="btn" style="background:#FF6B00; color:white; padding:14px; border:none; display:flex; align-items:center; gap:10px; cursor:pointer;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+        Manual Entry
+      </button>
+      
+      <button id="reportGenerateSyncBtn" onclick="selectReportGenerateOption('sync')" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand); padding:14px; display:flex; align-items:center; gap:10px; cursor:pointer;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        Sync Punch
+      </button>
+    </div>
+    
+    <button onclick="closeReportGenerateModal()" class="btn" style="margin-top:16px; background:#F1F5F9; color:var(--muted); border:none; width:100%; padding:12px; cursor:pointer;">Cancel</button>
+  </div>
+</div>
+
+{% endblock %}

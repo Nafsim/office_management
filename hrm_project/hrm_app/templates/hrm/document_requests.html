@@ -1,0 +1,127 @@
+{% extends 'hrm/base.html' %}
+
+{% block title %}Document Requests — Luminous HRM{% endblock %}
+
+{% block content %}
+
+<!-- Top Header -->
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
+  <div>
+    <h1 style="font-size:28px; font-weight:700; color:var(--ink); margin:0;">Document Requests</h1>
+    <div style="font-size:14px; color:var(--muted); margin-top:4px;">Home · Work · Document Requests</div>
+  </div>
+
+  <div style="display:flex; gap:10px; align-items:center;">
+    <button onclick="history.back()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">← Back</button>
+    <a href="{% url 'document_list' %}" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">Documents</a>
+
+    {% if user.role == 'super_admin' or user.role == 'manager' or user.role == 'employee' %}
+      <a href="{% url 'document_request_create' %}" class="btn" style="background:#FF6B00; color:white;">Request Document</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Orange Banner -->
+<div style="background:linear-gradient(90deg, #FF6B00, #FF8C3A); color:white; border-radius:12px; padding:16px 20px; margin-bottom:28px; display:flex; align-items:center; gap:16px;">
+  <div style="background:rgba(255,255,255,0.25); width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  </div>
+  <div>
+    <strong style="font-size:16px;">Document Request System</strong><br>
+    <span style="opacity:0.95;">Request documents from admin. Admin can approve and generate requested documents. Managers with permission can also generate.</span>
+  </div>
+</div>
+
+<!-- Stats -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:16px; margin-bottom:28px;">
+  <div class="card pad" style="text-align:center; border:2px solid #FF9F4D;">
+    <div style="font-size:42px; font-weight:700; color:var(--ink);">{{ pending_count }}</div>
+    <div style="color:var(--muted);">Pending Requests</div>
+  </div>
+  <div class="card pad" style="text-align:center; border:2px solid #22C55E;">
+    <div style="font-size:42px; font-weight:700; color:var(--ink);">{{ generated_count }}</div>
+    <div style="color:var(--muted);">Generated</div>
+  </div>
+</div>
+
+<!-- All Requests -->
+<div class="card">
+  <div style="padding:18px 20px; border-bottom:1px solid var(--line);">
+    <strong>All Document Requests</strong>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Requester</th>
+        <th>Employee</th>
+        <th>Document Type</th>
+        <th>Reason</th>
+        <th>Status</th>
+        <th>Requested At</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for req in requests %}
+      <tr>
+        <td>{{ req.requester.get_full_name|default:"—" }}</td>
+        <td>{{ req.employee.user.get_full_name|default:"—" }}</td>
+        <td>
+          {% if req.document_type == 'Other' %}
+            {{ req.custom_type|default:"—" }}
+          {% else %}
+            {{ req.document_type }}
+          {% endif %}
+        </td>
+        <td>{{ req.reason|truncatewords:10 }}</td>
+        <td>
+          {% if req.status == 'Pending' %}
+            <span class="tag" style="background:#FEF3C7; color:#D97706;">{{ req.status }}</span>
+          {% elif req.status == 'Approved' %}
+            <span class="tag" style="background:#D1FAE5; color:#10B981;">{{ req.status }}</span>
+          {% elif req.status == 'Rejected' %}
+            <span class="tag" style="background:#FEE2E2; color:#EF4444;">{{ req.status }}</span>
+          {% elif req.status == 'Completed' %}
+            <span class="tag" style="background:#DBEAFE; color:#3B82F6;">{{ req.status }}</span>
+          {% else %}
+            <span class="tag">{{ req.status }}</span>
+          {% endif %}
+        </td>
+        <td>{{ req.requested_at|date:"Y-m-d" }}</td>
+        <td>
+          <!-- Review button (Admin + Manager) when Pending -->
+          {% if req.status == 'Pending' %}
+            {% if user.role == 'super_admin' or user.role == 'manager' %}
+              <a href="{% url 'document_request_approve' req.pk %}" class="btn ghost sm">Review</a>
+            {% endif %}
+          {% endif %}
+
+          <!-- Generate button when Approved -->
+          {% if req.status == 'Approved' %}
+            {% if user.role == 'super_admin' or user.can_generate_documents %}
+              <a href="{% url 'document_generate' req.pk %}" 
+                 class="btn ghost sm" 
+                 style="background:#FF6B00; color:white;">
+                Generate
+              </a>
+            {% endif %}
+          {% endif %}
+
+          <!-- Download if already generated -->
+          {% if req.generated_document %}
+            <a href="{% url 'document_download' req.generated_document.pk %}" class="btn ghost sm">Download</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7" style="text-align:center; padding:40px; color:var(--muted);">No document requests found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

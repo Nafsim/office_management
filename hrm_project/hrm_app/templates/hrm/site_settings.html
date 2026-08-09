@@ -1,0 +1,156 @@
+{% extends 'hrm/base.html' %}
+
+{% block title %}Site Settings — Luminous HRM{% endblock %}
+
+{% block content %}
+
+<!-- Top Header -->
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
+  <div>
+    <h1 style="font-size:28px; font-weight:700; color:var(--ink); margin:0;">Site Settings</h1>
+    <div style="font-size:14px; color:var(--muted); margin-top:4px;">Home · Configuration · Site Settings</div>
+  </div>
+
+  <button onclick="history.back()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand); display:flex; align-items:center; gap:6px;">
+    <svg class="ico" style="width:16px;height:16px;" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Back
+  </button>
+</div>
+
+<!-- Back to All Settings -->
+<div style="margin-bottom:24px;">
+  <a href="{% url 'config' %}" style="color:var(--brand); text-decoration:none; font-size:14px; display:flex; align-items:center; gap:4px;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    ← All Settings
+  </a>
+</div>
+   <form method="POST" action="{% url 'site_settings' %}" enctype="multipart/form-data">
+
+  {% csrf_token %}
+
+  <!-- Company Profile Section -->
+  <div class="section-card" style="margin-bottom:20px;">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Company Profile</div>
+        <div class="section-subtitle">Basic information about your organization</div>
+      </div>
+    </div>
+
+    <div style="padding:20px; display:grid; gap:16px;">
+      <div>
+        <label>Company Name</label>
+        <input type="text" name="company_name" class="input" value="{{ settings.company_name|default:'Luminous Labs' }}">
+      </div>
+      <div>
+        <label>Company Email</label>
+        <input type="email" name="company_email" class="input" value="{{ settings.company_email|default:'info@luminouslabsbd.com' }}">
+      </div>
+      <div>
+        <label>Phone</label>
+        <input type="tel" name="company_phone" class="input" value="{{ settings.company_phone|default:'+880 1618 836577' }}">
+      </div>
+      <div>
+        <label>Address</label>
+        <textarea name="company_address" class="input" rows="3">{{ settings.company_address|default:'House 761/A, Road 11, Avenue 6, Mirpur DOHS, Dhaka 1216' }}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Preferences Section -->
+  <div class="section-card" style="margin-bottom:20px;">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Preferences</div>
+        <div class="section-subtitle">System-wide settings and formats</div>
+      </div>
+    </div>
+
+    <div style="padding:20px; display:grid; gap:16px;">
+      <div>
+        <label>Timezone</label>
+        <select name="timezone" class="input">
+          <option value="Asia/Dhaka" {% if settings.timezone == 'Asia/Dhaka' %}selected{% endif %}>Asia/Dhaka (GMT+6)</option>
+          <option value="Asia/Kolkata" {% if settings.timezone == 'Asia/Kolkata' %}selected{% endif %}>Asia/Kolkata (GMT+5:30)</option>
+          <option value="America/New_York" {% if settings.timezone == 'America/New_York' %}selected{% endif %}>America/New_York (GMT-5)</option>
+          <option value="Europe/London" {% if settings.timezone == 'Europe/London' %}selected{% endif %}>Europe/London (GMT+0)</option>
+          <option value="Asia/Dubai" {% if settings.timezone == 'Asia/Dubai' %}selected{% endif %}>Asia/Dubai (GMT+4)</option>
+        </select>
+      </div>
+      <div>
+        <label>Currency</label>
+        <select name="currency" class="input">
+          <option value="BDT" {% if settings.currency == 'BDT' %}selected{% endif %}>BDT (৳)</option>
+          <option value="USD" {% if settings.currency == 'USD' %}selected{% endif %}>USD ($)</option>
+          <option value="EUR" {% if settings.currency == 'EUR' %}selected{% endif %}>EUR (€)</option>
+          <option value="GBP" {% if settings.currency == 'GBP' %}selected{% endif %}>GBP (£)</option>
+          <option value="INR" {% if settings.currency == 'INR' %}selected{% endif %}>INR (₹)</option>
+        </select>
+      </div>
+      <div>
+        <label>Date Format</label>
+        <select name="date_format" class="input">
+          <option value="DD-MM-YYYY" {% if settings.date_format == 'DD-MM-YYYY' %}selected{% endif %}>DD-MM-YYYY</option>
+          <option value="MM-DD-YYYY" {% if settings.date_format == 'MM-DD-YYYY' %}selected{% endif %}>MM-DD-YYYY</option>
+          <option value="YYYY-MM-DD" {% if settings.date_format == 'YYYY-MM-DD' %}selected{% endif %}>YYYY-MM-DD</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Company Logo Section -->
+  <div class="section-card" style="margin-bottom:20px;">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Company Logo</div>
+        <div class="section-subtitle">Your organization's branding</div>
+      </div>
+    </div>
+
+    <div style="padding:20px;">
+      <div style="display:flex; align-items:center; gap:16px; margin-bottom:16px;">
+        <div style="width:80px; height:80px; background:#F3F4F6; border-radius:12px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+          {% if settings.company_logo %}
+          <img src="{{ settings.company_logo.url }}" alt="Company Logo" style="max-width:100%; max-height:100%; object-fit:contain;">
+          {% else %}
+          <span style="font-size:24px; font-weight:700; color:var(--muted);">LL</span>
+          {% endif %}
+        </div>
+        <div>
+          <strong style="font-size:16px;">{{ settings.company_name|default:'Luminous Labs' }}</strong>
+          <div style="font-size:13px; color:var(--muted); margin-top:4px;">Current logo</div>
+        </div>
+      </div>
+      <div>
+        <input type="file" name="company_logo" accept="image/*" class="input" style="padding:8px;">
+      </div>
+    </div>
+  </div>
+
+  <!-- Maintenance Mode Section -->
+  <div class="section-card" style="margin-bottom:20px;">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Maintenance Mode</div>
+        <div class="section-subtitle">Temporarily disable access for non-admin users</div>
+      </div>
+    </div>
+
+    <div style="padding:20px;">
+      <label style="display:flex; align-items:center; gap:12px; cursor:pointer;">
+        <input type="checkbox" name="maintenance_mode" {% if settings.maintenance_mode %}checked{% endif %} style="width:20px; height:20px; cursor:pointer;">
+        <span style="font-size:14px; color:var(--ink);">Enable Maintenance Mode</span>
+      </label>
+      <div style="font-size:13px; color:var(--muted); margin-top:8px; margin-left:32px;">
+        When enabled, only administrators can access the system.
+      </div>
+    </div>
+  </div>
+
+  <!-- Save Button -->
+  <div style="display:flex; justify-content:flex-end; gap:12px;">
+    <button type="submit" class="btn orange-btn" style="padding:12px 24px; font-size:14px;">Save Settings</button>
+  </div>
+</form>
+
+{% endblock %}

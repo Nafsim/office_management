@@ -1,0 +1,261 @@
+{% extends 'hrm/base.html' %}
+
+{% block title %}Configuration — Luminous HRM{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+
+  <div><h1>Configuration</h1><div class="crumb">System settings and configurations</div></div>
+
+</div>
+
+
+
+<div class="grid cols-2">
+
+  <div class="card pad">
+
+    <div class="section-title" style="margin-top:0">Departments</div>
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>Name</th>
+
+          <th>Head</th>
+
+          <th>Action</th>
+
+        </tr>
+
+      </thead>
+
+      <tbody>
+
+        {% for dept in departments %}
+
+        <tr>
+
+          <td><b>{{ dept.name }}</b></td>
+
+          <td>{{ dept.head|default:"—" }}</td>
+
+          <td><a href="#" class="btn ghost sm">Edit</a></td>
+
+        </tr>
+
+        {% empty %}
+
+        <tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px">No departments configured.</td></tr>
+
+        {% endfor %}
+
+      </tbody>
+
+    </table>
+
+    {% if user.role == 'super_admin' %}
+
+    <div style="margin-top:16px">
+
+      <a href="{% url 'dept_create' %}" class="btn full">Add Department</a>
+
+    </div>
+
+    {% endif %}
+
+  </div>
+
+
+
+  <div class="card pad">
+
+    <div class="section-title" style="margin-top:0">Designations</div>
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>Title</th>
+
+          <th>Department</th>
+
+          <th>Level</th>
+
+          <th>Action</th>
+
+        </tr>
+
+      </thead>
+
+      <tbody>
+
+        {% for desig in designations %}
+
+        <tr>
+
+          <td><b>{{ desig.title }}</b></td>
+
+          <td>{{ desig.department|default:"—" }}</td>
+
+          <td><span class="tag t-blue">{{ desig.level }}</span></td>
+
+          <td><a href="#" class="btn ghost sm">Edit</a></td>
+
+        </tr>
+
+        {% empty %}
+
+        <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">No designations configured.</td></tr>
+
+        {% endfor %}
+
+      </tbody>
+
+    </table>
+
+    {% if user.role == 'super_admin' %}
+
+    <div style="margin-top:16px">
+
+      <a href="{% url 'desig_create' %}" class="btn full">Add Designation</a>
+
+    </div>
+
+    {% endif %}
+
+  </div>
+
+
+
+  <div class="card pad">
+
+    <div class="section-title" style="margin-top:0">Shifts</div>
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>Name</th>
+
+          <th>Start Time</th>
+
+          <th>End Time</th>
+
+          <th>Action</th>
+
+        </tr>
+
+      </thead>
+
+      <tbody>
+
+        {% for shift in shifts %}
+
+        <tr>
+
+          <td><b>{{ shift.name }}</b></td>
+
+          <td>{{ shift.start_time }}</td>
+
+          <td>{{ shift.end_time }}</td>
+
+          <td><a href="#" class="btn ghost sm">Edit</a></td>
+
+        </tr>
+
+        {% empty %}
+
+        <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">No shifts configured.</td></tr>
+
+        {% endfor %}
+
+      </tbody>
+
+    </table>
+
+    {% if user.role == 'super_admin' %}
+
+    <div style="margin-top:16px">
+
+      <a href="{% url 'shift_create' %}" class="btn full">Add Shift</a>
+
+    </div>
+
+    {% endif %}
+
+  </div>
+
+
+
+  <div class="card pad">
+
+    <div class="section-title" style="margin-top:0">Holidays</div>
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>Date</th>
+
+          <th>Name</th>
+
+          <th>Type</th>
+
+          <th>Action</th>
+
+        </tr>
+
+      </thead>
+
+      <tbody>
+
+        {% for holiday in holidays %}
+
+        <tr>
+
+          <td>{{ holiday.date|date:"d M Y" }}</td>
+
+          <td><b>{{ holiday.name }}</b></td>
+
+          <td><span class="tag t-green">{{ holiday.htype }}</span></td>
+
+          <td><a href="#" class="btn ghost sm">Edit</a></td>
+
+        </tr>
+
+        {% empty %}
+
+        <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">No holidays configured.</td></tr>
+
+        {% endfor %}
+
+      </tbody>
+
+    </table>
+
+    {% if user.role == 'super_admin' %}
+
+    <div style="margin-top:16px">
+
+      <a href="{% url 'holiday_create' %}" class="btn full">Add Holiday</a>
+
+    </div>
+
+    {% endif %}
+
+  </div>
+
+</div>
+
+{% endblock %}

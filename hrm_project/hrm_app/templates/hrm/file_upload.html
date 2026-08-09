@@ -1,0 +1,46 @@
+{% extends "hrm/base.html" %}
+
+{% block title %}
+Upload File - Luminous HRM
+{% endblock %}
+
+
+{% block content %}
+
+<div class="card pad">
+
+    <div class="page-header">
+        <h2>Upload File</h2>
+        <p style="color:var(--muted)">
+            Upload employee documents and files
+        </p>
+    </div>
+
+
+    <form method="POST" enctype="multipart/form-data">
+
+        {% csrf_token %}
+
+        <div style="margin-bottom:20px;">
+            <label>
+                Select File
+            </label>
+
+            <input 
+                type="file" 
+                name="file"
+                required
+                style="margin-top:10px;"
+            >
+        </div>
+
+
+        <button class="btn btn-primary" type="submit">
+            Upload
+        </button>
+
+    </form>
+
+</div>
+
+{% endblock %}

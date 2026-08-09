@@ -1,0 +1,90 @@
+{% extends 'hrm/base.html' %}
+
+{% block title %}Generate Document — Luminous HRM{% endblock %}
+
+{% block content %}
+
+<!-- Top Header -->
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
+  <div>
+    <h1 style="font-size:28px; font-weight:700; color:var(--ink); margin:0;">Generate Document</h1>
+    <div style="font-size:14px; color:var(--muted); margin-top:4px;">Home · Work · Generate Document</div>
+  </div>
+
+  <div style="display:flex; gap:10px; align-items:center;">
+    <button onclick="history.back()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">← Back</button>
+  </div>
+</div>
+
+<!-- Request Details Card -->
+<div class="card pad" style="margin-bottom:20px;">
+  <h2 style="margin-top:0;">Request Details</h2>
+  
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-top:16px;">
+    <div>
+      <strong>Requester:</strong><br>
+      {{ doc_request.requester.get_full_name|default:"—" }}
+    </div>
+    <div>
+      <strong>Employee:</strong><br>
+      {{ doc_request.employee.user.get_full_name|default:"—" }}
+    </div>
+    <div>
+      <strong>Document Type:</strong><br>
+      {% if doc_request.document_type == 'Other' %}
+        {{ doc_request.custom_type|default:"—" }}
+      {% else %}
+        {{ doc_request.document_type }}
+      {% endif %}
+    </div>
+    <div>
+      <strong>Status:</strong><br>
+      <span class="tag" style="background:#D1FAE5; color:#10B981;">{{ doc_request.status }}</span>
+    </div>
+    <div>
+      <strong>Requested At:</strong><br>
+      {{ doc_request.requested_at|date:"Y-m-d H:i" }}
+    </div>
+  </div>
+
+  <div style="margin-top:16px;">
+    <strong>Reason:</strong><br>
+    {{ doc_request.reason }}
+  </div>
+</div>
+
+<!-- Generate Form -->
+<div class="card pad">
+  <h2 style="margin-top:0;">Upload Generated Document</h2>
+  
+  <form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    
+    <div style="margin-bottom:16px;">
+      <label style="display:block; margin-bottom:8px; font-weight:600;">Document Name</label>
+      <input type="text" name="document_name" class="input" style="width:100%; padding:10px; border:1px solid var(--line); border-radius:8px;" value="{{ doc_request.document_type }} - {{ doc_request.employee.user.get_full_name }}">
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <label style="display:block; margin-bottom:8px; font-weight:600;">Category</label>
+      <select name="category" class="input" style="width:100%; padding:10px; border:1px solid var(--line); border-radius:8px;">
+        {% for cat_value, cat_label in categories %}
+        <option value="{{ cat_value }}" {% if cat_value == 'Personal' %}selected{% endif %}>{{ cat_label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <label style="display:block; margin-bottom:8px; font-weight:600;">Generated Document File</label>
+      <input type="file" name="generated_file" class="input" style="width:100%; padding:10px; border:1px solid var(--line); border-radius:8px;" required accept=".pdf,.doc,.docx">
+      <small style="color:var(--muted);">Upload the generated document (PDF, DOC, DOCX)</small>
+    </div>
+
+    <div style="display:flex; gap:10px;">
+      <button type="submit" class="btn" style="background:#FF6B00; color:white; padding:12px 25px; border:none; border-radius:8px; cursor:pointer;">Upload & Complete</button>
+      <button type="button" onclick="history.back()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand); padding:12px 25px; border-radius:8px; cursor:pointer;">Cancel</button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

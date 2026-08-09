@@ -1,0 +1,32 @@
+{% extends 'hrm/base.html' %}
+{% block title %}Salary Adjustments — Luminous HRM{% endblock %}
+{% block content %}
+<div class="card pad">
+  <h1 style="margin:0 0 8px; color:var(--ink);">Salary Adjustments</h1>
+  <p style="color:var(--muted); margin:0 0 18px;">Recent payroll adjustments and deductions.</p>
+  <div style="overflow:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Type</th>
+          <th>Amount</th>
+          <th>Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for adj in adjustments %}
+        <tr>
+          <td>{{ adj.employee.user.get_full_name|default:adj.employee.user.username }}</td>
+          <td>{{ adj.adjustment_type|default:'Adjustment' }}</td>
+          <td>৳{{ adj.amount|default:0|floatformat:0 }}</td>
+          <td>{{ adj.note|default:'-' }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">No adjustments recorded yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

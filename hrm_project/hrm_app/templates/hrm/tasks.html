@@ -1,0 +1,436 @@
+{% extends 'hrm/base.html' %}
+
+{% block title %}Task Management — Luminous HRM{% endblock %}
+
+{% block content %}
+<div data-view-mode="{% if view_mode == 'table' %}table{% else %}card{% endif %}">
+
+<!-- ================= TOP HEADER ================= -->
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
+
+  <div>
+    <h1 style="font-size:28px; font-weight:700; color:var(--ink); margin:0;">Task Management</h1>
+    <div style="font-size:14px; color:var(--muted); margin-top:4px;">Home · Work · Kanban Board</div>
+  </div>
+
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+
+    <button onclick="history.back()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">
+      ← Back
+    </button>
+
+    <button id="exportTasksBtn" type="button" data-export-url="{% url 'task_export' %}" class="btn"
+            style="background:#FF6B00; color:white; border:none; display:flex; align-items:center; gap:6px; cursor:pointer;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+      </svg>
+      Export
+    </button>
+
+    <a href="{% url 'task_create' %}" class="btn" style="background:#FF6B00; color:white;">
+      New Task
+    </a>
+
+    <button onclick="location.reload()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">
+      Refresh
+    </button>
+
+    <!-- View Toggle Button -->
+    {% if view_mode == 'table' %}
+      <a href="?view=card" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">
+        Card View
+      </a>
+    {% else %}
+      <a href="?view=table" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">
+        Table View
+      </a>
+    {% endif %}
+
+  </div>
+</div>
+
+<!-- ================= ORANGE BANNER ================= -->
+<div style="background:linear-gradient(90deg,#FF6B00,#FF8C3A); color:white; border-radius:12px; padding:16px 20px; margin-bottom:28px; display:flex; align-items:center; gap:16px;">
+  <div style="background:rgba(255,255,255,.25); width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+    </svg>
+  </div>
+  <div>
+    <strong style="font-size:16px;">Drag & drop kanban</strong><br>
+    <span style="opacity:.95;">Grab any card and move it between columns to update task status.</span>
+  </div>
+</div>
+
+<!-- ================= TASK DETAILS MODAL ================= -->
+<div id="taskModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.45); align-items:center; justify-content:center; z-index:999;">
+  <div style="background:white; width:420px; border-radius:16px; padding:24px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h2 id="modalTitle" style="margin:0; font-size:22px;"></h2>
+      <button onclick="closeTaskModal()" style="border:none; background:none; font-size:30px; cursor:pointer; color:#666;">×</button>
+    </div>
+    <hr>
+    <div style="margin-top:15px;">
+      <p><strong id="modalPriority"></strong></p>
+      <p id="modalProject"></p>
+      <h4>Assignee</h4>
+      <p id="modalAssignee"></p>
+      <h4>Due Date</h4>
+      <p id="modalDate"></p>
+      <h4>Progress</h4>
+      <p>Progress — <span id="modalProgress"></span>%</p>
+    </div>
+    <button onclick="startProgress()" class="btn" style="background:#F59E0B; color:white; margin-top:20px; display:inline-block;">Start Progress</button>
+    <button onclick="markComplete()" class="btn" style="background:#10B981; color:white; margin-top:20px; display:inline-block;">Mark Complete</button>
+  </div>
+</div>
+
+{% if view_mode == 'table' %}
+
+<!-- ===================== TABLE VIEW ===================== -->
+<div style="background:white; border-radius:12px; overflow:hidden; border:1px solid #E5E7EB;">
+  <table style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr style="background:#F9FAFB; text-align:left;">
+        <th style="padding:12px 16px;">Title</th>
+        <th style="padding:12px 16px;">Project</th>
+        <th style="padding:12px 16px;">Assignee</th>
+        <th style="padding:12px 16px;">Priority</th>
+        <th style="padding:12px 16px;">Status</th>
+        <th style="padding:12px 16px;">Due Date</th>
+        <th style="padding:12px 16px;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for task in tasks %}
+      <tr style="border-top:1px solid #E5E7EB;">
+        <td style="padding:12px 16px;">
+          <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:{{ task.color|default:'#FF6B00' }}; margin-right:6px;"></span>
+          {{ task.title }}
+        </td>
+        <td style="padding:12px 16px;">{{ task.project.name }}</td>
+        <td style="padding:12px 16px;">{{ task.assignee.user.get_full_name|default:task.assignee.user.username }}</td>
+        <td style="padding:12px 16px;">{{ task.priority }}</td>
+        <td style="padding:12px 16px;">{{ task.status }}</td>
+        <td style="padding:12px 16px;">{{ task.due_date }}</td>
+        <td style="padding:12px 16px;">
+          <a href="{% url 'task_edit' task.pk %}" title="Edit" style="text-decoration:none; margin-right:8px;">✎</a>
+          <a href="{% url 'task_delete' task.pk %}" title="Delete" onclick="return confirm('Delete this task?')" style="text-decoration:none; color:#EF4444;">🗑</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7" style="padding:24px; text-align:center; color:#999;">No tasks found</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+
+<!-- ===================== KANBAN (CARD) VIEW ===================== -->
+<div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:16px;">
+
+  <!-- ========== TO DO ========== -->
+  <div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <span style="background:#F3F4F6; padding:6px 14px; border-radius:999px; font-weight:600;">To Do</span>
+      <span style="background:#F3F4F6; padding:4px 10px; border-radius:999px;">{{ todo_count }}</span>
+    </div>
+
+    <div ondrop="drop(event, 'To Do')" ondragover="allowDrop(event)"
+         style="background:white; border:2px solid #E5E7EB; border-radius:12px; padding:8px; min-height:350px;">
+
+      {% for task in tasks %}
+        {% if task.status == "To Do" %}
+        <div draggable="true" ondragstart="drag(event)" data-task-id="{{ task.pk }}"
+             onclick="openTaskModal('{{ task.pk }}', '{{ task.title|escapejs }}', '{{ task.priority }}', '{{ task.project.name|escapejs }}', '{{ task.assignee.user.first_name }} {{ task.assignee.user.last_name }}', '{{ task.due_date }}', '{{ task.progress }}')"
+             style="background:{{ task.color|default:'#ffffff' }}18; border:1px solid #E5E7EB; border-left:4px solid {{ task.color|default:'#FF6B00' }}; border-radius:8px; padding:10px; margin-bottom:8px; cursor:grab;">
+
+          <span style="background:#EF4444; color:white; padding:3px 10px; border-radius:999px; font-size:13px;">{{ task.priority }}</span>
+
+          <h4 style="margin:6px 0 2px; font-size:14px;">{{ task.title }}</h4>
+          <small style="color:#6B7280;">{{ task.project.name }}</small>
+
+          <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center;">
+            <div style="background:{{ task.color|default:'#FF6B00' }}; color:white; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold;">
+              {{ task.assignee.user.first_name|first }}{{ task.assignee.user.last_name|first }}
+            </div>
+
+            <div style="display:flex; gap:6px; align-items:center;" onclick="event.stopPropagation()">
+              <input type="color" value="{{ task.color|default:'#FF6B00' }}" title="Change color"
+                     style="width:22px; height:22px; border:none; padding:0; cursor:pointer; background:none;"
+                     onchange="updateTaskColor({{ task.pk }}, this.value)">
+              <a href="{% url 'task_edit' task.pk %}" title="Edit" style="font-size:16px; text-decoration:none; color:#555;">✎</a>
+              <a href="{% url 'task_delete' task.pk %}" title="Delete" onclick="return confirm('Delete this task?')" style="font-size:16px; text-decoration:none; color:#EF4444;">🗑</a>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      {% empty %}
+        <p style="text-align:center; color:#999;">No Task</p>
+      {% endfor %}
+
+      <div style="text-align:center; margin-top:12px;">
+        <button type="button" class="btn" style="background:#F3F4F6; border:1px dashed #ccc; color:#555;"
+                onclick="openAddTaskModal('To Do')">+ Add Task</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== IN PROGRESS ========== -->
+  <div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <span style="background:#FEF3C7; color:#D97706; padding:6px 14px; border-radius:999px; font-weight:600;">In Progress</span>
+      <span style="background:#FEF3C7; color:#D97706; padding:4px 10px; border-radius:999px;">{{ progress_count }}</span>
+    </div>
+
+    <div ondrop="drop(event, 'In Progress')" ondragover="allowDrop(event)"
+         style="background:white; border:2px solid #E5E7EB; border-radius:12px; padding:8px; min-height:350px;">
+
+      {% for task in tasks %}
+        {% if task.status == "In Progress" %}
+        <div draggable="true" ondragstart="drag(event)" data-task-id="{{ task.pk }}"
+             onclick="openTaskModal('{{ task.pk }}', '{{ task.title|escapejs }}', '{{ task.priority }}', '{{ task.project.name|escapejs }}', '{{ task.assignee.user.first_name }} {{ task.assignee.user.last_name }}', '{{ task.due_date }}', '{{ task.progress }}')"
+             style="background:{{ task.color|default:'#ffffff' }}18; border:1px solid #E5E7EB; border-left:4px solid {{ task.color|default:'#FF6B00' }}; border-radius:8px; padding:10px; margin-bottom:8px; cursor:grab;">
+
+          <span style="background:#EF4444; color:white; padding:3px 10px; border-radius:999px; font-size:13px;">{{ task.priority }}</span>
+
+          <h4 style="margin:10px 0 4px;">{{ task.title }}</h4>
+          <small style="color:#6B7280;">{{ task.project.name }}</small>
+
+          <div style="margin-top:12px;">
+            <div style="height:6px; background:#E5E7EB; border-radius:999px;">
+              <div style="width:{{ task.progress }}%; height:6px; background:#FF6B00; border-radius:999px;"></div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center;">
+            <div style="background:{{ task.color|default:'#EC4899' }}; color:white; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold;">
+              {{ task.assignee.user.first_name|first }}{{ task.assignee.user.last_name|first }}
+            </div>
+
+            <div style="display:flex; gap:6px; align-items:center;" onclick="event.stopPropagation()">
+              <input type="color" value="{{ task.color|default:'#FF6B00' }}" title="Change color"
+                     style="width:22px; height:22px; border:none; padding:0; cursor:pointer; background:none;"
+                     onchange="updateTaskColor({{ task.pk }}, this.value)">
+              <a href="{% url 'task_edit' task.pk %}" title="Edit" style="font-size:16px; text-decoration:none; color:#555;">✎</a>
+              <a href="{% url 'task_delete' task.pk %}" title="Delete" onclick="return confirm('Delete this task?')" style="font-size:16px; text-decoration:none; color:#EF4444;">🗑</a>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
+
+      <div style="text-align:center; margin-top:12px;">
+        <button type="button" class="btn" style="background:#FEF3C7; border:1px dashed #ccc; color:#D97706;"
+                onclick="openAddTaskModal('In Progress')">+ Add Task</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== COMPLETED ========== -->
+  <div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <span style="background:#D1FAE5; color:#10B981; padding:6px 14px; border-radius:999px; font-weight:600;">Completed</span>
+      <span style="background:#D1FAE5; color:#10B981; padding:4px 10px; border-radius:999px;">{{ done_count }}</span>
+    </div>
+
+    <div ondrop="drop(event, 'Completed')" ondragover="allowDrop(event)"
+         style="background:white; border:2px solid #E5E7EB; border-radius:12px; padding:8px; min-height:350px;">
+
+      {% for task in tasks %}
+        {% if task.status == "Completed" %}
+        <div draggable="true" ondragstart="drag(event)" data-task-id="{{ task.pk }}"
+             onclick="openTaskModal('{{ task.pk }}', '{{ task.title|escapejs }}', '{{ task.priority }}', '{{ task.project.name|escapejs }}', '{{ task.assignee.user.first_name }} {{ task.assignee.user.last_name }}', '{{ task.due_date }}', '{{ task.progress }}')"
+             style="background:{{ task.color|default:'#ffffff' }}18; border:1px solid #E5E7EB; border-left:4px solid {{ task.color|default:'#10B981' }}; border-radius:8px; padding:10px; margin-bottom:8px; cursor:grab;">
+
+          <span style="background:#10B981; color:white; padding:3px 10px; border-radius:999px; font-size:13px;">Completed</span>
+
+          <h4 style="margin:10px 0 4px;">{{ task.title }}</h4>
+          <small style="color:#6B7280;">{{ task.project.name }}</small>
+
+          <div style="margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
+            <div style="background:{{ task.color|default:'#10B981' }}; color:white; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold;">
+              {{ task.assignee.user.first_name|first }}{{ task.assignee.user.last_name|first }}
+            </div>
+
+            <div style="display:flex; gap:6px; align-items:center;" onclick="event.stopPropagation()">
+              <input type="color" value="{{ task.color|default:'#FF6B00' }}" title="Change color"
+                     style="width:22px; height:22px; border:none; padding:0; cursor:pointer; background:none;"
+                     onchange="updateTaskColor({{ task.pk }}, this.value)">
+              <a href="{% url 'task_edit' task.pk %}" title="Edit" style="font-size:16px; text-decoration:none; color:#555;">✎</a>
+              <a href="{% url 'task_delete' task.pk %}" title="Delete" onclick="return confirm('Delete this task?')" style="font-size:16px; text-decoration:none; color:#EF4444;">🗑</a>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
+
+      <div style="text-align:center; margin-top:12px;">
+        <button type="button" class="btn" style="background:#D1FAE5; border:1px dashed #ccc; color:#10B981;"
+                onclick="openAddTaskModal('Completed')">+ Add Task</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+<!-- Kanban End -->
+
+{% endif %}
+
+<!-- ================= ADD TASK MODAL ================= -->
+<div id="addTaskModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.45); align-items:center; justify-content:center; z-index:999;">
+  <div style="background:white; width:420px; max-width:92vw; max-height:calc(100vh - 48px); overflow-y:auto; border-radius:16px; padding:24px; box-sizing:border-box;">
+    <h2 style="margin:0; font-size:22px;">Add Task</h2>
+    <form method="POST" action="{% url 'task_create' %}">
+      {% csrf_token %}
+      <input type="hidden" name="status" id="taskStatusField">
+      <div style="margin-top:12px;">
+        <label>Title</label>
+        <input type="text" name="title" class="input" required>
+      </div>
+      <div style="margin-top:12px;">
+        <label>Project</label>
+        <select name="project" class="input" required>
+          {% for project in projects %}
+            <option value="{{ project.id }}">{{ project.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="margin-top:12px;">
+        <label>Assignee</label>
+        <select name="assignee" class="input" required>
+          {% for employee in employees %}
+            <option value="{{ employee.id }}">{{ employee.user.get_full_name|default:employee.user.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="margin-top:12px;">
+        <label>Priority</label>
+        <select name="priority" class="input">
+          <option>High</option>
+          <option selected>Medium</option>
+          <option>Low</option>
+        </select>
+      </div>
+      <div style="margin-top:12px;">
+        <label>Due Date</label>
+        <input type="date" name="due_date" class="input">
+      </div>
+      <button type="submit" class="btn orange-btn" style="margin-top:16px;">Save Task</button>
+    </form>
+    <button onclick="closeAddTaskModal()" class="btn" style="margin-top:10px; background:#ccc;">Cancel</button>
+  </div>
+</div>
+
+<!-- ================= JAVASCRIPT ================= -->
+<script>
+function allowDrop(ev) {
+  ev.preventDefault();
+}
+
+function drag(ev) {
+  ev.dataTransfer.setData("taskId", ev.target.getAttribute("data-task-id"));
+}
+
+async function drop(ev, newStatus) {
+  ev.preventDefault();
+  const taskId = ev.dataTransfer.getData("taskId");
+  if (!taskId) return;
+
+  const response = await fetch(`/tasks/${taskId}/status/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-CSRFToken': getCsrfToken(),
+    },
+    body: new URLSearchParams({ status: newStatus }),
+  });
+
+  if (!response.ok) {
+    alert('Could not update task status.');
+    return;
+  }
+  window.location.reload();
+}
+
+function openTaskModal(taskId, title, priority, project, assignee, date, progress) {
+  window.selectedTaskId = taskId;
+  document.getElementById("taskModal").style.display = "flex";
+  document.getElementById("modalTitle").innerHTML = title;
+  document.getElementById("modalPriority").innerHTML = priority + " Priority";
+  document.getElementById("modalProject").innerHTML = project;
+  document.getElementById("modalAssignee").innerHTML = assignee;
+  document.getElementById("modalDate").innerHTML = date;
+  document.getElementById("modalProgress").innerHTML = progress;
+}
+
+function getCsrfToken() {
+  const cookie = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
+  return cookie ? decodeURIComponent(cookie.split('=')[1]) : '';
+}
+
+async function updateTaskStatus(status) {
+  if (!window.selectedTaskId) return;
+
+  const response = await fetch(`/tasks/${window.selectedTaskId}/status/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-CSRFToken': getCsrfToken(),
+    },
+    body: new URLSearchParams({ status }),
+  });
+
+  if (!response.ok) {
+    alert('Could not update task status.');
+    return;
+  }
+  window.location.reload();
+}
+
+function startProgress() {
+  updateTaskStatus('In Progress');
+}
+
+function markComplete() {
+  updateTaskStatus('Completed');
+}
+
+function closeTaskModal() {
+  document.getElementById("taskModal").style.display = "none";
+  window.selectedTaskId = null;
+}
+
+function openAddTaskModal(status) {
+  document.getElementById("addTaskModal").style.display = "flex";
+  document.getElementById("taskStatusField").value = status;
+}
+
+function closeAddTaskModal() {
+  document.getElementById("addTaskModal").style.display = "none";
+}
+
+// Color update
+async function updateTaskColor(taskId, color) {
+  const response = await fetch(`/tasks/${taskId}/color/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-CSRFToken': getCsrfToken(),
+    },
+    body: new URLSearchParams({ color: color }),
+  });
+
+  if (!response.ok) {
+    alert('Could not update color.');
+    return;
+  }
+  // Optional: reload to see left border color change immediately
+  // window.location.reload();
+}
+</script>
+
+{% endblock %}

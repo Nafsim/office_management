@@ -1,0 +1,415 @@
+{% extends 'hrm/base.html' %}
+
+{% block title %}Onboarding & NDA — Luminous HRM{% endblock %}
+
+{% block content %}
+
+<!-- Top Header -->
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
+  <div>
+    <h1 style="font-size:28px; font-weight:700; color:var(--ink); margin:0;">Employee Onboarding</h1>
+    <div style="font-size:14px; color:var(--muted); margin-top:4px;">Home · People · Onboarding</div>
+  </div>
+
+  <div style="display:flex; gap:10px; align-items:center;">
+    <button onclick="history.back()" class="btn ghost" 
+            style="display:flex; align-items:center; gap:8px;">
+      ← Back
+    </button>
+    <button type="button" data-export-url="{% url 'onboarding_export' %}" class="btn" style="border-color:#FED7AA; background:#FFF7ED; color:#9A3412; display:flex; align-items:center; gap:6px; text-decoration:none;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      Export
+    </button>
+  </div>
+</div>
+
+<!-- Orange Banner -->
+<div style="background:linear-gradient(90deg, #FF6B00, #FF8C3A); color:white; border-radius:12px; padding:16px 20px; margin-bottom:28px; display:flex; align-items:center; gap:16px;">
+  <div style="background:rgba(255,255,255,0.25); width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.25">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2" />
+    </svg>
+  </div>
+  <div>
+    <strong style="font-size:16px;">How onboarding works</strong><br>
+    <span style="opacity:0.95;">A new hire fills their details, reads & agrees to the NDA, signs digitally, then their account is activated.</span>
+  </div>
+</div>
+
+<!-- Progress Steps -->
+<div id="progressSteps" style="display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:32px; flex-wrap:wrap;">
+  <div class="step-item active" data-step="1">
+    <div class="step-circle">1</div>
+    <div class="step-label">Details</div>
+  </div>
+  <div class="step-line"></div>
+  
+  <div class="step-item" data-step="2">
+    <div class="step-circle">2</div>
+    <div class="step-label">Read NDA</div>
+  </div>
+  <div class="step-line"></div>
+  
+  <div class="step-item" data-step="3">
+    <div class="step-circle">3</div>
+    <div class="step-label">Sign</div>
+  </div>
+  <div class="step-line"></div>
+  
+  <div class="step-item" data-step="4">
+    <div class="step-circle">4</div>
+    <div class="step-label">Activate</div>
+  </div>
+</div>
+
+<!-- Step 1: Details -->
+<div id="step1" class="step-content card pad" style="max-width:900px; margin:auto;">
+
+  <div style="margin-bottom:20px;">
+    <label style="display:block; margin-bottom:6px; font-weight:600;">
+      Select Employee
+    </label>
+
+    <select id="employeeSelect" class="input" style="width:100%;">
+    <option value="">-- Search & Select Employee --</option>
+
+    {% for emp in employees %}
+    <option 
+        value="{{ emp.id }}"
+        data-name="{{ emp.user.get_full_name }}"
+        data-email="{{ emp.user.email }}"
+        data-designation="{{ emp.designation.title|default:'' }}"
+        data-empid="{{ emp.emp_id }}"
+        data-department="{{ emp.department.name|default:'' }}"
+        data-joining="{{ emp.join_date|date:'Y-m-d' }}"
+    >
+        {{ emp.user.get_full_name }} ({{ emp.emp_id }})
+    </option>
+    {% endfor %}
+
+</select>
+
+
+<input type="hidden" id="selectedEmployeeId" name="employee_id">
+  </div>
+
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+
+    <!-- Left Column -->
+    <div>
+
+      <label style="display:block; margin-bottom:6px; font-weight:600;">
+        Full Name
+      </label>
+      <input id="fullName" type="text" class="input" readonly style="width:100%;">
+
+
+      <label style="display:block; margin:18px 0 6px; font-weight:600;">
+        Work Email
+      </label>
+      <input id="workEmail" type="email" class="input" readonly style="width:100%;">
+
+
+      <label style="display:block; margin:18px 0 6px; font-weight:600;">
+        Designation
+      </label>
+      <input id="designation" type="text" class="input" readonly style="width:100%;">
+
+    </div>
+
+
+    <!-- Right Column -->
+    <div>
+
+      <label style="display:block; margin-bottom:6px; font-weight:600;">
+        Employee ID
+      </label>
+      <input id="employeeId" type="text" class="input" readonly style="width:100%;">
+
+
+      <label style="display:block; margin:18px 0 6px; font-weight:600;">
+        Department
+      </label>
+      <input id="department" type="text" class="input" readonly style="width:100%;">
+
+
+      <label style="display:block; margin:18px 0 6px; font-weight:600;">
+        Joining Date
+      </label>
+      <input id="joiningDate" type="date" class="input" readonly style="width:100%;">
+
+    </div>
+
+  </div>
+
+  <div style="margin-top:32px; text-align:right;">
+    <button onclick="goToStep(2)" 
+      class="btn"
+      style="background:#FF6B00; color:white; padding:12px 28px; border-radius:8px; font-weight:600;">
+      Continue →
+    </button>
+  </div>
+
+</div>
+<script>
+
+document.getElementById('employeeSelect').addEventListener('change', function () {
+
+    let selected = this.options[this.selectedIndex];
+
+    document.getElementById('selectedEmployeeId').value = selected.value || "";
+
+    document.getElementById('fullName').value = selected.dataset.name || "";
+    document.getElementById('workEmail').value = selected.dataset.email || "";
+    document.getElementById('designation').value = selected.dataset.designation || "";
+    document.getElementById('employeeId').value = selected.dataset.empid || "";
+    document.getElementById('department').value = selected.dataset.department || "";
+    document.getElementById('joiningDate').value = selected.dataset.joining || "";
+
+});
+</script>
+<!-- Step 2: NDA -->
+<div id="step2" class="step-content card pad" style="max-width:900px; margin:auto; display:none;">
+  <h2 style="margin-top:0; margin-bottom:20px;">NON-DISCLOSURE AGREEMENT</h2>
+  
+  <div style="background:#f9f9f9; padding:20px; border-radius:8px; margin-bottom:20px; line-height:1.8; max-height:420px; overflow-y:auto;">
+    <p><strong>This Agreement is entered into between Luminous Labs Ltd. ("Company") and the undersigned employee ("Recipient").</strong></p>
+    <p><strong>1. Confidential Information.</strong> The Recipient agrees to keep confidential all proprietary information, trade secrets, client data, source code and business strategies.</p>
+    <p><strong>2. Non-Use.</strong> The Recipient shall not use confidential information for any purpose outside their duties.</p>
+    <p><strong>3. Return of Materials.</strong> Upon termination, all company property must be returned immediately.</p>
+    <p><strong>4. Duration.</strong> Obligations survive for three (3) years after termination.</p>
+    <p><strong>5. Governing Law.</strong> Governed by the laws of Bangladesh.</p>
+  </div>
+
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px;">
+    <input type="checkbox" id="agreeNda" style="width:20px; height:20px;">
+    <label for="agreeNda" style="font-weight:600; cursor:pointer;">I have read and agree to the Non-Disclosure Agreement</label>
+  </div>
+
+  <div style="display:flex; justify-content:space-between;">
+    <button onclick="goToStep(1)" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">← Back</button>
+    <button onclick="goToStep(3)" class="btn" id="ndaContinueBtn" style="background:#FF6B00; color:white; padding:12px 28px; border-radius:8px; font-weight:600;" disabled>Proceed to Sign →</button>
+  </div>
+</div>
+
+<!-- Step 3: Digital Sign -->
+<div id="step3" class="step-content card pad" style="max-width:900px; margin:auto; display:none;">
+  <h2 style="margin-top:0; margin-bottom:20px;">Digital Signature</h2>
+  <p style="color:var(--muted); margin-bottom:20px;">Please sign below using your mouse or finger.</p>
+
+  <div style="border:2px solid #ddd; border-radius:8px; background:#fafafa; position:relative;">
+    <canvas id="signatureCanvas" width="800" height="280" style="width:100%; max-width:800px; display:block; margin:0 auto; background:white;"></canvas>
+  </div>
+
+  <div style="margin-top:16px; display:flex; gap:12px; justify-content:center;">
+    <button onclick="clearSignature()" class="btn" style="background:white; border:1px solid #ddd;">Clear Signature</button>
+  </div>
+
+  <div style="margin-top:24px; display:flex; justify-content:space-between; align-items:center;">
+    <button onclick="goToStep(2)" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">← Back</button>
+    <button onclick="goToStep(4)" class="btn" id="signBtn" style="background:#FF6B00; color:white; padding:12px 28px; border-radius:8px; font-weight:600;" disabled>Complete Signing →</button>
+  </div>
+</div>
+
+<!-- Step 4: Activation -->
+<div id="step4" class="step-content card pad" style="max-width:900px; margin:auto; display:none; text-align:center;">
+<form method="POST" action="{% url 'onboarding_complete' %}">
+    {% csrf_token %}
+    <input type="hidden" id="completeEmployeeId" name="employee_id">
+
+    <button type="submit"
+    class="btn"
+    style="background:#FF6B00;color:white;">
+        Complete Onboarding →
+    </button>
+</form>
+  <div style="margin:40px 0;">
+    <div style="
+      width:90px;
+      height:90px;
+      background:#10b981;
+      color:white;
+      border-radius:50%;
+      margin:auto;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:48px;">
+      ✓
+    </div>
+
+    <h2 style="margin:24px 0 12px;color:#10b981;">
+      Onboarding Complete!
+    </h2>
+
+    <p style="font-size:17px;color:var(--muted);">
+      Employee onboarding and NDA signing completed successfully.
+    </p>
+  </div>
+
+
+  <form method="POST" action="{% url 'onboarding_complete' %}">
+    {% csrf_token %}
+
+    <input type="hidden" 
+           id="completeEmployeeId" 
+           name="employee_id">
+
+
+    <button type="submit"
+      class="btn"
+      style="
+      background:#FF6B00;
+      color:white;
+      padding:14px 40px;
+      border-radius:8px;
+      font-weight:600;
+      font-size:17px;">
+      Activate Employee →
+    </button>
+
+  </form>
+
+</div>
+
+<!-- Onboarding Directory Card -->
+<div class="card" style="margin-top: 32px;">
+  <div style="padding: 18px 20px; border-bottom: 1px solid var(--line); display:flex; justify-content:space-between; align-items:center;">
+    <strong>Onboarding Status Directory</strong>
+  </div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Employee ID</th>
+          <th>Status</th>
+          <th>NDA Status</th>
+          <th>NDA Signed At</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for record in records %}
+        <tr>
+          <td>
+            <b>{{ record.employee.user.get_full_name|default:record.employee.user.username }}</b><br>
+            <small>{{ record.employee.user.email }}</small>
+          </td>
+          <td><span class="tag t-gray">{{ record.employee.emp_id }}</span></td>
+          <td>
+            <span class="tag t-{% if record.status == 'Completed' %}green{% elif record.status == 'NDA Signed' %}blue{% elif record.status == 'In Progress' %}amber{% else %}gray{% endif %}">
+              {{ record.status }}
+            </span>
+          </td>
+          <td>
+            {% if record.nda_signed %}
+            <span class="tag t-green">Signed</span>
+            {% else %}
+            <span class="tag t-red">Unsigned</span>
+            {% endif %}
+          </td>
+          <td>{{ record.nda_signed_at|date:"Y-m-d H:i"|default:"—" }}</td>
+          <td>{{ record.notes|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" style="text-align:center; color:var(--muted); padding:24px;">No onboarding records found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<style>
+.step-item { text-align:center; cursor:pointer; }
+.step-circle {
+  width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-weight:bold; margin:auto; background:#ddd; color:#666;
+}
+.step-item.active .step-circle { background:#FF6B00; color:white; }
+.step-label { margin-top:6px; font-weight:600; }
+.step-line { flex:1; height:2px; background:#ddd; max-width:80px; }
+
+.step-content { transition: all 0.3s; }
+</style>
+
+<script>
+// Step Navigation
+function goToStep(step) {
+  // Hide all steps
+  document.querySelectorAll('.step-content').forEach(s => s.style.display = 'none');
+  
+  // Show target step
+  document.getElementById('step' + step).style.display = 'block';
+  
+  // Update progress
+  document.querySelectorAll('.step-item').forEach(item => {
+    item.classList.toggle('active', parseInt(item.dataset.step) <= step);
+  });
+}
+
+// NDA Checkbox
+document.getElementById('agreeNda').addEventListener('change', function() {
+  document.getElementById('ndaContinueBtn').disabled = !this.checked;
+});
+
+// Signature Pad
+const canvas = document.getElementById('signatureCanvas');
+const ctx = canvas.getContext('2d');
+let drawing = false;
+
+ctx.strokeStyle = "#000";
+ctx.lineWidth = 3;
+ctx.lineJoin = "round";
+ctx.lineCap = "round";
+
+canvas.addEventListener('mousedown', startDrawing);
+canvas.addEventListener('mousemove', draw);
+canvas.addEventListener('mouseup', stopDrawing);
+canvas.addEventListener('mouseout', stopDrawing);
+
+// Touch support
+canvas.addEventListener('touchstart', e => { e.preventDefault(); startDrawing(e.touches[0]); });
+canvas.addEventListener('touchmove', e => { e.preventDefault(); draw(e.touches[0]); });
+canvas.addEventListener('touchend', stopDrawing);
+
+function startDrawing(e) {
+  drawing = true;
+  ctx.beginPath();
+  ctx.moveTo(e.offsetX || e.clientX - canvas.getBoundingClientRect().left, 
+             e.offsetY || e.clientY - canvas.getBoundingClientRect().top);
+  document.getElementById('signBtn').disabled = false;
+}
+
+function draw(e) {
+  if (!drawing) return;
+  ctx.lineTo(e.offsetX || e.clientX - canvas.getBoundingClientRect().left, 
+             e.offsetY || e.clientY - canvas.getBoundingClientRect().top);
+  ctx.stroke();
+}
+
+function stopDrawing() {
+  drawing = false;
+}
+
+function clearSignature() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  document.getElementById('signBtn').disabled = true;
+}
+document.getElementById('signBtn').addEventListener('click', function(){
+
+    let empId = document.getElementById('selectedEmployeeId').value;
+
+    document.getElementById('completeEmployeeId').value = empId;
+
+    goToStep(4);
+
+});
+// Start at step 1
+goToStep(1);
+</script>
+
+{% endblock %}

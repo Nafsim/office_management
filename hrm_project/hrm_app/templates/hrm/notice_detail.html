@@ -1,0 +1,18 @@
+{% extends 'hrm/base.html' %}
+{% block title %}{{ notice.title }} — Luminous HRM{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ notice.title }}</h1>
+    <div class="crumb"><a href="{% url 'notice_list' %}">← Notices</a></div>
+  </div>
+</div>
+<div class="card pad" style="max-width:800px">
+  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+    <span class="tag t-{% if notice.category == 'Holiday' %}green{% elif notice.category == 'Urgent' %}red{% else %}gray{% endif %}">{{ notice.category }}</span>
+    <span class="sub">{{ notice.created_at|date:"d F Y" }} · {{ notice.posted_by.get_full_name }}</span>
+    {% if notice.pinned %}<span class="tag t-red">📌 Pinned</span>{% endif %}
+  </div>
+  <div style="line-height:1.8;font-size:14px">{{ notice.body|linebreaks }}</div>
+</div>
+{% endblock %}

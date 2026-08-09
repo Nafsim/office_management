@@ -1,0 +1,359 @@
+{% extends 'hrm/base.html' %}
+
+{% block title %}Late Management — Luminous HRM{% endblock %}
+
+{% block content %}
+
+<!-- Top Header -->
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
+  <div>
+    <h1 style="font-size:28px; font-weight:700; color:var(--ink); margin:0;">Late Management</h1>
+    <div style="font-size:14px; color:var(--muted); margin-top:4px;">Home · Time & Attendance · Late</div>
+  </div>
+
+  <div style="display:flex; gap:10px; align-items:center;">
+    <button onclick="history.back()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand); display:flex; align-items:center; gap:6px;">
+      <svg class="ico" style="width:16px;height:16px;" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back
+    </button>
+    
+    <button id="exportLateBtn" type="button" data-export-url="{% url 'late_export' %}" class="btn" style="background:#FF6B00; color:white; border:none; display:flex; align-items:center; gap:6px; cursor:pointer;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+      </svg>
+      Export
+    </button>
+    
+<button 
+onclick="openLateModal()"
+class="btn"
+style="background:#FF6B00;color:white;display:flex;align-items:center;gap:6px;">
+    
+<svg class="ico" style="width:16px;height:16px;" viewBox="0 0 24 24">
+<path d="M12 5v14M5 12h14"/>
+</svg>
+
+Apply for Late
+
+</button>
+  </div>
+</div>
+
+<!-- Orange Banner -->
+<div style="background:linear-gradient(90deg, #FF6B00, #FF8C3A); color:white; border-radius:12px; padding:16px 20px; margin-bottom:28px; display:flex; align-items:center; gap:16px;">
+  <div style="background:rgba(255,255,255,0.25); width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.25">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 01-9 9m9-9a9 9 0 00-9-9" />
+    </svg>
+  </div>
+  <div>
+    <strong style="font-size:16px;">Handle late arrivals fairly</strong><br>
+    <span style="opacity:0.95;">Employees apply for late with a reason. Managers/HR approve, reject or grant allowances. Late reports feed payroll deductions.</span>
+  </div>
+</div>
+
+<!-- Stats -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:16px; margin-bottom:28px;">
+
+  <!-- Late This Month -->
+  <div class="card pad" style="text-align:center; border:2px solid #FF9F4D;">
+    <div style="font-size:42px; font-weight:700; color:var(--ink);">
+      {{ late_this_month }}
+    </div>
+    <div style="color:var(--muted);">
+      Late This Month
+    </div>
+  </div>
+
+
+  <!-- Pending Review -->
+  <div class="card pad" style="text-align:center; border:2px solid #FF9F4D;">
+    <div style="font-size:42px; font-weight:700; color:var(--ink);">
+      {{ pending_review }}
+    </div>
+    <div style="color:var(--muted);">
+      Pending Review
+    </div>
+  </div>
+
+
+  <!-- Approved -->
+  <div class="card pad" style="text-align:center; border:2px solid #22C55E;">
+    <div style="font-size:42px; font-weight:700; color:var(--ink);">
+      {{ approved }}
+    </div>
+    <div style="color:var(--muted);">
+      Approved
+    </div>
+  </div>
+
+
+  <!-- Rejected -->
+  <div class="card pad" style="text-align:center; border:2px solid #EF4444;">
+    <div style="font-size:42px; font-weight:700; color:var(--ink);">
+      {{ rejected }}
+    </div>
+    <div style="color:var(--muted);">
+      Rejected
+    </div>
+  </div>
+
+
+</div>
+
+<!-- Late Requests Table -->
+<div class="card">
+  <div style="padding:18px 20px; border-bottom:1px solid var(--line);">
+    <strong>Late Requests</strong>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Employee</th>
+        <th>Date</th>
+        <th>Arrival</th>
+        <th>Late By</th>
+        <th>Reason</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for record in late_records %}
+      <tr>
+        <td>
+          <div class="flex">
+            <div class="avatar-sm" style="background:linear-gradient(135deg,#FF6B00,#FF9F4D); color:white;">
+              {{ record.employee.user.get_full_name|slice:":1"|upper }}
+            </div>
+            <div>
+              <b>{{ record.employee.user.get_full_name }}</b>
+            </div>
+          </div>
+        </td>
+        <td>{{ record.date|date:"Y-m-d" }}</td>
+        <td>{{ record.check_in|time:"h:i A"|default:"—" }}</td>
+        <td><span class="tag t-red">{{ record.late_minutes }} min</span></td>
+        <td>{{ record.note|default:"—" }}</td>
+        <td>
+          {% if record.late_entry and record.late_entry.reviewed_by %}
+            {% if record.late_entry.excused %}
+              <span class="tag t-green">Approved</span>
+            {% else %}
+              <span class="tag t-red">Rejected</span>
+            {% endif %}
+          {% elif record.status == 'Approved' %}
+            <span class="tag t-green">Approved</span>
+          {% else %}
+            <span class="tag t-amber">Pending</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if user.role == 'super_admin' or user.role == 'manager' %}
+            <button type="button" class="btn ghost sm" data-reason="{{ record.note|default:'No reason provided'|escapejs }}" onclick="showLateReason(this)">View</button>
+            <a href="{% url 'late_action' record.pk 'approve' %}" class="btn green sm">Approve</a>
+            <a href="{% url 'late_action' record.pk 'reject' %}" class="btn red sm">Reject</a>
+          {% else %}
+            <span class="sub">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7" style="text-align:center; padding:40px; color:var(--muted);">No late requests found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Apply Late Modal -->
+
+<div id="lateModal"
+style="
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,.45);
+align-items:center;
+justify-content:center;
+z-index:999;
+">
+
+
+<div class="card"
+style="
+width:420px;
+padding:24px;
+border-radius:16px;
+background:white;
+">
+
+
+<div style="
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:20px;
+">
+
+<h2 style="margin:0;">
+Apply for Late
+</h2>
+
+
+<button onclick="closeLateModal()"
+style="
+border:none;
+background:none;
+font-size:22px;
+cursor:pointer;">
+×
+</button>
+
+</div>
+
+
+
+<form method="POST"
+action="{% url 'apply_late' %}">
+
+{% csrf_token %}
+
+
+<label>Title</label>
+
+<input 
+type="text"
+name="title"
+required
+placeholder="Short title for this late request"
+style="
+width:100%;
+padding:10px;
+margin:8px 0 15px;
+border:1px solid var(--line);
+border-radius:8px;
+">
+
+
+<label>Date</label>
+
+<input 
+type="date"
+name="date"
+required
+style="
+width:100%;
+padding:10px;
+margin:8px 0 15px;
+border:1px solid var(--line);
+border-radius:8px;
+">
+
+
+
+<label>Expected Arrival</label>
+
+<input 
+type="time"
+name="arrival"
+required
+style="
+width:100%;
+padding:10px;
+margin:8px 0 15px;
+border:1px solid var(--line);
+border-radius:8px;
+">
+
+
+
+<label>Reason</label>
+
+<textarea
+name="reason"
+rows="4"
+required
+style="
+width:100%;
+padding:10px;
+margin:8px 0 20px;
+border:1px solid var(--line);
+border-radius:8px;
+"
+></textarea>
+
+
+
+<div style="
+display:flex;
+justify-content:flex-end;
+gap:10px;
+">
+
+
+<button type="button"
+onclick="closeLateModal()"
+class="btn"
+style="
+background:white;
+color:#555;
+border:1px solid #ddd;
+">
+
+Cancel
+
+</button>
+
+
+
+<button type="submit"
+class="btn"
+style="
+background:#FF6B00;
+color:white;
+">
+
+Submit
+
+</button>
+
+
+</div>
+
+
+</form>
+
+
+</div>
+
+</div>
+<script>
+
+function showLateReason(button) {
+  alert(button.getAttribute('data-reason') || 'No reason provided');
+}
+
+function openLateModal(){
+
+document.getElementById(
+"lateModal"
+).style.display="flex";
+
+}
+
+
+function closeLateModal(){
+
+document.getElementById(
+"lateModal"
+).style.display="none";
+
+}
+
+</script>
+{% endblock %}

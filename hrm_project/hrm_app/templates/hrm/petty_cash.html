@@ -1,0 +1,95 @@
+{% extends 'hrm/base.html' %}
+
+{% block title %}Petty Cash — Luminous HRM{% endblock %}
+
+{% block content %}
+
+<!-- Top Header -->
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
+  <div>
+    <h1 style="font-size:28px; font-weight:700; color:var(--ink); margin:0;">Petty Cash</h1>
+    <div style="font-size:14px; color:var(--muted); margin-top:4px;">Home · Finance · Petty Cash · Cashbook</div>
+  </div>
+
+  <div style="display:flex; gap:10px;">
+    <button onclick="history.back()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">← Back</button>
+    <button type="button" data-export-url="{% url 'petty_cash_export' %}" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">Export</button>
+    <a href="{% url 'petty_cash_add' %}" class="btn" style="background:#FF6B00; color:white;">Add Transaction</a>
+  </div>
+</div>
+
+<!-- Orange Banner -->
+<div style="background:linear-gradient(90deg, #FF6B00, #FF8C3A); color:white; border-radius:12px; padding:16px 20px; margin-bottom:28px; display:flex; align-items:center; gap:16px;">
+  <div style="background:rgba(255,255,255,0.25); width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-1a2 2 0 01-2-2H9a2 2 0 01-2-2v-1a2 2 0 012-2m0-2V9a2 2 0 012-2" />
+    </svg>
+  </div>
+  <div>
+    <strong style="font-size:16px;">Track small expenses</strong><br>
+    <span style="opacity:0.95;">Maintain the cash ledger, categorise spends, set fixed monthly costs and view analytics.</span>
+  </div>
+</div>
+
+<!-- Quick Links -->
+<div style="display:flex; gap:12px; margin-bottom:24px; flex-wrap:wrap;">
+  <button class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">Cash Book</button>
+  <button class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">Categories</button>
+  <button class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">Fixed Costs</button>
+  <button class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">Analytics</button>
+</div>
+
+<!-- Cash Ledger Table -->
+<div class="card">
+  <div style="padding:18px 20px; border-bottom:1px solid var(--line);">
+    <strong>Cash Ledger</strong>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Description</th>
+        <th>Category</th>
+        <th>Type</th>
+        <th>Amount</th>
+        <th>Balance</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in entries %}
+      <tr>
+        <td>{{ entry.date|date:"Y-m-d" }}</td>
+        <td><b>{{ entry.description }}</b></td>
+        <td><span class="tag t-blue">{{ entry.category }}</span></td>
+        <td>
+          {% if entry.entry_type == 'Credit' %}
+            <span class="tag t-green">Credit</span>
+          {% else %}
+            <span class="tag t-red">Debit</span>
+          {% endif %}
+        </td>
+        <td style="font-weight:600;">
+          {% if entry.entry_type == 'Credit' %}
+            <span style="color:#22C55E">+৳{{ entry.amount }}</span>
+          {% else %}
+            <span style="color:#EF4444">-৳{{ entry.amount }}</span>
+          {% endif %}
+        </td>
+        <td>৳{{ entry.balance }}</td>
+        <td>
+          <a href="#" class="btn ghost sm" title="View">👁</a>
+          <a href="#" class="btn ghost sm" title="Edit">✏</a>
+          <a href="#" class="btn ghost sm red" title="Delete" onclick="return confirm('Delete this entry?')">🗑</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7" style="text-align:center; padding:40px; color:var(--muted);">No transactions yet.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

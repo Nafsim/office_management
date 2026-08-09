@@ -1,0 +1,68 @@
+{% extends 'hrm/base.html' %}
+{% block title %}{{ title }} — Luminous HRM{% endblock %}
+{% block content %}
+<div class="page-head" style="
+display:flex;
+justify-content:space-between;
+align-items:center;
+">
+
+<div>
+    <h1>{{ title }}</h1>
+</div>
+
+
+<a href="{% url back %}"
+style="
+font-size:28px;
+font-weight:600;
+color:#666;
+text-decoration:none;
+line-height:1;
+">
+×
+</a>
+
+
+</div>
+<div class="card pad" style="max-width:640px">
+  <form method="post" enctype="multipart/form-data"{% if action_url %} action="{% url action_url %}"{% endif %}>
+    {% csrf_token %}
+    {% for field in form %}
+    <div class="field">
+      <label>{{ field.label }}</label>
+      {{ field }}
+      {% if field.errors %}<small style="color:#dc2626">{{ field.errors.0 }}</small>{% endif %}
+      {% if field.help_text %}<small class="sub">{{ field.help_text }}</small>{% endif %}
+    </div>
+    {% endfor %}
+<div style="display:flex;gap:10px;margin-top:20px">
+
+  <button 
+    type="submit" 
+    class="btn"
+    style="
+      background:#FF6B00;
+      color:white;
+      border:none;
+      padding:10px 22px;
+      border-radius:8px;
+      font-weight:600;
+    "
+  >
+    {% if title == 'Apply for Leave' %}
+      Submit Request
+    {% else %}
+      Save
+    {% endif %}
+  </button>
+
+
+  <a href="{% url back %}" class="btn ghost">
+    Cancel
+  </a>
+
+</div>
+  </form>
+</div>
+{% endblock %}

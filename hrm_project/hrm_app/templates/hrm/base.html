@@ -1,0 +1,927 @@
+{% load static %}
+
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>{% block title %}Luminous HRM{% endblock %}</title>
+
+<style>
+
+:root{--brand:#ef6a4f;--brand-d:#e0512f;--brand-l:#fdeee9;--brand-2:#f7941d;--navy:#2e3a4f;--navy-d:#222c3c;--green:#16a34a;--amber:#f59e0b;--red:#dc2626;--blue:#2563eb;--bg:#f5f6f8;--card:#fff;--ink:#2e3a4f;--muted:#7a869a;--line:#e7eaf0;--radius:14px;--shadow:0 1px 3px rgba(46,58,79,.06),0 8px 24px rgba(46,58,79,.06);--sidebar:268px}
+
+*{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}
+
+body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5}
+
+body.dark{--bg:#161c26;--card:#1e2733;--ink:#e8ecf2;--muted:#94a0b3;--line:#2e3a49;--brand-l:#33231f;--navy:#1e2733;--shadow:0 1px 3px rgba(0,0,0,.4)}
+
+.hero-card{background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;border-radius:20px;padding:22px;box-shadow:var(--shadow)}
+
+.metric-card{padding:18px;border-radius:var(--radius);background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow)}
+
+.metric-card .label{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
+
+.metric-card .value{font-size:28px;font-weight:800;letter-spacing:-.8px;margin-top:6px}
+
+.page-chip{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:var(--brand-l);color:var(--brand);font-size:12px;font-weight:700}
+
+.list-card{padding:16px 18px;border:1px solid var(--line);border-radius:14px;background:var(--card);display:flex;justify-content:space-between;align-items:center;gap:12px}
+
+.list-card + .list-card{margin-top:12px}
+
+.empty-state{padding:24px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:14px;background:rgba(239,106,79,.04)}
+
+.mini-picker{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:8px 12px;background:var(--card)}
+
+.mini-picker input{border:none;background:transparent;padding:0;min-width:140px;outline:none}
+
+a{color:inherit;text-decoration:none}button,input,select,textarea{font-family:inherit}
+
+svg{display:block}.ico{width:18px;height:18px;stroke:currentColor;stroke-width:1.9;fill:none;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+
+::-webkit-scrollbar{width:9px}::-webkit-scrollbar-thumb{background:#cdd3de;border-radius:8px}
+
+.app{display:flex;min-height:100vh}
+
+.sidebar{width:var(--sidebar);background:var(--navy);position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;z-index:50;transition:transform .25s;overflow-y:auto}
+
+.brand{display:flex;align-items:center;gap:11px;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0}
+
+.logobox{width:42px;height:42px;flex-shrink:0;background:#fff;border-radius:11px;display:grid;place-items:center;box-shadow:0 4px 10px rgba(0,0,0,.15)}
+
+.brand b{font-size:14.5px;letter-spacing:.5px;color:#fff;font-weight:800;line-height:1.1}
+
+.brand small{display:block;color:var(--brand);font-size:10.5px;font-weight:600;margin-top:1px}
+
+.rolebar{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0}
+
+.rolebar select{width:100%;background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:9px;padding:8px 10px;font-size:12.5px;font-weight:600;cursor:pointer}
+
+.rolebar small{color:rgba(255,255,255,.5);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:5px}
+
+.nav{flex:1;padding:10px 12px;overflow-y:auto}
+
+.nav .group{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.4);margin:14px 10px 6px;font-weight:700}
+
+.nav a.item{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:10px;color:rgba(255,255,255,.72);font-weight:600;margin-bottom:2px;cursor:pointer;transition:.15s}
+
+.nav a.item:hover{background:rgba(255,255,255,.08);color:#fff}
+
+.nav a.item.active{background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;box-shadow:0 6px 16px rgba(239,106,79,.4)}
+
+.nav a.item .badge{margin-left:auto;background:var(--brand);color:#fff;font-size:10px;padding:1px 7px;border-radius:20px}
+
+.nav a.item.active .badge{background:rgba(255,255,255,.3)}
+
+.main{flex:1;margin-left:var(--sidebar);display:flex;flex-direction:column;min-width:0}
+
+.topbar{height:64px;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 22px;position:sticky;top:0;z-index:40}
+
+.search-wrap{flex:1;max-width:320px;position:relative}
+
+.search-wrap input{width:100%;padding:8px 12px 8px 34px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:12px}
+
+.search-wrap .si{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+
+.spacer{flex:1}
+
+.iconbtn{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;color:var(--muted);background:var(--card);border:1px solid var(--line);cursor:pointer;position:relative}
+
+.iconbtn:hover{background:var(--brand-l);color:var(--brand)}
+
+.avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;display:grid;place-items:center;font-weight:700;cursor:pointer;font-size:13px;flex-shrink:0}
+
+.content{padding:24px;max-width:1320px;width:100%;margin:0 auto}
+
+.page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+
+.page-head h1{font-size:22px;letter-spacing:-.3px}
+
+.crumb{color:var(--muted);font-size:12px;margin-top:3px}
+
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:10px;font-weight:600;font-size:13px;background:var(--brand);color:#fff;border:none;cursor:pointer;transition:.15s;text-decoration:none}
+
+.btn:hover{background:var(--brand-d)}.btn .ico{width:15px;height:15px;stroke-width:2.1}
+
+.btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line)}.btn.ghost:hover{background:var(--bg);border-color:var(--brand);color:var(--brand)}
+
+.btn.green{background:var(--green)}.btn.red{background:var(--red)}.btn.amber{background:var(--amber)}
+
+.btn.sm{padding:6px 11px;font-size:12px}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+
+.card.pad{padding:20px}
+
+.grid{display:grid;gap:18px}.cols-4{grid-template-columns:repeat(4,1fr)}.cols-3{grid-template-columns:repeat(3,1fr)}.cols-2{grid-template-columns:repeat(2,1fr)}.cols-7{grid-template-columns:repeat(7,1fr)}
+
+@media(max-width:1100px){.cols-4{grid-template-columns:repeat(2,1fr)}.cols-3{grid-template-columns:repeat(2,1fr)}}
+
+@media(max-width:680px){.cols-4,.cols-3,.cols-2{grid-template-columns:1fr}}
+
+.stat{padding:18px;border-radius:var(--radius);background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);position:relative}
+
+.stat .ic{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;margin-bottom:12px}
+
+.stat h3{font-size:28px;letter-spacing:-1px}.stat p{color:var(--muted);font-size:12.5px;font-weight:600;margin-top:2px}
+
+.stat .trend{position:absolute;top:18px;right:18px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px}
+
+.up{background:#dcfce7;color:#16a34a}.down{background:#fee2e2;color:#dc2626}
+
+.tint-i{background:var(--brand-l);color:var(--brand)}.tint-g{background:#dcfce7;color:#16a34a}.tint-a{background:#fef3c7;color:#d97706}.tint-r{background:#fee2e2;color:#dc2626}.tint-s{background:#dbeafe;color:#2563eb}
+
+table{width:100%;border-collapse:collapse}
+
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:12px 14px;border-bottom:1px solid var(--line);font-weight:700}
+
+td{padding:13px 14px;border-bottom:1px solid var(--line);font-size:13px}tr:hover td{background:var(--brand-l)}
+
+.tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;display:inline-block}
+
+.t-green{background:#dcfce7;color:#16a34a}.t-amber{background:#fef3c7;color:#d97706}.t-red{background:#fee2e2;color:#dc2626}.t-blue{background:#dbeafe;color:#2563eb}.t-gray{background:#eef1f6;color:#64748b}.t-brand{background:var(--brand-l);color:var(--brand)}.t-purple{background:#f3e8ff;color:#9333ea}
+
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+
+.input,.form-control{padding:9px 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:13px;width:100%}
+
+.field{margin-bottom:14px}.field label{display:block;font-size:12px;font-weight:700;margin-bottom:6px;color:var(--muted)}
+
+.field input,.field select,.field textarea{width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:13px}
+
+.field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-l)}
+
+.sub{color:var(--muted);font-size:12.5px}
+
+.section-title{font-size:15px;font-weight:700;margin-bottom:14px;margin-top:22px}
+
+.card.small-chart{padding:16px 18px}
+
+.card.small-chart .section-title{margin-top:0;margin-bottom:10px;font-size:13.5px}
+
+.card.small-chart .chart-box{height:150px;position:relative}
+
+.card.small-chart .donut-box{height:150px;display:flex;align-items:center;justify-content:center;gap:14px}
+
+.card.small-chart .donut-box canvas{max-width:120px;max-height:120px}
+
+.card.small-chart .donut-legend{font-size:11.5px;color:var(--muted);display:flex;flex-direction:column;gap:5px}
+
+.card.small-chart .donut-legend span{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+
+.progress{height:8px;background:var(--line);border-radius:8px;overflow:hidden}.progress>i{display:block;height:100%;background:linear-gradient(90deg,var(--brand),var(--brand-2))}
+
+.avatar-sm{width:32px;height:32px;border-radius:50%;display:inline-grid;place-items:center;color:#fff;font-weight:700;font-size:12px;flex-shrink:0}
+
+.flex{display:flex;align-items:center;gap:10px}
+
+.toggle{width:38px;height:22px;border-radius:20px;background:var(--line);position:relative;cursor:pointer;display:inline-block;flex-shrink:0;border:none}
+
+.toggle.on{background:var(--green)}.toggle::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.2s}.toggle.on::after{left:19px}
+
+.alert{padding:12px 16px;border-radius:10px;margin-bottom:16px;font-size:13px;font-weight:600}
+
+.alert-success{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}
+
+.alert-error{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+
+.alert-warning{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+
+/* Orange banner (shared across every page, content driven by blocks) */
+
+.page-banner{background:linear-gradient(135deg,#FF6B00,#FF9F4D);color:#fff;border-radius:16px;padding:18px 22px;margin-bottom:24px;display:flex;align-items:center;gap:16px;box-shadow:0 8px 24px rgba(255,107,0,.15)}
+
+.page-banner .pb-icon{background:rgba(255,255,255,.25);width:48px;height:48px;border-radius:12px;display:grid;place-items:center;flex-shrink:0}
+
+.page-banner .pb-body{flex:1;min-width:160px}
+
+.page-banner .pb-title{font-weight:700;font-size:15px}
+
+.page-banner .pb-sub{font-size:13.5px;opacity:.95;margin-top:3px}
+
+.banner-btn{background:rgba(255,255,255,.25);color:#fff;border:none;padding:10px 16px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;flex-shrink:0}
+
+.banner-btn:hover{background:rgba(255,255,255,.38)}
+
+.profile-wrap{position:relative;display:flex;align-items:center}
+
+.profile-trigger{display:flex;align-items:center;gap:10px;padding:6px 10px 6px 6px;border-radius:14px;background:var(--card);border:1px solid var(--line);cursor:pointer;box-shadow:var(--shadow)}
+
+.profile-trigger:hover{background:var(--brand-l)}
+
+.profile-meta{display:flex;flex-direction:column;align-items:flex-start;line-height:1.1;min-width:0}
+
+.profile-name{font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}
+
+.profile-role{font-size:11px;font-weight:700;color:var(--muted);text-transform:capitalize}
+
+.profile-role-badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:var(--brand-l);color:var(--brand);font-size:11px;font-weight:700;text-transform:capitalize}
+
+.profile-caret{width:14px;height:14px;color:var(--muted);flex-shrink:0}
+
+.profile-menu{position:absolute;top:calc(100% + 10px);right:0;width:250px;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 38px rgba(46,58,79,.18);padding:12px;display:none;z-index:70}
+
+.profile-menu.open{display:block}
+
+.profile-menu-head{display:flex;align-items:center;gap:10px;padding:8px 8px 12px;border-bottom:1px solid var(--line);margin-bottom:8px}
+
+.profile-menu-name{font-size:14px;font-weight:800;color:var(--ink)}
+
+.profile-menu-role{font-size:12px;color:var(--muted);font-weight:700}
+
+.profile-menu a{display:flex;align-items:center;gap:10px;padding:10px 8px;border-radius:10px;color:var(--ink);font-weight:600}
+
+.profile-menu a:hover{background:var(--brand-l);color:var(--brand)}
+
+.profile-menu a svg{width:16px;height:16px;stroke-width:2.1}
+
+.avatar-blue{background:var(--blue)}
+.avatar-green{background:var(--green)}
+.avatar-brand{background:var(--brand)}
+
+.export-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.18);backdrop-filter:blur(1px);z-index:90;display:none}
+
+.export-menu{position:fixed;z-index:91;min-width:220px;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 38px rgba(46,58,79,.18);padding:12px;display:none}
+
+.export-menu.open,.export-backdrop.open{display:block}
+
+.export-menu-title{font-size:12px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+
+.export-menu-option{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-weight:700;cursor:pointer}
+
+.export-menu-option + .export-menu-option{margin-top:8px}
+
+.export-menu-option:hover{background:var(--brand-l);border-color:var(--brand);color:var(--brand)}
+
+@media(max-width:980px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0}}
+
+</style>
+
+<script>
+(function(){
+  function applyTheme() {
+    const dark = localStorage.getItem('luminous-theme') === 'dark';
+    document.documentElement.classList.toggle('dark', dark);
+    if (document.body) {
+      document.body.classList.toggle('dark', dark);
+    }
+  }
+  document.addEventListener('DOMContentLoaded', applyTheme);
+  applyTheme();
+})();
+
+function switchRole(role) {
+  window.location.href = '/dashboard/?view_role=' + role;
+}
+
+function toggleTheme() {
+  const body = document.body;
+  const dark = body.classList.toggle('dark');
+  document.documentElement.classList.toggle('dark', dark);
+  try { localStorage.setItem('luminous-theme', dark ? 'dark' : 'light'); } catch (e) {}
+}
+
+function quickCreate() {
+  const roleEl = document.getElementById('roleSwitcher');
+  const role = roleEl ? roleEl.value : '{{ view_role|default:"super_admin" }}';
+  if (role === 'super_admin') {
+    window.location.href = "{% url 'user_create' %}";
+  } else {
+    window.location.href = "{% url 'task_list' %}";
+  }
+}
+
+function toggleProfileMenu() {
+  const menu = document.getElementById('profileMenu');
+  if (!menu) return;
+  menu.classList.toggle('open');
+}
+
+let activeExportButton = null;
+let activeExportUrl = '';
+
+function closeExportMenu() {
+  const menu = document.getElementById('exportMenu');
+  const backdrop = document.getElementById('exportBackdrop');
+  if (menu) menu.classList.remove('open');
+  if (backdrop) backdrop.classList.remove('open');
+  activeExportButton = null;
+  activeExportUrl = '';
+}
+
+function openExportMenu(button) {
+  const menu = document.getElementById('exportMenu');
+  const backdrop = document.getElementById('exportBackdrop');
+  if (!menu || !backdrop) return;
+
+  activeExportButton = button;
+  activeExportUrl = button.getAttribute('data-export-url') || '';
+  if (!activeExportUrl) return;
+
+  menu.classList.add('open');
+  backdrop.classList.add('open');
+  menu.hidden = false;
+  backdrop.hidden = false;
+
+  const rect = button.getBoundingClientRect();
+  const menuWidth = 240;
+  const menuHeight = 142;
+  let left = rect.left;
+  let top = rect.bottom + 10;
+
+  if (left + menuWidth > window.innerWidth - 12) {
+    left = window.innerWidth - menuWidth - 12;
+  }
+  if (left < 12) left = 12;
+  if (top + menuHeight > window.innerHeight - 12) {
+    top = rect.top - menuHeight - 10;
+  }
+  if (top < 12) top = 12;
+
+  menu.style.left = `${left}px`;
+  menu.style.top = `${top}px`;
+}
+
+function launchExport(format) {
+  if (!activeExportUrl) return;
+
+  const exportUrl = new URL(activeExportUrl, window.location.origin);
+  exportUrl.searchParams.set('format', format);
+  closeExportMenu();
+  window.location.href = exportUrl.pathname + exportUrl.search + exportUrl.hash;
+}
+
+document.addEventListener('click', function (event) {
+  const wrapper = document.getElementById('profileMenuWrap');
+  const menu = document.getElementById('profileMenu');
+  if (!wrapper || !menu) return;
+  if (!wrapper.contains(event.target)) {
+    menu.classList.remove('open');
+  }
+});
+
+document.addEventListener('click', function (event) {
+  const exportTrigger = event.target.closest('[data-export-url]');
+  if (exportTrigger) {
+    event.preventDefault();
+    event.stopPropagation();
+    openExportMenu(exportTrigger);
+    return;
+  }
+
+  const formatButton = event.target.closest('[data-export-format]');
+  if (formatButton) {
+    event.preventDefault();
+    event.stopPropagation();
+    launchExport(formatButton.getAttribute('data-export-format'));
+    return;
+  }
+
+  const exportMenu = document.getElementById('exportMenu');
+  if (exportMenu && !exportMenu.contains(event.target)) {
+    closeExportMenu();
+  }
+});
+
+document.addEventListener('keydown', function (event) {
+  if (event.key === 'Escape') {
+    closeExportMenu();
+  }
+});
+</script>
+
+</head>
+
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+
+  <aside class="sidebar" id="sidebar">
+
+    <div class="brand">
+
+      <div class="logobox">
+
+        <img src="{% static 'logo.png' %}" alt="Luminous Labs" style="width:30px;height:30px">
+
+      </div>
+
+      <div><b>LUMINOUS <span style="color:var(--brand)">LABS</span></b><small>HRM Platform</small></div>
+
+    </div>
+
+    <div class="rolebar">
+
+      <small>Viewing as</small>
+
+      <select id="roleSwitcher" onchange="switchRole(this.value)">
+
+        <option value="super_admin" {% if view_role == 'super_admin' %}selected{% endif %}>🛡️ Super Admin</option>
+
+        <option value="manager" {% if view_role == 'manager' %}selected{% endif %}>👔 Manager</option>
+
+        <option value="employee" {% if view_role == 'employee' %}selected{% endif %}>🧑 Employee</option>
+
+      </select>
+
+    </div>
+<nav class="nav">
+{% block nav %}
+{% with current_url=request.resolver_match.url_name %}
+
+{% if view_role == 'super_admin' %}
+
+  {% if user.role == "super_admin" or 'dashboard' in allowed_menus %}
+  <div class="group">Main</div>
+  <a class="item {% if current_url == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+    Dashboard
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'notice' in allowed_menus %}
+  <a class="item {% if 'notice' in current_url %}active{% endif %}" href="{% url 'notice_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+    Notice & Announcements
+    <span class="badge">{{ unread_notices|default:3 }}</span>
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'users' in allowed_menus or 'onboarding' in allowed_menus or 'profile' in allowed_menus %}
+  <div class="group">People</div>
+  {% endif %}
+  {% if user.role == "super_admin" or 'users' in allowed_menus %}
+  <a class="item {% if current_url == 'user_list' %}active{% endif %}" href="{% url 'user_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+    Users & Employees
+  </a>
+  {% endif %}
+  {% if user.role == "super_admin" or 'onboarding' in allowed_menus %}
+  <a class="item {% if current_url == 'onboarding_list' %}active{% endif %}" href="{% url 'onboarding_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+    Onboarding & NDA
+  </a>
+  {% endif %}
+  {% if user.role == "super_admin" or 'profile' in allowed_menus %}
+  <a class="item {% if current_url == 'my_profile' or current_url == 'user_detail' and is_my_profile %}active{% endif %}" href="{% url 'my_profile' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    My Profile
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'attendance' in allowed_menus or 'late' in allowed_menus or 'leave' in allowed_menus %}
+  <div class="group">Time & Attendance</div>
+  {% endif %}
+  {% if user.role == "super_admin" or 'attendance' in allowed_menus %}
+  <a class="item {% if current_url == 'attendance_list' %}active{% endif %}" href="{% url 'attendance_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+    Attendance
+  </a>
+  {% endif %}
+  {% if user.role == "super_admin" or 'late' in allowed_menus %}
+  <a class="item {% if current_url == 'late_list' %}active{% endif %}" href="{% url 'late_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+    Late Management
+  </a>
+  {% endif %}
+  {% if user.role == "super_admin" or 'leave' in allowed_menus %}
+  <a class="item {% if current_url == 'leave_list' %}active{% endif %}" href="{% url 'leave_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+    Leave Management
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'tasks' in allowed_menus or 'documents' in allowed_menus %}
+  <div class="group">Work</div>
+  {% endif %}
+  {% if user.role == "super_admin" or 'tasks' in allowed_menus %}
+  <a class="item {% if current_url == 'task_list' %}active{% endif %}" href="{% url 'task_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+    Task Management
+  </a>
+  {% endif %}
+  {% if user.role == "super_admin" or 'documents' in allowed_menus %}
+  <a class="item {% if current_url == 'document_list' %}active{% endif %}" href="{% url 'document_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+    Document Management
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'salary' in allowed_menus or 'petty_cash' in allowed_menus or 'assets' in allowed_menus %}
+  <div class="group">Finance</div>
+  {% endif %}
+  {% if user.role == "super_admin" or 'salary' in allowed_menus %}
+  <a class="item {% if current_url == 'salary_list' %}active{% endif %}" href="{% url 'salary_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="12" cy="12" r="3"/></svg>
+    Payroll & Salary
+  </a>
+  {% endif %}
+  {% if user.role == "super_admin" or 'petty_cash' in allowed_menus %}
+  <a class="item {% if current_url == 'petty_cash' %}active{% endif %}" href="{% url 'petty_cash' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg>
+    Petty Cash
+  </a>
+  {% endif %}
+  {% if user.role == "super_admin" or 'assets' in allowed_menus %}
+  <a class="item {% if current_url == 'asset_list' %}active{% endif %}" href="{% url 'asset_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+    Asset Management
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'files' in allowed_menus or 'configuration' in allowed_menus %}
+  <div class="group">System</div>
+  {% endif %}
+  {% if user.role == "super_admin" or 'files' in allowed_menus %}
+  <a class="item {% if current_url == 'files_list' %}active{% endif %}" href="{% url 'files_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>
+    Files & Credentials
+  </a>
+  {% endif %}
+  {% if user.role == "super_admin" or 'configuration' in allowed_menus %}
+  <a class="item {% if current_url == 'config' %}active{% endif %}" href="{% url 'config' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2V9a2 2 0 00-2-2H6a2 2 0 00-2 2v10a2 2 0 002 2"/><path d="M15 9V5a3 3 0 00-6 0v4"/></svg>
+    Configuration
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'upload_center' in allowed_menus %}
+  <div class="group">Work</div>
+  <a class="item {% if current_url == 'document_upload' %}active{% endif %}" href="{% url 'document_upload' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+    Upload Center
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'support' in allowed_menus %}
+  <div class="group">Support & Help</div>
+  <a class="item {% if current_url == 'user_guide_faq' %}active{% endif %}" href="{% url 'user_guide_faq' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+    User Guide & FAQ
+  </a>
+  <a class="item {% if current_url == 'contact_support' %}active{% endif %}" href="{% url 'contact_support' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+    Contact Support
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'calendar' in allowed_menus %}
+  <div class="group">Time & Attendance</div>
+  <a class="item {% if current_url == 'calendar_view' %}active{% endif %}" href="{% url 'calendar_view' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+    Calendar
+  </a>
+  {% endif %}
+
+{% elif view_role == 'manager' %}
+
+  {% if user.role == "super_admin" or 'dashboard' in allowed_menus %}
+  <div class="group">Main</div>
+  <a class="item {% if current_url == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+    Dashboard
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'notice' in allowed_menus %}
+  <a class="item {% if 'notice' in current_url %}active{% endif %}" href="{% url 'notice_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+    Notice & Announcements
+    <span class="badge">{{ unread_notices|default:3 }}</span>
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'users' in allowed_menus or 'profile' in allowed_menus %}
+  <div class="group">People</div>
+  {% endif %}
+  {% if user.role == "super_admin" or 'users' in allowed_menus %}
+  <a class="item {% if current_url == 'user_list' %}active{% endif %}" href="{% url 'user_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+    Users & Employees
+  </a>
+  {% endif %}
+  {% if user.role == "super_admin" or 'profile' in allowed_menus %}
+  <a class="item {% if current_url == 'my_profile' or current_url == 'user_detail' and is_my_profile %}active{% endif %}" href="{% url 'my_profile' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/></svg>
+    My Profile
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'attendance' in allowed_menus or 'late' in allowed_menus or 'leave' in allowed_menus %}
+  <div class="group">Time & Attendance</div>
+  {% endif %}
+  {% if user.role == "super_admin" or 'attendance' in allowed_menus %}
+  <a class="item {% if current_url == 'attendance_list' %}active{% endif %}" href="{% url 'attendance_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+    Attendance
+  </a>
+  {% endif %}
+  {% if user.role == "super_admin" or 'late' in allowed_menus %}
+  <a class="item {% if current_url == 'late_list' %}active{% endif %}" href="{% url 'late_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+    Late Management
+  </a>
+  {% endif %}
+  {% if user.role == "super_admin" or 'leave' in allowed_menus %}
+  <a class="item {% if current_url == 'leave_list' %}active{% endif %}" href="{% url 'leave_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+    Leave Management
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'tasks' in allowed_menus or 'documents' in allowed_menus %}
+  <div class="group">Work</div>
+  {% endif %}
+  {% if user.role == "super_admin" or 'tasks' in allowed_menus %}
+  <a class="item {% if current_url == 'task_list' %}active{% endif %}" href="{% url 'task_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+    Task Management
+  </a>
+  {% endif %}
+  {% if user.role == "super_admin" or 'documents' in allowed_menus %}
+  <a class="item {% if current_url == 'document_list' %}active{% endif %}" href="{% url 'document_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+    Document Management
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'assets' in allowed_menus %}
+  <div class="group">Finance</div>
+  <a class="item {% if current_url == 'asset_list' %}active{% endif %}" href="{% url 'asset_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+    Asset Management
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'upload_center' in allowed_menus %}
+  <div class="group">Work</div>
+  <a class="item {% if current_url == 'document_upload' %}active{% endif %}" href="{% url 'document_upload' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+    Upload Center
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'support' in allowed_menus %}
+  <div class="group">Support & Help</div>
+  <a class="item {% if current_url == 'user_guide_faq' %}active{% endif %}" href="{% url 'user_guide_faq' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+    User Guide & FAQ
+  </a>
+  <a class="item {% if current_url == 'contact_support' %}active{% endif %}" href="{% url 'contact_support' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+    Contact Support
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'calendar' in allowed_menus %}
+  <div class="group">Time & Attendance</div>
+  <a class="item {% if current_url == 'calendar_view' %}active{% endif %}" href="{% url 'calendar_view' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+    Calendar
+  </a>
+  {% endif %}
+
+{% else %}
+  {# ========== EMPLOYEE ========== #}
+
+  {% if user.role == "super_admin" or 'dashboard' in allowed_menus %}
+  <div class="group">Main</div>
+  <a class="item {% if current_url == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+    Dashboard
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'notice' in allowed_menus %}
+  <a class="item {% if 'notice' in current_url %}active{% endif %}" href="{% url 'notice_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+    Notice & Announcements
+    <span class="badge">{{ unread_notices|default:3 }}</span>
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'profile' in allowed_menus %}
+  <div class="group">People</div>
+  <a class="item {% if current_url == 'my_profile' or current_url == 'user_detail' and is_my_profile %}active{% endif %}" href="{% url 'my_profile' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/></svg>
+    My Profile
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'attendance' in allowed_menus or 'late' in allowed_menus or 'leave' in allowed_menus %}
+  <div class="group">Time & Attendance</div>
+  {% endif %}
+  {% if user.role == "super_admin" or 'attendance' in allowed_menus %}
+  <a class="item {% if current_url == 'attendance_list' %}active{% endif %}" href="{% url 'attendance_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+    Attendance
+  </a>
+  {% endif %}
+  {% if user.role == "super_admin" or 'late' in allowed_menus %}
+  <a class="item {% if current_url == 'late_list' %}active{% endif %}" href="{% url 'late_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+    Late Management
+  </a>
+  {% endif %}
+  {% if user.role == "super_admin" or 'leave' in allowed_menus %}
+  <a class="item {% if current_url == 'leave_list' %}active{% endif %}" href="{% url 'leave_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+    Leave Management
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'tasks' in allowed_menus or 'documents' in allowed_menus %}
+  <div class="group">Work</div>
+  {% endif %}
+  {% if user.role == "super_admin" or 'tasks' in allowed_menus %}
+  <a class="item {% if current_url == 'task_list' %}active{% endif %}" href="{% url 'task_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+    Task Management
+  </a>
+  {% endif %}
+  {% if user.role == "super_admin" or 'documents' in allowed_menus %}
+  <a class="item {% if current_url == 'document_list' %}active{% endif %}" href="{% url 'document_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+    Document Management
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'assets' in allowed_menus %}
+  <div class="group">Finance</div>
+  <a class="item {% if current_url == 'asset_list' %}active{% endif %}" href="{% url 'asset_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+    Asset Management
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'upload_center' in allowed_menus %}
+  <div class="group">Work</div>
+  <a class="item {% if current_url == 'document_upload' %}active{% endif %}" href="{% url 'document_upload' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+    Upload Center
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'support' in allowed_menus %}
+  <div class="group">Support & Help</div>
+  <a class="item {% if current_url == 'user_guide_faq' %}active{% endif %}" href="{% url 'user_guide_faq' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+    User Guide & FAQ
+  </a>
+  <a class="item {% if current_url == 'contact_support' %}active{% endif %}" href="{% url 'contact_support' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+    Contact Support
+  </a>
+  {% endif %}
+
+  {% if user.role == "super_admin" or 'calendar' in allowed_menus %}
+  <div class="group">Time & Attendance</div>
+  <a class="item {% if current_url == 'calendar_view' %}active{% endif %}" href="{% url 'calendar_view' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
+    Calendar
+  </a>
+  {% endif %}
+
+{% endif %}
+{% endwith %}
+{% endblock %}
+</nav>
+  </aside>
+
+
+
+  <!-- MAIN -->
+
+  <div class="main">
+
+    <header class="topbar">
+
+      <button class="iconbtn" onclick="document.getElementById('sidebar').classList.toggle('open')" title="Menu">
+
+        <svg class="ico" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+
+      </button>
+
+      <div class="search-wrap">
+
+        <span class="si"><svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></span>
+
+        <input placeholder="Search employees, pages, documents…" id="globalSearch" onkeydown="if(event.key==='Enter'){window.location='/employees/?q='+this.value}">
+
+      </div>
+
+      <div class="spacer"></div>
+
+      <button class="iconbtn" onclick="quickCreate()" title="Quick create">
+
+        <svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+
+      </button>
+
+      <a class="iconbtn" href="{% url 'user_guide_faq' %}{% if view_role %}?view_role={{ view_role }}{% endif %}" title="Help & FAQ">
+
+        <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 115 .5c0 1.5-2 1.5-2 3.5"/><path d="M12 17h.01"/></svg>
+
+      </a>
+
+      <a class="iconbtn" href="{% url 'notice_list' %}{% if view_role %}?view_role={{ view_role }}{% endif %}" title="Notifications">
+
+        <svg class="ico" viewBox="0 0 24 24"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+
+        {% if unread_notices %}<span style="position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--red)"></span>{% endif %}
+
+      </a>
+
+      <button class="iconbtn" onclick="toggleTheme()" title="Toggle dark mode">
+
+        <svg class="ico" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+
+      </button>
+
+      <div class="profile-wrap" id="profileMenuWrap">
+        <button type="button" class="profile-trigger" onclick="toggleProfileMenu()" aria-haspopup="true" aria-expanded="false">
+          <div class="avatar {% if user.role == 'manager' or view_role == 'manager' %}avatar-blue{% elif user.role == 'employee' or view_role == 'employee' %}avatar-green{% else %}avatar-brand{% endif %}" title="{{ user.get_full_name|default:user.username }}">{{ user.employee.avatar_initials|default:user.username|slice:":2"|upper }}</div>
+          <div class="profile-meta">
+            <span class="profile-name">{{ user.get_full_name|default:user.username }}</span>
+          </div>
+          <svg class="ico profile-caret" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+
+        <div class="profile-menu" id="profileMenu">
+          <div class="profile-menu-head">
+            <div class="avatar {% if user.role == 'manager' or view_role == 'manager' %}avatar-blue{% elif user.role == 'employee' or view_role == 'employee' %}avatar-green{% else %}avatar-brand{% endif %}">{{ user.employee.avatar_initials|default:user.username|slice:":2"|upper }}</div>
+            <div>
+              <div class="profile-menu-name">{{ user.get_full_name|default:user.username }}</div>
+              <div class="profile-role-badge">{% if view_role == 'manager' or user.role == 'manager' %}Manager{% elif view_role == 'employee' or user.role == 'employee' %}Employee{% else %}Super Admin{% endif %}</div>
+            </div>
+          </div>
+
+          <a href="{% url 'my_profile' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+            <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20v-1a8 8 0 0116 0v1"/></svg>
+            My Profile
+          </a>
+
+          <a href="{% url 'config' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1 1 0 00.2 1.1l.1.1-.9 1.6-.2-.1a1 1 0 00-1.1.2l-.1.1a1 1 0 00-.3 1l.1.2-1.6.9-.1-.2a1 1 0 00-1-.3h-.2a1 1 0 00-.8.6l-.1.2h-1.8l-.1-.2a1 1 0 00-.8-.6h-.2a1 1 0 00-1 .3l-.1.2-1.6-.9.1-.2a1 1 0 00-.3-1l-.1-.1a1 1 0 00-1.1-.2l-.2.1-.9-1.6.1-.1a1 1 0 00.2-1.1v-.2a1 1 0 00-.6-.8l-.2-.1V13l.2-.1a1 1 0 00.6-.8v-.2a1 1 0 00-.2-1.1l-.1-.1.9-1.6.2.1a1 1 0 001.1-.2l.1-.1a1 1 0 00.3-1l-.1-.2 1.6-.9.1.2a1 1 0 001 .3h.2a1 1 0 00.8-.6l.1-.2h1.8l.1.2a1 1 0 00.8.6h.2a1 1 0 001-.3l.1-.2 1.6.9-.1.2a1 1 0 00.3 1l.1.1a1 1 0 001.1.2l.2-.1.9 1.6-.1.1a1 1 0 00-.2 1.1v.2a1 1 0 00.6.8l.2.1z"/></svg>
+            Settings
+          </a>
+
+          <a href="{% url 'logout' %}">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M10 17l1 1 5-5-5-5-1 1 3 3H3v2h10z"/><path d="M21 3h-8v2h8v14h-8v2h8a2 2 0 002-2V5a2 2 0 00-2-2z"/></svg>
+            Sign out
+          </a>
+        </div>
+      </div>
+
+    </header>
+
+
+
+    <main class="content">
+
+      {% for message in messages %}
+
+      <div class="alert alert-{% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% else %}success{% endif %}">
+
+        {{ message }}
+
+      </div>
+
+      {% endfor %}
+
+      {% block content %}{% endblock %}
+
+    </main>
+
+  </div>
+
+</div>
+
+<div id="exportBackdrop" class="export-backdrop" hidden></div>
+
+<div id="exportMenu" class="export-menu" hidden>
+  <div class="export-menu-title">Download as</div>
+  <button type="button" class="export-menu-option" data-export-format="pdf">
+    PDF
+    <span style="color:var(--muted);font-size:11px;font-weight:700;">.pdf</span>
+  </button>
+  <button type="button" class="export-menu-option" data-export-format="xlsx">
+    Excel
+    <span style="color:var(--muted);font-size:11px;font-weight:700;">.xlsx</span>
+  </button>
+</div>
+
+{% block extra_js %}{% endblock %}
+
+</body>
+
+</html>

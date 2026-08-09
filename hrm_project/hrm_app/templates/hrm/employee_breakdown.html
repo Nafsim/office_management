@@ -1,0 +1,18 @@
+{% extends 'hrm/base.html' %}
+{% block title %}Employee Breakdown — Luminous HRM{% endblock %}
+{% block content %}
+<div class="card pad">
+  <h1 style="margin:0 0 8px; color:var(--ink);">Employee Breakdown</h1>
+  <p style="color:var(--muted); margin:0 0 18px;">Select an employee to review salary structure and latest payslip data.</p>
+  {% if selected_employee %}
+  <div style="display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); margin-bottom:18px;">
+    <div class="card pad"><strong>Employee</strong><div>{{ selected_employee.user.get_full_name|default:selected_employee.user.username }}</div></div>
+    <div class="card pad"><strong>Basic</strong><div>৳{{ structure.basic|default:0|floatformat:0 }}</div></div>
+    <div class="card pad"><strong>Net Pay</strong><div>৳{{ latest_payslip.net_pay|default:0|floatformat:0 }}</div></div>
+  </div>
+  {% else %}
+  <p style="color:var(--muted);">No employee selected.</p>
+  {% endif %}
+  <a href="{% url 'salary_list' %}" class="btn" style="background:#FF6B00; color:white;">Back to Payroll</a>
+</div>
+{% endblock %}

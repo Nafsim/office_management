@@ -1,0 +1,123 @@
+{% extends 'hrm/base.html' %}
+
+{% block title %}Document Management — Luminous HRM{% endblock %}
+
+{% block content %}
+
+<!-- Top Header -->
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
+  <div>
+    <h1 style="font-size:28px; font-weight:700; color:var(--ink); margin:0;">Document Management</h1>
+    <div style="font-size:14px; color:var(--muted); margin-top:4px;">Home · Work · Documents</div>
+  </div>
+
+  <div style="display:flex; gap:10px; align-items:center;">
+    <button onclick="history.back()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">← Back</button>
+    
+    <button id="exportDocsBtn" type="button" data-export-url="{% url 'document_export' %}" class="btn" style="background:#FF6B00; color:white; border:none; display:flex; align-items:center; gap:6px; cursor:pointer;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+      </svg>
+      Export
+    </button>
+
+    {% if user.role == 'super_admin' or user.role == 'manager' %}
+      <a href="{% url 'document_upload' %}" class="btn" style="background:#FF6B00; color:white;">Upload Document</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Orange Banner -->
+<div style="background:linear-gradient(90deg, #FF6B00, #FF8C3A); color:white; border-radius:12px; padding:16px 20px; margin-bottom:28px; display:flex; align-items:center; gap:16px;">
+  <div style="background:rgba(255,255,255,0.25); width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2" />
+    </svg>
+  </div>
+  <div>
+    <strong style="font-size:16px;">One home for every file</strong><br>
+    <span style="opacity:0.95;">Company policies, NDA & contract templates, employee documents and generated letters — all categorised and searchable.</span>
+  </div>
+</div>
+
+<!-- Stats -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:16px; margin-bottom:28px;">
+  <div class="card pad" style="text-align:center; border:2px solid #FF9F4D;">
+    <div style="font-size:42px; font-weight:700; color:var(--ink);">{{ category_count }}</div>
+    <div style="color:var(--muted);">Categories</div>
+  </div>
+  <div class="card pad" style="text-align:center; border:2px solid #FF9F4D;">
+    <div style="font-size:42px; font-weight:700; color:var(--ink);">{{ total_documents }}</div>
+    <div style="color:var(--muted);">Total Documents</div>
+  </div>
+  <div class="card pad" style="text-align:center; border:2px solid #FF9F4D;">
+    <div style="font-size:42px; font-weight:700; color:var(--ink);">{{ pending_requests }}</div>
+    <div style="color:var(--muted);">Pending Requests</div>
+  </div>
+  <div class="card pad" style="text-align:center; border:2px solid #22C55E;">
+    <div style="font-size:42px; font-weight:700; color:var(--ink);">{{ generated_documents }}</div>
+    <div style="color:var(--muted);">Generated</div>
+  </div>
+</div>
+
+<!-- All Documents -->
+<div class="card">
+  <div style="padding:18px 20px; border-bottom:1px solid var(--line);">
+    <strong>All Documents</strong>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Document Name</th>
+        <th>Category</th>
+        <th>Size</th>
+        <th>Owner</th>
+        <th>Date</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for doc in docs %}
+      <tr>
+        <td>
+          <div class="flex">
+            <div class="ic tint-s" style="margin-right:12px">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+            </div>
+            <div>
+              <b>{{ doc.name }}</b>
+            </div>
+          </div>
+        </td>
+        <td><span class="tag t-gray">{{ doc.category|default:"General" }}</span></td>
+        <td>{{ doc.size_display|default:"—" }}</td>
+        <td>{{ doc.owner.get_full_name|default:"—" }}</td>
+        <td>{{ doc.uploaded_at|date:"Y-m-d" }}</td>
+        <td>
+          <!-- Download - everyone -->
+          <a href="{% url 'document_download' doc.pk %}" class="btn ghost sm">Download</a>
+
+          <!-- Delete - only Super Admin -->
+          {% if user.role == 'super_admin' %}
+            <a href="{% url 'document_delete' doc.pk %}" class="btn ghost sm red" onclick="return confirm('Delete this document?')">Delete</a>
+          {% endif %}
+
+          <!-- View Requests - Admin, Manager, Employee -->
+          <a href="{% url 'document_request_list' %}" class="btn ghost sm">View Requests</a>
+
+          <!-- Request button - Manager & Employee -->
+          {% if user.role == 'manager' or user.role == 'employee' %}
+            <a href="{% url 'document_request_create' %}" class="btn ghost sm" style="background:#FF6B00; color:white;">Request</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" style="text-align:center; padding:40px; color:var(--muted);">No documents found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}
