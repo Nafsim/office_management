@@ -94,45 +94,63 @@ path(
 
 
 
+# ─── USERS / EMPLOYEES ─────────────────────────────────────────────
 
+path(
+    'employees/',
+    views.user_list,
+    name='user_list'
+),
 
-    # Users / Employees
+path(
+    'employees/export/',
+    views.employee_export,
+    name='employee_export'
+),
 
+path(
+    'employees/create/',
+    views.user_create,
+    name='user_create'
+),
 
+# Role / Default permissions
+path(
+    'employees/permissions/',
+    views.user_permissions,
+    name='user_permissions'
+),
 
-    path('employees/',               views.user_list,   name='user_list'),
+# Individual user's permissions
+path(
+    'employees/<int:pk>/permissions/',
+    views.user_permissions,
+    name='user_permissions_user'
+),
 
+path(
+    'employees/<int:pk>/edit/',
+    views.user_edit,
+    name='user_edit'
+),
 
+path(
+    'employees/<int:pk>/delete/',
+    views.user_delete,
+    name='user_delete'
+),
 
-    path('employees/export/',        views.employee_export, name='employee_export'),
+path(
+    'employees/<int:pk>/',
+    views.user_detail,
+    name='user_detail'
+),
 
-
-
-    path('employees/create/',        views.user_create, name='user_create'),
-
-
-
-    path('employees/<int:pk>/',      views.user_detail, name='user_detail'),
-
-
-
-    path('employees/<int:pk>/edit/', views.user_edit,   name='user_edit'),
-
-
-
-    path('employees/<int:pk>/delete/', views.user_delete, name='user_delete'),
-
-    path("employees/permissions/", views.user_permissions, name="user_permissions"),
-
-    # path("employees/<int:pk>/permissions/", views.user_permissions, name="user_permissions"),
-
-    # path("employees/permissions-data/", views.permissions_data, name="permissions_data"),
-
-    # path("employees/permissions-save/", views.permissions_save, name="permissions_save"),
-
-    path('profile/',                 views.my_profile,  name='my_profile'),
-
-
+path(
+    'profile/',
+    views.my_profile,
+    name='my_profile'
+),
 
   # Attendance
 
@@ -284,33 +302,18 @@ path(
 
 
 
+    path('tasks/',                  views.task_list,               name='task_list'),
+    path('tasks/export/',           views.task_export,             name='task_export'),
+    path('tasks/create/',           views.task_create,             name='task_create'),
+    path('tasks/<int:pk>/',         views.task_detail,             name='task_detail'),
+    path('tasks/<int:pk>/status/',  views.task_update_status,      name='task_update_status'),
+    path('tasks/<int:pk>/edit/',    views.task_edit,               name='task_edit'),
+    path('tasks/<int:pk>/delete/',  views.task_delete,             name='task_delete'),
+    path('tasks/<int:pk>/color/',   views.task_update_color,       name='task_update_color'),
+    path('tasks/<int:pk>/progress/',views.task_update_progress,    name='task_update_progress'),
+    path('tasks/column-color/',     views.task_update_column_color,name='task_update_column_color'),
 
-
-    # Tasks
-
-
-
-    path('tasks/',               views.task_list,   name='task_list'),
-
-
-
-    path('tasks/export/',        views.task_export, name='task_export'),
-
-
-
-    path('tasks/create/',        views.task_create, name='task_create'),
-
-    path('tasks/<int:pk>/status/', views.task_update_status, name='task_update_status'),
-
-    path('tasks/<int:pk>/edit/', views.task_edit,   name='task_edit'),
-
-    path('tasks/<int:pk>/delete/', views.task_delete, name='task_delete'),
-
-    path('tasks/<int:pk>/color/', views.task_update_color, name='task_update_color'),
-
-
-
-
+    
 
 
 

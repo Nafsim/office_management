@@ -11,33 +11,59 @@
     <div style="font-size:14px; color:var(--muted); margin-top:4px;">Home · Work · Documents</div>
   </div>
 
-  <div style="display:flex; gap:10px; align-items:center;">
+  <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
     <button onclick="history.back()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">← Back</button>
-    
-    <button id="exportDocsBtn" type="button" data-export-url="{% url 'document_export' %}" class="btn" style="background:#FF6B00; color:white; border:none; display:flex; align-items:center; gap:6px; cursor:pointer;">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-      </svg>
+
+    <button id="exportDocsBtn" type="button" data-export-url="{% url 'document_export' %}" class="btn"
+            style="background:#FF6B00; color:white; border:none; display:flex; align-items:center; gap:6px; cursor:pointer;">
       Export
     </button>
 
-    {% if user.role == 'super_admin' or user.role == 'manager' %}
+    {% if user.role == 'super_admin' or user.role == 'manager' or user.role == 'admin' %}
       <a href="{% url 'document_upload' %}" class="btn" style="background:#FF6B00; color:white;">Upload Document</a>
+    {% endif %}
+
+    {% if user.role == 'manager' or user.role == 'employee' or user.role == 'super_admin' %}
+      <a href="{% url 'document_request_create' %}" class="btn" style="background:#FF6B00; color:white;">Request Document</a>
     {% endif %}
   </div>
 </div>
 
 <!-- Orange Banner -->
-<div style="background:linear-gradient(90deg, #FF6B00, #FF8C3A); color:white; border-radius:12px; padding:16px 20px; margin-bottom:28px; display:flex; align-items:center; gap:16px;">
-  <div style="background:rgba(255,255,255,0.25); width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2" />
-    </svg>
-  </div>
-  <div>
-    <strong style="font-size:16px;">One home for every file</strong><br>
-    <span style="opacity:0.95;">Company policies, NDA & contract templates, employee documents and generated letters — all categorised and searchable.</span>
-  </div>
+<div style="background:linear-gradient(90deg, #FF6B00, #FF8C3A); color:white; border-radius:12px; padding:16px 20px; margin-bottom:28px;">
+  <strong style="font-size:16px;">One home for every file</strong><br>
+  <span style="opacity:0.95;">Company policies, employee documents, requests and generated letters — all in one place.</span>
+</div>
+
+<!-- Menu tabs (grey by default, orange when active) -->
+<div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+  {% with f=document_type_filter|default:'all' %}
+  <a href="{% url 'document_list' %}?document_type=all"
+     class="btn"
+     style="{% if f == 'all' %}background:#FF6B00;color:white;border:none;{% else %}background:#E5E7EB;color:#374151;border:none;{% endif %}">
+    All Documents
+  </a>
+  <a href="{% url 'document_list' %}?document_type=request"
+     class="btn"
+     style="{% if f == 'request' %}background:#FF6B00;color:white;border:none;{% else %}background:#E5E7EB;color:#374151;border:none;{% endif %}">
+    Request Documents
+  </a>
+  <a href="{% url 'document_list' %}?document_type=generated"
+     class="btn"
+     style="{% if f == 'generated' %}background:#FF6B00;color:white;border:none;{% else %}background:#E5E7EB;color:#374151;border:none;{% endif %}">
+    Generated Documents
+  </a>
+  <a href="{% url 'document_list' %}?document_type=employee"
+     class="btn"
+     style="{% if f == 'employee' %}background:#FF6B00;color:white;border:none;{% else %}background:#E5E7EB;color:#374151;border:none;{% endif %}">
+    Employee Documents
+  </a>
+  <a href="{% url 'document_list' %}?document_type=office"
+     class="btn"
+     style="{% if f == 'office' %}background:#FF6B00;color:white;border:none;{% else %}background:#E5E7EB;color:#374151;border:none;{% endif %}">
+    Office Documents
+  </a>
+  {% endwith %}
 </div>
 
 <!-- Stats -->
@@ -60,10 +86,98 @@
   </div>
 </div>
 
-<!-- All Documents -->
+{% if document_type_filter == 'request' %}
+
+<!-- ================= REQUEST DOCUMENTS TABLE ================= -->
 <div class="card">
   <div style="padding:18px 20px; border-bottom:1px solid var(--line);">
-    <strong>All Documents</strong>
+    <strong>Document Requests</strong>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Requester</th>
+        <th>Employee</th>
+        <th>Document Type</th>
+        <th>Reason</th>
+        <th>Status</th>
+        <th>Requested At</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for req in requests %}
+      <tr>
+        <td>{{ req.requester.get_full_name|default:"—" }}</td>
+        <td>{{ req.employee.user.get_full_name|default:"—" }}</td>
+        <td>
+          {% if req.document_type == 'Other' %}
+            {{ req.custom_type|default:"—" }}
+          {% else %}
+            {{ req.document_type }}
+          {% endif %}
+        </td>
+        <td>{{ req.reason|truncatewords:10 }}</td>
+        <td>
+          {% if req.status == 'Pending' %}
+            <span class="tag" style="background:#FEF3C7; color:#D97706;">{{ req.status }}</span>
+          {% elif req.status == 'Approved' %}
+            <span class="tag" style="background:#D1FAE5; color:#10B981;">{{ req.status }}</span>
+          {% elif req.status == 'Rejected' %}
+            <span class="tag" style="background:#FEE2E2; color:#EF4444;">{{ req.status }}</span>
+          {% elif req.status == 'Completed' %}
+            <span class="tag" style="background:#DBEAFE; color:#3B82F6;">{{ req.status }}</span>
+          {% else %}
+            <span class="tag">{{ req.status }}</span>
+          {% endif %}
+        </td>
+        <td>{{ req.requested_at|date:"Y-m-d" }}</td>
+                <td>
+          {% if req.status == 'Pending' %}
+            {% if user.role == 'super_admin' or user.role == 'manager' or user.role == 'admin' %}
+              <a href="{% url 'document_request_approve' req.pk %}"
+                 class="btn ghost sm"
+                 style="background:#10B981; color:white;">
+                Approve
+              </a>
+            {% endif %}
+          {% endif %}
+
+          {% if req.status == 'Approved' %}
+            {% if user.role == 'super_admin' or user.role == 'manager' or user.role == 'admin' %}
+              <a href="{% url 'document_generate' req.pk %}"
+                 class="btn ghost sm"
+                 style="background:#FF6B00; color:white;">
+                Generate
+              </a>
+            {% endif %}
+          {% endif %}
+
+          {% if req.generated_document %}
+            <a href="{% url 'document_download' req.generated_document.pk %}" class="btn ghost sm">Download</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7" style="text-align:center; padding:40px; color:var(--muted);">No document requests found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+
+<!-- ================= DOCUMENTS TABLE (All / Generated / Employee / Office) ================= -->
+<div class="card">
+  <div style="padding:18px 20px; border-bottom:1px solid var(--line);">
+    <strong>
+      {% if document_type_filter == 'generated' %}Generated Documents
+      {% elif document_type_filter == 'employee' %}Employee Documents
+      {% elif document_type_filter == 'office' %}Office Documents
+      {% else %}All Documents{% endif %}
+    </strong>
   </div>
   <table>
     <thead>
@@ -79,35 +193,16 @@
     <tbody>
       {% for doc in docs %}
       <tr>
-        <td>
-          <div class="flex">
-            <div class="ic tint-s" style="margin-right:12px">
-              <svg class="ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
-            </div>
-            <div>
-              <b>{{ doc.name }}</b>
-            </div>
-          </div>
-        </td>
+        <td><b>{{ doc.name }}</b></td>
         <td><span class="tag t-gray">{{ doc.category|default:"General" }}</span></td>
         <td>{{ doc.size_display|default:"—" }}</td>
         <td>{{ doc.owner.get_full_name|default:"—" }}</td>
         <td>{{ doc.uploaded_at|date:"Y-m-d" }}</td>
         <td>
-          <!-- Download - everyone -->
           <a href="{% url 'document_download' doc.pk %}" class="btn ghost sm">Download</a>
 
-          <!-- Delete - only Super Admin -->
-          {% if user.role == 'super_admin' %}
+          {% if user.role == 'super_admin' or user.role == 'admin' %}
             <a href="{% url 'document_delete' doc.pk %}" class="btn ghost sm red" onclick="return confirm('Delete this document?')">Delete</a>
-          {% endif %}
-
-          <!-- View Requests - Admin, Manager, Employee -->
-          <a href="{% url 'document_request_list' %}" class="btn ghost sm">View Requests</a>
-
-          <!-- Request button - Manager & Employee -->
-          {% if user.role == 'manager' or user.role == 'employee' %}
-            <a href="{% url 'document_request_create' %}" class="btn ghost sm" style="background:#FF6B00; color:white;">Request</a>
           {% endif %}
         </td>
       </tr>
@@ -119,5 +214,7 @@
     </tbody>
   </table>
 </div>
+
+{% endif %}
 
 {% endblock %}

@@ -20,7 +20,11 @@
 
         <div class="crumb">
 
-            {% if selected_role %}
+            {% if selected_user %}
+
+                {{ selected_user.get_full_name }} ({{ selected_user.email }})
+
+            {% elif selected_role %}
 
                 {{ selected_role_label }}
 
@@ -54,12 +58,72 @@
 
 
 
-    <!-- ROLE FILTER ONLY -->
+    {% if selected_user %}
 
+    <!-- Individual User Mode -->
+    <div style="margin-bottom:16px; padding:12px; background:#f0f9ff; border-left:4px solid #0ea5e9; border-radius:4px;">
+        <strong>Individual User Permissions</strong><br>
+        <span style="color:#64748b;">Managing permissions for <b>{{ selected_user.get_full_name }}</b> ({{ selected_user.email }}) only.</span>
+    </div>
+
+    <form method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="permission_type" value="user">
+        <input type="hidden" name="user_id" value="{{ selected_user.pk }}">
+        <input type="hidden" name="role" value="{{ selected_user.role }}">
+
+
+
+        <table style="width:100%; border-collapse:collapse;">
+            <thead>
+                <tr style="background:#f3f4f6;">
+                    <th style="padding:12px; text-align:left;">Menu Access & Module Permissions</th>
+                    <th>View</th>
+                    <th>Create</th>
+                    <th>Edit</th>
+                    <th>Delete</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for menu_key, menu_name in menu_choices %}
+                    {% with perm=saved_permissions|get_item:menu_key %}
+                    <tr style="border-bottom:1px solid #e5e7eb;">
+                        <td style="padding:12px;">
+                            <b>{{ menu_name }}</b>
+                        </td>
+                        <td>
+                            <input type="checkbox" name="{{ menu_key }}_view"
+                                   {% if perm and perm.can_view %}checked{% endif %}>
+                        </td>
+                        <td>
+                            <input type="checkbox" name="{{ menu_key }}_create"
+                                   {% if perm and perm.can_create %}checked{% endif %}>
+                        </td>
+                        <td>
+                            <input type="checkbox" name="{{ menu_key }}_edit"
+                                   {% if perm and perm.can_edit %}checked{% endif %}>
+                        </td>
+                        <td>
+                            <input type="checkbox" name="{{ menu_key }}_delete"
+                                   {% if perm and perm.can_delete %}checked{% endif %}>
+                        </td>
+                    </tr>
+                    {% endwith %}
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <br><br>
+
+        <button type="submit" class="btn" style="background:#FF6B00; color:white; padding:12px 25px; border:none; border-radius:8px; cursor:pointer;">Save Permissions</button>
+
+    </form>
+
+    {% else %}
+
+    <!-- Role Filter Mode (Backward Compatibility) -->
     <form method="GET">
-
         <label><b>Select Role</b></label><br>
-
         <select name="role" onchange="this.form.submit()"
 
                 style="padding:10px; width:320px; margin-top:8px;">
@@ -99,7 +163,7 @@
         <form method="POST">
 
             {% csrf_token %}
-
+            <input type="hidden" name="permission_type" value="role">
             <input type="hidden" name="role" value="{{ selected_role }}">
 
             <input type="hidden" name="menu_access_role" value="1">
@@ -156,6 +220,8 @@
             <button type="submit" class="btn" style="background:#FF6B00; color:white; padding:12px 25px; border:none; border-radius:8px; cursor:pointer;">Save Permissions</button>
 
         </form>
+
+    {% endif %}
 
     {% endif %}
 

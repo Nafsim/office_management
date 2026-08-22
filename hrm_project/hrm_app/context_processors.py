@@ -1,4 +1,4 @@
-from .models import RoleMenuPermission
+from .models import UserPermission
 
 def role_menu_permissions(request):
     allowed_menus = []
@@ -7,11 +7,12 @@ def role_menu_permissions(request):
         if request.user.role == "super_admin":
           allowed_menus = []         
         else:
+            # Use user-specific permissions instead of role-based
             allowed_menus = list(
-                RoleMenuPermission.objects.filter(
-                    role=request.user.role,
-                    is_allowed=True
-                ).values_list("menu", flat=True)
+                UserPermission.objects.filter(
+                    user=request.user,
+                    can_view=True
+                ).values_list("module", flat=True)
             )
 
     return {

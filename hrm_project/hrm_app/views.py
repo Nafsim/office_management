@@ -3,6 +3,7 @@ from html import escape
 from io import BytesIO
 
 from django.shortcuts import render, redirect, get_object_or_404
+
 from django.urls import reverse
 
 from django.contrib.auth import authenticate, login, logout
@@ -63,6 +64,7 @@ from .forms import (
 
 from .decorators import admin_required, manager_or_admin, role_required
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
 # ─────────────────────────────────────────────
 # PERMISSION HELPER
 # ─────────────────────────────────────────────
@@ -70,19 +72,14 @@ from django.views.decorators.http import require_POST
 def has_permission(user, module, action="view"):
     """
     Super Admin -> Always True
-    Manager / Employee -> Check UserPermission, but allow basic access for common modules
+    Manager / Employee -> Check UserPermission strictly
     """
 
-    # Super Admin সবসময় full access
+    # Super Admin always has full access
     if user.role == Role.SUPER_ADMIN:
         return True
 
-    # Allow managers/employees basic access to common modules without UserPermission
-    basic_modules = ['dashboard', 'notice', 'employees', 'profile', 'attendance', 'late', 'leave', 'tasks', 'documents', 'assets', 'calendar']
-    if user.role in [Role.MANAGER, Role.EMPLOYEE] and module in basic_modules and action == "view":
-        return True
-
-    # For other modules, check UserPermission
+    # Check UserPermission for the specific user
     perm = UserPermission.objects.filter(
         user=user,
         module=module
@@ -130,14 +127,14 @@ def _ctx(request, **kw):
 
     ctx['unread_leaves'] = unread_leaves
 
-    # Add allowed menus list to the context
-    if view_role == 'super_admin':
+    # Add allowed menus list to the context using UserPermission
+    if request.user.role == 'super_admin':
         ctx['allowed_menus'] = [key for key, _ in UserPermission.MODULE_CHOICES]
     else:
-        ctx['allowed_menus'] = list(RoleMenuPermission.objects.filter(
-            role=view_role,
-            is_allowed=True
-        ).values_list('menu', flat=True))
+        ctx['allowed_menus'] = list(UserPermission.objects.filter(
+            user=request.user,
+            can_view=True
+        ).values_list('module', flat=True))
 
     ctx.update(kw)
 
@@ -393,6 +390,7 @@ def _export_tabular_response(title, sections, filename, export_format):
     return _export_xlsx_response(sections, filename)
 
 
+@csrf_exempt
 def login_view(request):
 
     if request.user.is_authenticated:
@@ -671,7 +669,7 @@ def notice_delete(request, pk):
 @login_required
 
 def user_list(request):
-    if not has_permission(request.user, "employees", "view"):
+    if not has_permission(request.user, "users", "view"):
         messages.error(request, "You don't have permission to access employees.")
         return redirect("dashboard")
 
@@ -748,8 +746,8 @@ def user_detail(request, pk):
 @admin_required
 
 def user_create(request):
-    if not has_permission(request.user, "employees", "create"):
-        messages.error(request, "You don't have permission to create employee.")
+    if not has_permission(request.user, "users", "create"):
+        messages.error(request, "You don't have permission to create user.")
         return redirect("user_list")
 
     form = EmployeeForm(request.POST or None)
@@ -782,6 +780,22 @@ def user_create(request):
 
         emp.save()
 
+        # Initialize default permissions for new user based on role
+        from .models import UserPermission, RoleMenuPermission
+        
+        if u.role != 'super_admin':
+            # Copy role default permissions to user-specific permissions
+            role_perms = RoleMenuPermission.objects.filter(role=u.role)
+            for role_perm in role_perms:
+                UserPermission.objects.create(
+                    user=u,
+                    module=role_perm.menu,
+                    can_view=role_perm.can_view,
+                    can_create=role_perm.can_create,
+                    can_edit=role_perm.can_edit,
+                    can_delete=role_perm.can_delete,
+                )
+
         messages.success(request, f'Employee {u.get_full_name()} created. Default password: 12345')
 
         return redirect('user_list')
@@ -791,7 +805,7 @@ def user_create(request):
 
 @login_required
 def employee_export(request):
-    if not has_permission(request.user, "employees", "view"):
+    if not has_permission(request.user, "users", "view"):
         messages.error(request, "You don't have permission to export employees.")
         return redirect("user_list")
 
@@ -826,8 +840,8 @@ def employee_export(request):
 @admin_required
 
 def user_edit(request, pk):
-    if not has_permission(request.user, "employees", "edit"):
-        messages.error(request, "You don't have permission to edit employee.")
+    if not has_permission(request.user, "users", "edit"):
+        messages.error(request, "You don't have permission to edit user.")
         return redirect("user_list")
 
     emp  = get_object_or_404(Employee, pk=pk)
@@ -861,8 +875,8 @@ def user_edit(request, pk):
 @admin_required
 
 def user_delete(request, pk):
-    if not has_permission(request.user, "employees", "delete"):
-        messages.error(request, "You don't have permission to delete employee.")
+    if not has_permission(request.user, "users", "delete"):
+        messages.error(request, "You don't have permission to delete user.")
         return redirect("user_list")
 
     emp = get_object_or_404(Employee, pk=pk)
@@ -875,174 +889,339 @@ def user_delete(request, pk):
 
 @login_required
 def user_permissions(request, pk=None):
-    if request.user.role != 'super_admin':
-        messages.error(request, "You don't have permission to access this page.")
+
+    # Only Super Admin can manage permissions
+    if request.user.role != Role.SUPER_ADMIN:
+        messages.error(
+            request,
+            "You don't have permission to access this page."
+        )
         return redirect("user_list")
 
-    selected_role = request.GET.get("role", "")
-    users_for_role = User.objects.filter(role=selected_role) if selected_role else User.objects.none()
-    module_choices = UserPermission.MODULE_CHOICES
+    # ─────────────────────────────────────────────
+    # MENU LIST
+    # ─────────────────────────────────────────────
 
-    # Define menu choices based on role
-    MENU_CHOICES = [
-        ('dashboard', 'Dashboard'),
-        ('notice', 'Notice & Announcements'),
-        ('users', 'Users & Employees'),
-        ('onboarding', 'Onboarding & NDA'),
-        ('profile', 'My Profile'),
-        ('attendance', 'Attendance'),
-        ('late', 'Late Management'),
-        ('leave', 'Leave Management'),
-        ('tasks', 'Task Management'),
-        ('documents', 'Document Management'),
-        ('salary', 'Payroll & Salary'),
-        ('payroll', 'Payroll'),
-        ('petty_cash', 'Petty Cash'),
-        ('assets', 'Asset Management'),
-        ('files', 'Files & Credentials'),
-        ('configuration', 'Configuration'),
-        ('upload_center', 'Upload Center'),
-        ('support', 'Support & Help'),
-        ('calendar', 'Calendar'),
-    ]
+    MENU_CHOICES = UserPermission.MODULE_CHOICES
 
-    # Filter menu choices based on selected role
-    if selected_role == 'manager':
-        menu_choices = [
-            ('dashboard', 'Dashboard'),
-            ('notice', 'Notice & Announcements'),
-            ('users', 'Users & Employees'),
-            ('profile', 'My Profile'),
-            ('attendance', 'Attendance'),
-            ('late', 'Late Management'),
-            ('leave', 'Leave Management'),
-            ('tasks', 'Task Management'),
-            ('documents', 'Document Management'),
-            ('assets', 'Asset Management'),
-            ('upload_center', 'Upload Center'),
-            ('support', 'Support & Help'),
-            ('calendar', 'Calendar'),
-        ]
-    elif selected_role == 'employee':
-        menu_choices = [
-            ('dashboard', 'Dashboard'),
-            ('notice', 'Notice & Announcements'),
-            ('profile', 'My Profile'),
-            ('attendance', 'Attendance'),
-            ('late', 'Late Management'),
-            ('leave', 'Leave Management'),
-            ('tasks', 'Task Management'),
-            ('documents', 'Document Management'),
-            ('assets', 'Asset Management'),
-            ('upload_center', 'Upload Center'),
-            ('support', 'Support & Help'),
-            ('calendar', 'Calendar'),
-        ]
-    else:
-        menu_choices = MENU_CHOICES
+    # ─────────────────────────────────────────────
+    # SELECT USER
+    # ─────────────────────────────────────────────
+
+    selected_user = None
+
+    if pk is not None:
+        selected_user = get_object_or_404(User, pk=pk)
+
+    # Role selected from dropdown
+    selected_role = (
+        request.GET.get("role", "")
+        or (selected_user.role if selected_user else "")
+    )
+
+    # ─────────────────────────────────────────────
+    # SAVE ROLE DEFAULT PERMISSIONS
+    # ─────────────────────────────────────────────
 
     if request.method == "POST":
-       selected_role = request.POST.get("role", "")
-       users_for_role = User.objects.filter(role=selected_role)
 
-       # Re-filter menu choices based on POST role
-       if selected_role == 'manager':
-           menu_choices = [
-               ('dashboard', 'Dashboard'),
-               ('notice', 'Notice & Announcements'),
-               ('users', 'Users & Employees'),
-               ('profile', 'My Profile'),
-               ('attendance', 'Attendance'),
-               ('late', 'Late Management'),
-               ('leave', 'Leave Management'),
-               ('tasks', 'Task Management'),
-               ('documents', 'Document Management'),
-               ('assets', 'Asset Management'),
-               ('upload_center', 'Upload Center'),
-               ('support', 'Support & Help'),
-               ('calendar', 'Calendar'),
-           ]
-       elif selected_role == 'employee':
-           menu_choices = [
-               ('dashboard', 'Dashboard'),
-               ('notice', 'Notice & Announcements'),
-               ('profile', 'My Profile'),
-               ('attendance', 'Attendance'),
-               ('late', 'Late Management'),
-               ('leave', 'Leave Management'),
-               ('tasks', 'Task Management'),
-               ('documents', 'Document Management'),
-               ('assets', 'Asset Management'),
-               ('upload_center', 'Upload Center'),
-               ('support', 'Support & Help'),
-               ('calendar', 'Calendar'),
-           ]
-       else:
-           menu_choices = MENU_CHOICES
+        permission_type = request.POST.get("permission_type")
 
-       if not selected_role:
-           messages.error(request, "Please select a role first.")
-           return render(request, "hrm/user_permissions.html", {
-               "saved_permissions": {},
-               "modules": module_choices,
-               "selected_role": "",
-               "selected_role_label": "",
-               "role_choices": Role.choices,
-               "role_user_count": 0,
-               "module_choices": module_choices,
-               "allowed_menus": [],
-               "menu_choices": MENU_CHOICES,
-           })
+        # =====================================================
+        # 1. SAVE ROLE DEFAULT PERMISSIONS
+        # =====================================================
 
-       for user in users_for_role:
-           for module in PERMISSION_MODULES:
-               UserPermission.objects.update_or_create(
-                   user=user,
-                   module=module,
-                   defaults={
-                       "can_view": request.POST.get(f"{module}_view") == "on",
-                       "can_create": request.POST.get(f"{module}_create") == "on",
-                       "can_edit": request.POST.get(f"{module}_edit") == "on",
-                       "can_delete": request.POST.get(f"{module}_delete") == "on",
-                   }
-               )
+        if permission_type == "role":
 
-       RoleMenuPermission.objects.filter(role=selected_role).delete()
+            role = request.POST.get("role")
 
-       for menu_key, menu_name in menu_choices:
-           if request.POST.get(f"menu_{menu_key}"):
-               RoleMenuPermission.objects.create(
-                   role=selected_role,
-                   menu=menu_key,
-                   is_allowed=True
-               )
+            if not role:
+                messages.error(request, "Please select a role first.")
+                return redirect("user_permissions")
 
-       messages.success(request, "Permissions updated successfully.")
-       return redirect(f"/employees/permissions/?role={selected_role}")
+            for module, module_name in MENU_CHOICES:
 
-    selected_user = users_for_role.first()
+                RoleMenuPermission.objects.update_or_create(
+                    role=role,
+                    menu=module,
+                    defaults={
+                        "can_view": request.POST.get(
+                            f"{module}_view"
+                        ) == "on",
+
+                        "can_create": request.POST.get(
+                            f"{module}_create"
+                        ) == "on",
+
+                        "can_edit": request.POST.get(
+                            f"{module}_edit"
+                        ) == "on",
+
+                        "can_delete": request.POST.get(
+                            f"{module}_delete"
+                        ) == "on",
+                    }
+                )
+
+            messages.success(
+                request,
+                f"Default permissions for {role} updated successfully."
+            )
+
+            return redirect(
+                f"{request.path}?role={role}"
+            )
+
+        # =====================================================
+        # 2. SAVE INDIVIDUAL USER PERMISSIONS
+        # =====================================================
+
+        elif permission_type == "user":
+
+            if selected_user is None:
+                messages.error(
+                    request,
+                    "Please select a user first."
+                )
+                return redirect("user_permissions")
+
+            # Delete all existing permissions for this user first
+            UserPermission.objects.filter(user=selected_user).delete()
+
+            # Only create permissions for modules that have at least one checkbox checked
+            for module, module_name in MENU_CHOICES:
+                has_any_permission = (
+                    request.POST.get(f"{module}_view") == "on" or
+                    request.POST.get(f"{module}_create") == "on" or
+                    request.POST.get(f"{module}_edit") == "on" or
+                    request.POST.get(f"{module}_delete") == "on"
+                )
+                
+                if has_any_permission:
+                    UserPermission.objects.create(
+                        user=selected_user,
+                        module=module,
+                        can_view=request.POST.get(f"{module}_view") == "on",
+                        can_create=request.POST.get(f"{module}_create") == "on",
+                        can_edit=request.POST.get(f"{module}_edit") == "on",
+                        can_delete=request.POST.get(f"{module}_delete") == "on",
+                    )
+
+            messages.success(
+                request,
+                f"Permissions for {selected_user.get_full_name() or selected_user.username} updated successfully."
+            )
+
+            return redirect(
+                f"/employees/{selected_user.pk}/permissions/"
+            )
+
+    # ─────────────────────────────────────────────
+    # ROLE DEFAULT PERMISSIONS
+    # ─────────────────────────────────────────────
+
+    role_permissions = {}
+
+    if selected_role:
+
+        role_permissions_qs = RoleMenuPermission.objects.filter(
+            role=selected_role
+        )
+
+        role_permissions = {
+            item.menu: item
+            for item in role_permissions_qs
+        }
+
+    # ─────────────────────────────────────────────
+    # INDIVIDUAL USER PERMISSIONS
+    # ─────────────────────────────────────────────
+
+    user_permissions_data = {}
+
+    if selected_user:
+
+        user_permissions_qs = UserPermission.objects.filter(
+            user=selected_user
+        )
+
+        user_permissions_data = {
+            item.module: item
+            for item in user_permissions_qs
+        }
+
+    # ─────────────────────────────────────────────
+    # BUILD MENU DATA FOR TEMPLATE
+    # ─────────────────────────────────────────────
+
+    permission_rows = []
+
+    for module, module_name in MENU_CHOICES:
+
+        role_perm = role_permissions.get(module)
+
+        user_perm = user_permissions_data.get(module)
+
+        permission_rows.append({
+            "module": module,
+            "name": module_name,
+
+            "role_can_view": (
+                role_perm.can_view
+                if role_perm else False
+            ),
+
+            "role_can_create": (
+                role_perm.can_create
+                if role_perm else False
+            ),
+
+            "role_can_edit": (
+                role_perm.can_edit
+                if role_perm else False
+            ),
+
+            "role_can_delete": (
+                role_perm.can_delete
+                if role_perm else False
+            ),
+
+            "user_can_view": (
+                user_perm.can_view
+                if user_perm else None
+            ),
+
+            "user_can_create": (
+                user_perm.can_create
+                if user_perm else None
+            ),
+
+            "user_can_edit": (
+                user_perm.can_edit
+                if user_perm else None
+            ),
+
+            "user_can_delete": (
+                user_perm.can_delete
+                if user_perm else None
+            ),
+        })
+
+    # ─────────────────────────────────────────────
+    # RENDER
+    # ─────────────────────────────────────────────
+
+    return render(
+        request,
+        "hrm/user_permissions.html",
+        _ctx(
+            request,
+
+            selected_user=selected_user,
+            selected_role=selected_role,
+
+            menu_choices=MENU_CHOICES,
+
+            role_permissions=role_permissions,
+            user_permissions_data=user_permissions_data,
+
+            permission_rows=permission_rows,
+        )
+    )
+    # ── POST ──────────────────────────────────────────────────────────────────
+    if request.method == "POST":
+        # A) ONE USER only
+        user_id = request.POST.get("user_id")
+        if user_id:
+            target = get_object_or_404(User, pk=user_id)
+            role_for_menus = target.role
+            menu_choices = menus_for_role(role_for_menus)
+
+            # Module permissions — ONLY this user
+            for menu_key, _ in menu_choices:
+                UserPermission.objects.update_or_create(
+                    user=target,
+                    module=menu_key,
+                    defaults={
+                        "can_view": request.POST.get(f"{menu_key}_view") == "on",
+                        "can_create": request.POST.get(f"{menu_key}_create") == "on",
+                        "can_edit": request.POST.get(f"{menu_key}_edit") == "on",
+                        "can_delete": request.POST.get(f"{menu_key}_delete") == "on",
+                    },
+                )
+
+            messages.success(
+                request,
+                f"Permissions updated for {target.get_full_name()} only. Other users were not changed."
+            )
+            return redirect("user_permissions", pk=target.pk)
+
+        # B) ROLE defaults only (does NOT loop every user)
+        role = request.POST.get("role", "")
+        if not role:
+            messages.error(request, "Please select a role first.")
+            return redirect("user_permissions")
+
+        menu_choices = menus_for_role(role)
+
+        RoleMenuPermission.objects.filter(role=role).delete()
+        for menu_key, _ in menu_choices:
+            if request.POST.get(f"menu_{menu_key}"):
+                RoleMenuPermission.objects.create(
+                    role=role,
+                    menu=menu_key,
+                    is_allowed=True,
+                )
+
+        messages.success(
+            request,
+            f"Default menu permissions for role '{role}' saved. "
+            "Individual user custom permissions were not changed."
+        )
+        return redirect(f"/employees/permissions/?role={role}")
+
+    # ── GET display ───────────────────────────────────────────────────────────
     saved_permissions = {}
+    allowed_menus = []
+
     if selected_user:
         saved_permissions = {
             p.module: p
             for p in UserPermission.objects.filter(user=selected_user)
         }
+        # Menus for display: from role defaults (user-specific module flags still apply in has_permission)
+        allowed_menus = list(
+            RoleMenuPermission.objects.filter(
+                role=selected_user.role,
+                is_allowed=True,
+            ).values_list("menu", flat=True)
+        )
+        # If user has any can_view, prefer those for menu checkboxes
+        user_view_menus = [
+            p.module for p in saved_permissions.values() if p.can_view
+        ]
+        if user_view_menus:
+            allowed_menus = user_view_menus
+    elif selected_role:
+        allowed_menus = list(
+            RoleMenuPermission.objects.filter(
+                role=selected_role,
+                is_allowed=True,
+            ).values_list("menu", flat=True)
+        )
 
-    allowed_menus = RoleMenuPermission.objects.filter(
-        role=selected_role,
-        is_allowed=True
-    ).values_list('menu', flat=True)
-
+    role_user_count = (
+        User.objects.filter(role=selected_role).count() if selected_role else 0
+    )
     selected_role_label = dict(Role.choices).get(selected_role, "") if selected_role else ""
 
     return render(request, "hrm/user_permissions.html", {
         "saved_permissions": saved_permissions,
-        "modules": module_choices,
+        "selected_user": selected_user,
         "selected_role": selected_role,
         "selected_role_label": selected_role_label,
         "role_choices": Role.choices,
-        "role_user_count": users_for_role.count(),
-        "module_choices": module_choices,
+        "role_user_count": role_user_count,
         "allowed_menus": allowed_menus,
         "menu_choices": menu_choices,
     })
@@ -2589,32 +2768,24 @@ def leave_action(request, pk, action):
 
 @login_required
 def task_list(request):
-
     if not has_permission(request.user, "tasks", "view"):
         messages.error(request, "You don't have permission to access Tasks.")
         return redirect("dashboard")
 
     emp = _emp(request)
 
-
     if request.user.role == Role.EMPLOYEE:
-
         tasks = Task.objects.filter(
             assignee=emp
         ).select_related(
             'assignee__user',
             'project'
         )
-
-
     else:
-
         tasks = Task.objects.select_related(
             'assignee__user',
             'project'
         ).all()
-
-
 
     projects = Project.objects.all()
 
@@ -2623,13 +2794,11 @@ def task_list(request):
     else:
         employees = Employee.objects.select_related('user').all()
 
-
     statuses = [
         ('To Do', '#F3F4F6', '#374151'),
         ('In Progress', '#FEF3C7', '#D97706'),
         ('Done', '#D1FAE5', '#10B981'),
     ]
-
 
     view_mode = request.GET.get('view', 'card')
 
@@ -2640,26 +2809,12 @@ def task_list(request):
         employees=employees,
         statuses=statuses,
         view_mode=view_mode,
-
-        todo_count=tasks.filter(
-            status='To Do'
-        ).count(),
-
-        progress_count=tasks.filter(
-            status='In Progress'
-        ).count(),
-
-        done_count=tasks.filter(
-            status='Completed'
-        ).count(),
+        todo_count=tasks.filter(status='To Do').count(),
+        progress_count=tasks.filter(status='In Progress').count(),
+        done_count=tasks.filter(status='Completed').count(),
     )
 
-
-    return render(
-        request,
-        'hrm/tasks.html',
-        context
-    )
+    return render(request, 'hrm/tasks.html', context)
 
 
 @login_required
@@ -2668,7 +2823,6 @@ def task_export(request):
         messages.error(request, "You don't have permission to export tasks.")
         return redirect("task_list")
 
-    
     if request.user.role == Role.EMPLOYEE:
         tasks = Task.objects.filter(assignee=_emp(request)).select_related('assignee__user', 'project')
     else:
@@ -2682,8 +2836,8 @@ def task_export(request):
             task.priority,
             task.status,
             task.progress,
-            task.due_date.strftime('%Y-%m-%d'),
-            task.description,
+            task.due_date.strftime('%Y-%m-%d') if task.due_date else '',
+            task.description or '',
         ]
         for task in tasks
     ]
@@ -2694,6 +2848,7 @@ def task_export(request):
 
     return _export_tabular_response('Task Export', sections, 'Tasks', request.GET.get('format'))
 
+
 @login_required
 def task_create(request):
     if not has_permission(request.user, "tasks", "create"):
@@ -2702,56 +2857,39 @@ def task_create(request):
 
     form = TaskForm(request.POST or None)
 
-
-    
     if request.method == "GET":
         if request.user.role == Role.EMPLOYEE:
             form.fields['assignee'].initial = _emp(request)
 
-
     if form.is_valid():
-
         task = form.save(commit=False)
 
         requested_status = request.POST.get('status', '').strip()
         allowed_statuses = {choice for choice, _ in Task.STATUS_CHOICES}
         if requested_status in allowed_statuses:
             task.status = requested_status
-            if requested_status == 'In Progress' and task.progress == 0:
-                task.progress = 50
-            elif requested_status == 'Done':
-                task.progress = 100
+        if requested_status == 'In Progress' and (task.progress or 0) == 0:
+            task.progress = 20
+        elif requested_status == 'Completed':
+            task.progress = 100
+        elif requested_status == 'To Do':
+            task.progress = 0
 
         task.save()
-
-        messages.success(
-            request,
-            'Task created.'
-        )
-
+        messages.success(request, 'Task created.')
         return redirect('task_list')
-
 
     return render(
         request,
         'hrm/form.html',
-        _ctx(
-            request,
-            form=form,
-            title='New Task',
-            back='task_list'
-        )
+        _ctx(request, form=form, title='New Task', back='task_list')
     )
 
 
 @login_required
 def task_update_status(request, pk):
     if not has_permission(request.user, "tasks", "edit"):
-        return JsonResponse(
-            {'ok': False, 'error': 'Permission denied.'},
-            status=403
-        )
-
+        return JsonResponse({'ok': False, 'error': 'Permission denied.'}, status=403)
 
     if request.method != 'POST':
         return HttpResponseForbidden('Invalid request method.')
@@ -2770,7 +2908,7 @@ def task_update_status(request, pk):
     task.status = status
     if status == 'In Progress' and task.progress < 50:
         task.progress = 50
-    elif status == 'Done':
+    elif status == 'Completed':
         task.progress = 100
     elif status == 'To Do' and task.progress > 0:
         task.progress = 0
@@ -2785,28 +2923,28 @@ def task_update_status(request, pk):
 
 
 @login_required
-
 def task_edit(request, pk):
     if not has_permission(request.user, "tasks", "edit"):
         messages.error(request, "You don't have permission to edit tasks.")
         return redirect("task_list")
+
     task = get_object_or_404(Task, pk=pk)
 
     if request.user.role == Role.EMPLOYEE and task.assignee != _emp(request):
-
         raise PermissionDenied
 
     form = TaskForm(request.POST or None, instance=task)
 
     if form.is_valid():
-
         form.save()
-
         messages.success(request, 'Task updated.')
-
         return redirect('task_list')
 
-    return render(request, 'hrm/form.html', _ctx(request, form=form, title='Edit Task', back='task_list'))
+    return render(
+        request,
+        'hrm/form.html',
+        _ctx(request, form=form, title='Edit Task', back='task_list')
+    )
 
 
 @login_required
@@ -2817,12 +2955,10 @@ def task_delete(request, pk):
 
     task = get_object_or_404(Task, pk=pk)
 
-    # Allow delete if:
-    # 1. User is Admin / Super Admin, OR
-    # 2. The task belongs to the current employee
     user_role = getattr(request.user, 'role', None)
-
-    is_admin = user_role in ['admin', 'super_admin', 'Admin', 'Super Admin', Role.SUPER_ADMIN] if hasattr(Role, 'SUPER_ADMIN') else user_role in ['admin', 'super_admin']
+    is_admin = user_role in ['admin', 'super_admin', 'Admin', 'Super Admin']
+    if hasattr(Role, 'SUPER_ADMIN'):
+        is_admin = is_admin or user_role == Role.SUPER_ADMIN
 
     if not is_admin:
         emp = _emp(request)
@@ -2839,13 +2975,8 @@ def task_delete(request, pk):
 def task_update_color(request, pk):
     task = get_object_or_404(Task, pk=pk)
 
-    # Permission: Admin can change any, Employee/Manager only their own
     if request.user.role == Role.EMPLOYEE and task.assignee != _emp(request):
         return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
-
-    # Optional: also restrict Manager if you want only own tasks
-    # if request.user.role == Role.MANAGER and task.assignee != _emp(request):
-    #     return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
 
     color = request.POST.get('color') or request.POST.get('task_color')
     if not color:
@@ -2853,8 +2984,88 @@ def task_update_color(request, pk):
 
     task.color = color
     task.save(update_fields=['color'])
-
     return JsonResponse({'success': True, 'color': task.color})
+
+
+# ─── NEW: detail (redirects to list + opens modal) ────────────────────────────
+@login_required
+def task_detail(request, pk):
+    if not has_permission(request.user, "tasks", "view"):
+        messages.error(request, "You don't have permission to view tasks.")
+        return redirect("task_list")
+
+    task = get_object_or_404(Task, pk=pk)
+
+    if request.user.role == Role.EMPLOYEE and task.assignee != _emp(request):
+        raise PermissionDenied
+
+    return redirect(f"{reverse('task_list')}?open={task.pk}")
+
+
+# ─── NEW: 5-step progress (each step = +20%) ─────────────────────────────────
+@login_required
+@require_POST
+def task_update_progress(request, pk):
+    if not has_permission(request.user, "tasks", "edit"):
+        return JsonResponse({'ok': False, 'error': 'Permission denied.'}, status=403)
+
+    task = get_object_or_404(Task, pk=pk)
+
+    if request.user.role == Role.EMPLOYEE and task.assignee != _emp(request):
+        return JsonResponse({'ok': False, 'error': 'Permission denied.'}, status=403)
+
+    try:
+        step = int(request.POST.get('step', 0))
+    except (TypeError, ValueError):
+        return JsonResponse({'ok': False, 'error': 'Invalid step.'}, status=400)
+
+    if step < 0 or step > 5:
+        return JsonResponse({'ok': False, 'error': 'Step must be 0-5.'}, status=400)
+
+    # Each step = exactly 20%
+    new_progress = step * 20
+    task.progress = new_progress
+
+    if new_progress == 0:
+        task.status = 'To Do'
+    elif new_progress < 100:
+        task.status = 'In Progress'
+    else:
+        task.status = 'Completed'
+
+    task.save(update_fields=['progress', 'status'])
+
+    return JsonResponse({
+        'ok': True,
+        'progress': task.progress,
+        'status': task.status,
+    })
+
+
+# ─── NEW: column color (applies to whole column) ──────────────────────────────
+@login_required
+@require_POST
+def task_update_column_color(request):
+    if not has_permission(request.user, "tasks", "edit"):
+        return JsonResponse({'ok': False, 'error': 'Permission denied.'}, status=403)
+
+    status = request.POST.get('status', '').strip()
+    color  = request.POST.get('color', '').strip()
+
+    allowed = {'To Do', 'In Progress', 'Completed'}
+    if status not in allowed or not color:
+        return JsonResponse({'ok': False, 'error': 'Invalid data.'}, status=400)
+
+    field_map = {
+        'To Do': 'todo_color',
+        'In Progress': 'in_progress_color',
+        'Completed': 'completed_color',
+    }
+    field = field_map[status]
+
+    Project.objects.all().update(**{field: color})
+
+    return JsonResponse({'ok': True, 'status': status, 'color': color})
 # ─── DOCUMENTS ────────────────────────────────────────────────────────────────
 
 @login_required
@@ -3016,31 +3227,159 @@ def document_download(request, pk):
         filename=filename
     )
 
+# ─── DOCUMENTS ────────────────────────────────────────────────────────────────
+
+@login_required
+def document_list(request):
+    if not has_permission(request.user, "documents", "view"):
+        messages.error(request, "You don't have permission to access Documents.")
+        return redirect("dashboard")
+
+    emp = _emp(request)
+    document_type_filter = request.GET.get('document_type', 'all')
+
+    docs = Document.objects.select_related('owner', 'employee__user').all()
+
+    if request.user.role == Role.EMPLOYEE and emp:
+        docs = docs.filter(Q(employee=emp) | Q(is_public=True) | Q(owner=request.user))
+
+    if document_type_filter == 'generated':
+        generated_ids = DocumentRequest.objects.filter(
+            status='Completed',
+            generated_document__isnull=False
+        ).values_list('generated_document_id', flat=True)
+        docs = docs.filter(pk__in=generated_ids)
+    elif document_type_filter == 'employee':
+        docs = docs.filter(category__in=['Personal', 'Employee', 'HR'])
+    elif document_type_filter == 'office':
+        docs = docs.filter(category__in=['Office', 'Policy', 'Company', 'General'])
+
+    if request.user.role == Role.EMPLOYEE:
+        requests_qs = DocumentRequest.objects.filter(requester=request.user)
+    else:
+        requests_qs = DocumentRequest.objects.all()
+
+    requests_qs = requests_qs.select_related(
+        'requester', 'employee__user', 'reviewed_by', 'generated_document'
+    ).order_by('-requested_at')
+
+    pending_requests = DocumentRequest.objects.filter(status='Pending').count()
+    generated_documents = DocumentRequest.objects.filter(status='Completed').count()
+    category_count = docs.values('category').distinct().count()
+    total_documents = docs.count()
+
+    return render(
+        request,
+        'hrm/documents.html',
+        _ctx(
+            request,
+            docs=docs,
+            requests=requests_qs,
+            document_type_filter=document_type_filter,
+            category_count=category_count,
+            total_documents=total_documents,
+            pending_requests=pending_requests,
+            generated_documents=generated_documents,
+        )
+    )
+
+
+@login_required
+def document_export(request):
+    if not has_permission(request.user, "documents", "view"):
+        messages.error(request, "You don't have permission to export documents.")
+        return redirect("document_list")
+
+    docs = Document.objects.select_related('owner', 'employee__user').all()
+    rows = [
+        [
+            d.name,
+            d.category or '',
+            getattr(d, 'size_display', '') or '',
+            d.owner.get_full_name() if d.owner else '',
+            d.uploaded_at.strftime('%Y-%m-%d') if d.uploaded_at else '',
+        ]
+        for d in docs
+    ]
+    sections = [('Documents', ['Name', 'Category', 'Size', 'Owner', 'Date'], rows)]
+    return _export_tabular_response('Document Export', sections, 'Documents', request.GET.get('format'))
+
+
+@login_required
+def document_upload(request):
+    if request.user.role not in [Role.SUPER_ADMIN, Role.MANAGER, 'super_admin', 'manager', 'admin']:
+        if not has_permission(request.user, "documents", "create"):
+            messages.error(request, "You don't have permission to upload documents.")
+            return redirect("document_list")
+
+    if request.method == 'POST':
+        form = DocumentForm(request.POST, request.FILES)
+        if form.is_valid():
+            doc = form.save(commit=False)
+            doc.owner = request.user
+            doc.save()
+            messages.success(request, 'Document uploaded.')
+            return redirect('document_list')
+    else:
+        form = DocumentForm()
+
+    return render(
+        request,
+        'hrm/form.html',
+        _ctx(request, form=form, title='Upload Document', back='document_list')
+    )
+
+
+@login_required
+def document_download(request, pk):
+    if not has_permission(request.user, "documents", "view"):
+        messages.error(request, "You don't have permission to download documents.")
+        return redirect("document_list")
+
+    doc = get_object_or_404(Document, pk=pk)
+    if not doc.file:
+        messages.error(request, 'File not found.')
+        return redirect('document_list')
+
+    response = HttpResponse(doc.file.read(), content_type='application/octet-stream')
+    response['Content-Disposition'] = f'attachment; filename="{doc.file.name.split("/")[-1]}"'
+    return response
+
+
+@login_required
+def document_delete(request, pk):
+    if request.user.role not in [Role.SUPER_ADMIN, 'super_admin', 'admin']:
+        if not has_permission(request.user, "documents", "delete"):
+            messages.error(request, "You don't have permission to delete documents.")
+            return redirect("document_list")
+
+    doc = get_object_or_404(Document, pk=pk)
+    doc.delete()
+    messages.success(request, 'Document deleted.')
+    return redirect('document_list')
+
 
 # ─── DOCUMENT REQUESTS ─────────────────────────────────────────────────────────
+
 @login_required
 def document_request_list(request):
-    # Allow managers and employees to view their requests without permission check
     if request.user.role not in [Role.MANAGER, Role.EMPLOYEE, Role.SUPER_ADMIN]:
         if not has_permission(request.user, "documents", "view"):
             messages.error(request, "You don't have permission to view document requests.")
             return redirect("document_list")
-    
-    emp = _emp(request)
-    
+
     if request.user.role == Role.EMPLOYEE:
-        # Employee sees only their own requests
-        requests = DocumentRequest.objects.filter(requester=request.user).select_related('employee__user', 'reviewed_by')
-    elif request.user.role == Role.MANAGER:
-        # Manager sees only their own requests
-        requests = DocumentRequest.objects.filter(requester=request.user).select_related('employee__user', 'reviewed_by')
+        requests = DocumentRequest.objects.filter(requester=request.user).select_related(
+            'employee__user', 'reviewed_by'
+        )
     else:
-        # Super admin sees all requests
-        requests = DocumentRequest.objects.select_related('requester', 'employee__user', 'reviewed_by').all()
-    
+        requests = DocumentRequest.objects.select_related(
+            'requester', 'employee__user', 'reviewed_by'
+        ).all()
+
     pending_count = DocumentRequest.objects.filter(status='Pending').count()
     generated_count = DocumentRequest.objects.filter(status='Completed').count()
-    
+
     return render(
         request,
         'hrm/document_requests.html',
@@ -3049,65 +3388,55 @@ def document_request_list(request):
             requests=requests,
             pending_count=pending_count,
             generated_count=generated_count,
-            doc_types=DocumentRequest.DOC_TYPE_CHOICES
-        )
+            doc_types=DocumentRequest.DOC_TYPE_CHOICES,
+        ),
     )
 
 
 @login_required
 def document_request_create(request):
-    # Allow managers and employees to request documents without permission check
     if request.user.role not in [Role.MANAGER, Role.EMPLOYEE, Role.SUPER_ADMIN]:
         messages.error(request, "You don't have permission to request documents.")
         return redirect("document_list")
-    
-    # Only check permission for employees, not managers or super admin
+
     if request.user.role == Role.EMPLOYEE:
         if not has_permission(request.user, "documents", "create"):
             messages.error(request, "You don't have permission to request documents.")
             return redirect("document_list")
-    
+
     emp = _emp(request)
-    
+
     if request.method == 'POST':
         document_type = request.POST.get('document_type')
         custom_type = request.POST.get('custom_type', '')
         reason = request.POST.get('reason')
         employee_id = request.POST.get('employee')
-        
-        # Manager/Employee can only request for themselves
+
         if request.user.role in [Role.MANAGER, Role.EMPLOYEE]:
             employee = emp
         else:
-            # Admin can request for any employee
             employee = get_object_or_404(Employee, pk=employee_id)
-        
+
         DocumentRequest.objects.create(
             requester=request.user,
             employee=employee,
             document_type=document_type,
             custom_type=custom_type,
             reason=reason,
-            status='Pending'
+            status='Pending',
         )
-        
         messages.success(request, 'Document request submitted successfully.')
         return redirect('document_request_list')
-    
-    # Manager/Employee can only see themselves in the dropdown
+
     if request.user.role in [Role.MANAGER, Role.EMPLOYEE]:
-        employees = [emp]
+        employees = [emp] if emp else []
     else:
         employees = Employee.objects.select_related('user').all()
-    
+
     return render(
         request,
         'hrm/document_request_form.html',
-        _ctx(
-            request,
-            employees=employees,
-            doc_types=DocumentRequest.DOC_TYPE_CHOICES
-        )
+        _ctx(request, employees=employees, doc_types=DocumentRequest.DOC_TYPE_CHOICES),
     )
 
 
@@ -3116,31 +3445,31 @@ def document_request_approve(request, pk):
     if not has_permission(request.user, "documents", "edit"):
         messages.error(request, "You don't have permission to approve document requests.")
         return redirect("document_request_list")
-    
+
     doc_request = get_object_or_404(DocumentRequest, pk=pk)
-    
+
     if request.method == 'POST':
         action = request.POST.get('action')
         notes = request.POST.get('notes', '')
-        
+
         doc_request.reviewed_by = request.user
         doc_request.reviewed_at = timezone.now()
         doc_request.notes = notes
-        
+
         if action == 'approve':
             doc_request.status = 'Approved'
             messages.success(request, f'Document request for {doc_request.employee.user.get_full_name()} approved.')
         elif action == 'reject':
             doc_request.status = 'Rejected'
             messages.warning(request, f'Document request for {doc_request.employee.user.get_full_name()} rejected.')
-        
+
         doc_request.save()
         return redirect('document_request_list')
-    
+
     return render(
         request,
         'hrm/document_request_approve.html',
-        _ctx(request, doc_request=doc_request)
+        _ctx(request, doc_request=doc_request),
     )
 
 
@@ -3149,14 +3478,14 @@ def document_generate(request, pk):
     if not has_permission(request.user, "documents", "create"):
         messages.error(request, "You don't have permission to generate documents.")
         return redirect("document_request_list")
-    
+
     doc_request = get_object_or_404(DocumentRequest, pk=pk)
-    
+
     if request.method == 'POST':
         uploaded_file = request.FILES.get('generated_file')
         document_name = request.POST.get('document_name')
         category = request.POST.get('category', 'Personal')
-        
+
         if uploaded_file:
             document = Document.objects.create(
                 name=document_name or f"{doc_request.document_type} - {doc_request.employee.user.get_full_name()}",
@@ -3164,31 +3493,23 @@ def document_generate(request, pk):
                 category=category,
                 owner=request.user,
                 employee=doc_request.employee,
-                is_public=False
+                is_public=False,
             )
-            
             doc_request.generated_document = document
             doc_request.status = 'Completed'
             doc_request.reviewed_by = request.user
             doc_request.reviewed_at = timezone.now()
             doc_request.save()
-            
             messages.success(request, 'Document generated and uploaded successfully.')
             return redirect('document_request_list')
         else:
             messages.error(request, 'Please upload the generated document.')
-    
+
     return render(
         request,
         'hrm/document_generate.html',
-        _ctx(
-            request,
-            doc_request=doc_request,
-            categories=Document.CAT_CHOICES
-        )
+        _ctx(request, doc_request=doc_request, categories=Document.CAT_CHOICES),
     )
-
-
 
 # ─── SALARY / PAYROLL ─────────────────────────────────────────────────────────
 @login_required
@@ -4129,3 +4450,5 @@ def calendar_view(request):
 @login_required
 def contact_support(request):
     return render(request, 'hrm/contact_support.html', _ctx(request))
+
+

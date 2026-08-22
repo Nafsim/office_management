@@ -150,6 +150,10 @@ class Employee(models.Model):
 # ─────────────────────────────────────────────
 # USER PERMISSIONS
 # ─────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# USER PERMISSIONS
+# ─────────────────────────────────────────────
+
 class UserPermission(models.Model):
 
     MODULE_CHOICES = [
@@ -182,7 +186,6 @@ class UserPermission(models.Model):
         ('support', 'Support & Help'),
 
         ('calendar', 'Calendar'),
-
     ]
 
     user = models.ForeignKey(
@@ -196,10 +199,32 @@ class UserPermission(models.Model):
         choices=MODULE_CHOICES
     )
 
-    can_view = models.BooleanField(default=False)
-    can_create = models.BooleanField(default=False)
-    can_edit = models.BooleanField(default=False)
-    can_delete = models.BooleanField(default=False)
+    # None = use role default
+    # True = explicitly allowed for this user
+    # False = explicitly denied for this user
+    can_view = models.BooleanField(
+        null=True,
+        blank=True,
+        default=None
+    )
+
+    can_create = models.BooleanField(
+        null=True,
+        blank=True,
+        default=None
+    )
+
+    can_edit = models.BooleanField(
+        null=True,
+        blank=True,
+        default=None
+    )
+
+    can_delete = models.BooleanField(
+        null=True,
+        blank=True,
+        default=None
+    )
 
     class Meta:
         unique_together = ("user", "module")
@@ -209,6 +234,9 @@ class UserPermission(models.Model):
         return f"{self.user.username} - {self.module}"
 
 
+    # ─────────────────────────────────────────────
+# ROLE DEFAULT PERMISSIONS
+# ─────────────────────────────────────────────
 
 class RoleMenuPermission(models.Model):
 
@@ -222,15 +250,17 @@ class RoleMenuPermission(models.Model):
         choices=UserPermission.MODULE_CHOICES
     )
 
-    is_allowed = models.BooleanField(default=False)
-
+    # Default permissions for this role
+    can_view = models.BooleanField(default=False)
+    can_create = models.BooleanField(default=False)
+    can_edit = models.BooleanField(default=False)
+    can_delete = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ("role", "menu")
 
     def __str__(self):
         return f"{self.role} - {self.menu}"
-
 # ─────────────────────────────────────────────
 #  BANK ACCOUNT
 # ─────────────────────────────────────────────
@@ -405,9 +435,17 @@ class Document(models.Model):
         ('Policy', 'Policy'), ('Legal', 'Legal'), ('Payroll', 'Payroll'),
         ('Benefits', 'Benefits'), ('Personal', 'Personal'), ('Contract', 'Contract'),
     ]
+    DOC_TYPE_CHOICES = [
+        ('request', 'Request Document'),
+        ('generated', 'Generated Document'),
+        ('employee', 'Employee Document'),
+        ('office', 'Office Document'),
+    ]
     name       = models.CharField(max_length=200)
     file       = models.FileField(upload_to='documents/')
     category   = models.CharField(max_length=20, choices=CAT_CHOICES, default='Policy')
+    document_type = models.CharField(max_length=20, choices=DOC_TYPE_CHOICES, default='office', help_text='Type of document for filtering')
+    is_approved = models.BooleanField(default=False, help_text='Admin approval for employee documents')
     owner      = models.ForeignKey(User, on_delete=models.CASCADE, related_name='documents')
     employee   = models.ForeignKey(Employee, null=True, blank=True, on_delete=models.SET_NULL, related_name='personal_docs')
     is_public  = models.BooleanField(default=True, help_text='Visible to all employees')
@@ -625,6 +663,11 @@ class Project(models.Model):
     start_date = models.DateField(default=timezone.now)
     end_date   = models.DateField(null=True, blank=True)
     active     = models.BooleanField(default=True)
+    # Column colors for kanban board
+    todo_color         = models.CharField(max_length=7, default='#6B7280', help_text='Color for To Do column')
+    in_progress_color = models.CharField(max_length=7, default='#F59E0B', help_text='Color for In Progress column')
+    completed_color    = models.CharField(max_length=7, default='#10B981', help_text='Color for Completed column')
+    blocked_color      = models.CharField(max_length=7, default='#EF4444', help_text='Color for Blocked column')
 
     def __str__(self):
         return self.name
