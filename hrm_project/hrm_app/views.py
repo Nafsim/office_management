@@ -424,7 +424,56 @@ def dashboard(request):
     pending_lv = LeaveRequest.objects.filter(from_date__lte=today, to_date__gte=today, status='Approved').count()
     late_today = Attendance.objects.filter(date=today, status='Late').count()
     total_employees = Employee.objects.count()
+    # ==================== TREND CALCULATIONS ====================
+    from dateutil.relativedelta import relativedelta   # make sure this import is at the top
 
+    this_month_start = today.replace(day=1)
+    last_month_start = this_month_start - relativedelta(months=1)
+    last_month_end = this_month_start - timedelta(days=1)
+    yesterday = today - timedelta(days=1)
+
+    # 1. Employees Trend (new hires this month vs last month)
+    this_month_emp = Employee.objects.filter(join_date__gte=this_month_start).count()
+    last_month_emp = Employee.objects.filter(
+        join_date__gte=last_month_start,
+        join_date__lte=last_month_end
+    ).count()
+
+    if last_month_emp > 0:
+        emp_change = round(((this_month_emp - last_month_emp) / last_month_emp) * 100)
+    else:
+        emp_change = this_month_emp
+
+    employees_trend = f"+{emp_change}" if emp_change >= 0 else str(emp_change)
+    employees_trend_dir = "up" if emp_change >= 0 else "down"
+
+    # 2. Present Today Trend (today vs yesterday)
+    present_yesterday = Attendance.objects.filter(
+        date=yesterday, status__in=['Present', 'Late']
+    ).count()
+
+    if present_yesterday > 0:
+        present_change = round(((present - present_yesterday) / present_yesterday) * 100)
+    else:
+        present_change = 0
+
+    present_trend = f"{present_change}%" if present_change >= 0 else f"{present_change}%"
+    present_trend_dir = "up" if present_change >= 0 else "down"
+
+    # 3. On Leave Trend (today vs 7 days ago)
+    last_week = today - timedelta(days=7)
+    leave_last_week = LeaveRequest.objects.filter(
+        from_date__lte=last_week, to_date__gte=last_week, status='Approved'
+    ).count()
+
+    leave_change = pending_lv - leave_last_week
+    leave_trend = f"+{leave_change}" if leave_change >= 0 else str(leave_change)
+    leave_trend_dir = "up" if leave_change >= 0 else "down"
+
+    # 4. Payroll Trend (you can replace with real Salary calculation later)
+    # Temporary static for now – replace when you have Salary model
+    payroll_trend = "+4%"
+    payroll_trend_dir = "up"
     recent_notices = Notice.objects.all()[:5]
     recent_tasks = Task.objects.filter(Q(assignee=emp) | Q(project__manager=emp)).order_by('-created_at')[:5] if emp else Task.objects.all()[:5]
 
@@ -498,6 +547,15 @@ def dashboard(request):
         special_total=special_total,
         workforce_data=workforce_data,
         total_employees=total_employees,
+        # Dynamic trends
+        employees_trend=employees_trend,
+        employees_trend_dir=employees_trend_dir,
+        present_trend=present_trend,
+        present_trend_dir=present_trend_dir,
+        leave_trend=leave_trend,
+        leave_trend_dir=leave_trend_dir,
+        payroll_trend=payroll_trend,
+        payroll_trend_dir=payroll_trend_dir,        
     ))
 
 
