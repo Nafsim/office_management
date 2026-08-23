@@ -9,7 +9,41 @@
 
 
 {% block content %}
+<style>
+    .document-parent-row {
+        cursor: pointer;
+        background: #f8fafc;
+    }
 
+    .document-parent-row:hover {
+        background: #f1f5f9;
+    }
+
+    .document-arrow {
+        display: inline-block;
+        width: 22px;
+        font-size: 14px;
+        transition: transform 0.2s ease;
+    }
+
+    .document-arrow.open {
+        transform: rotate(90deg);
+    }
+
+    .document-child-row {
+        display: none;
+        background: #ffffff;
+    }
+
+    .document-child-row.show {
+        display: table-row;
+    }
+
+    .document-child-name {
+        padding-left: 42px !important;
+        color: #475569;
+    }
+</style>
 
 
 <div class="page-head">
@@ -86,30 +120,131 @@
             </thead>
             <tbody>
                 {% for menu_key, menu_name in menu_choices %}
-                    {% with perm=saved_permissions|get_item:menu_key %}
-                    <tr style="border-bottom:1px solid #e5e7eb;">
-                        <td style="padding:12px;">
-                            <b>{{ menu_name }}</b>
-                        </td>
-                        <td>
-                            <input type="checkbox" name="{{ menu_key }}_view"
-                                   {% if perm and perm.can_view %}checked{% endif %}>
-                        </td>
-                        <td>
-                            <input type="checkbox" name="{{ menu_key }}_create"
-                                   {% if perm and perm.can_create %}checked{% endif %}>
-                        </td>
-                        <td>
-                            <input type="checkbox" name="{{ menu_key }}_edit"
-                                   {% if perm and perm.can_edit %}checked{% endif %}>
-                        </td>
-                        <td>
-                            <input type="checkbox" name="{{ menu_key }}_delete"
-                                   {% if perm and perm.can_delete %}checked{% endif %}>
-                        </td>
-                    </tr>
-                    {% endwith %}
-                {% endfor %}
+
+    {% if menu_key == "documents" %}
+
+        <!-- Document Management Parent -->
+        {% with perm=saved_permissions|get_item:"documents" %}
+        <tr class="document-parent-row"
+            onclick="toggleDocumentPermissions(this)"
+            style="border-bottom:1px solid #e5e7eb;">
+
+            <td style="padding:12px;">
+                <span class="document-arrow">▶</span>
+                <b>Document Management</b>
+            </td>
+
+            <td>
+                <input type="checkbox"
+                       onclick="event.stopPropagation()"
+                       name="documents_view"
+                       {% if perm and perm.can_view %}checked{% endif %}>
+            </td>
+
+            <td>
+                <input type="checkbox"
+                       onclick="event.stopPropagation()"
+                       name="documents_create"
+                       {% if perm and perm.can_create %}checked{% endif %}>
+            </td>
+
+            <td>
+                <input type="checkbox"
+                       onclick="event.stopPropagation()"
+                       name="documents_edit"
+                       {% if perm and perm.can_edit %}checked{% endif %}>
+            </td>
+
+            <td>
+                <input type="checkbox"
+                       onclick="event.stopPropagation()"
+                       name="documents_delete"
+                       {% if perm and perm.can_delete %}checked{% endif %}>
+            </td>
+        </tr>
+        {% endwith %}
+
+
+    {% elif menu_key == "documents_request" or menu_key == "documents_generate" or menu_key == "documents_employee" or menu_key == "documents_office" %}
+
+        <!-- Document Child -->
+        {% with perm=saved_permissions|get_item:menu_key %}
+        <tr class="document-child-row"
+            data-document-child="true"
+            style="border-bottom:1px solid #e5e7eb;">
+
+            <td class="document-child-name" style="padding:12px;">
+                <span style="margin-right:8px;">↳</span>
+                <b>{{ menu_name }}</b>
+            </td>
+
+            <td>
+                <input type="checkbox"
+                       name="{{ menu_key }}_view"
+                       {% if perm and perm.can_view %}checked{% endif %}>
+            </td>
+
+            <td>
+                <input type="checkbox"
+                       name="{{ menu_key }}_create"
+                       {% if perm and perm.can_create %}checked{% endif %}>
+            </td>
+
+            <td>
+                <input type="checkbox"
+                       name="{{ menu_key }}_edit"
+                       {% if perm and perm.can_edit %}checked{% endif %}>
+            </td>
+
+            <td>
+                <input type="checkbox"
+                       name="{{ menu_key }}_delete"
+                       {% if perm and perm.can_delete %}checked{% endif %}>
+            </td>
+        </tr>
+        {% endwith %}
+
+
+    {% else %}
+
+        <!-- Normal Menu -->
+        {% with perm=saved_permissions|get_item:menu_key %}
+        <tr style="border-bottom:1px solid #e5e7eb;">
+
+            <td style="padding:12px;">
+                <b>{{ menu_name }}</b>
+            </td>
+
+            <td>
+                <input type="checkbox"
+                       name="{{ menu_key }}_view"
+                       {% if perm and perm.can_view %}checked{% endif %}>
+            </td>
+
+            <td>
+                <input type="checkbox"
+                       name="{{ menu_key }}_create"
+                       {% if perm and perm.can_create %}checked{% endif %}>
+            </td>
+
+            <td>
+                <input type="checkbox"
+                       name="{{ menu_key }}_edit"
+                       {% if perm and perm.can_edit %}checked{% endif %}>
+            </td>
+
+            <td>
+                <input type="checkbox"
+                       name="{{ menu_key }}_delete"
+                       {% if perm and perm.can_delete %}checked{% endif %}>
+            </td>
+
+        </tr>
+        {% endwith %}
+
+    {% endif %}
+
+{% endfor %}
             </tbody>
         </table>
 
@@ -226,5 +361,28 @@
     {% endif %}
 
 </div>
+<script>
+function toggleDocumentPermissions(row) {
+    const arrow = row.querySelector(".document-arrow");
+    const childRows = document.querySelectorAll(
+        'tr[data-document-child="true"]'
+    );
 
+    const isOpen = arrow.classList.contains("open");
+
+    childRows.forEach(function(child) {
+        if (isOpen) {
+            child.classList.remove("show");
+        } else {
+            child.classList.add("show");
+        }
+    });
+
+    if (isOpen) {
+        arrow.classList.remove("open");
+    } else {
+        arrow.classList.add("open");
+    }
+}
+</script>
 {% endblock %}

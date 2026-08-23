@@ -157,37 +157,37 @@ class Employee(models.Model):
 class UserPermission(models.Model):
 
     MODULE_CHOICES = [
+    ('dashboard', 'Dashboard'),
+    ('notice', 'Notice & Announcements'),
 
-        ('dashboard', 'Dashboard'),
-        ('notice', 'Notice & Announcements'),
+    ('users', 'Users & Employees'),
+    ('onboarding', 'Onboarding & NDA'),
+    ('profile', 'My Profile'),
 
-        ('users', 'Users & Employees'),
-        ('onboarding', 'Onboarding & NDA'),
-        ('profile', 'My Profile'),
+    ('attendance', 'Attendance'),
+    ('late', 'Late Management'),
+    ('leave', 'Leave Management'),
 
-        ('attendance', 'Attendance'),
-        ('late', 'Late Management'),
-        ('leave', 'Leave Management'),
+    ('tasks', 'Task Management'),
 
-        ('tasks', 'Task Management'),
-        ('documents', 'Document Management'),
+    # ── Document Management (expanded) ──
+    ('documents', 'Document Management (All)'),
+    ('documents_request', 'Document - Request'),
+    ('documents_generate', 'Document - Generate'),
+    ('documents_employee', 'Document - Employee'),
+    ('documents_office', 'Document - Office'),
 
-        ('salary', 'Payroll & Salary'),
-        ('payroll', 'Payroll'),
-        ('petty_cash', 'Petty Cash'),
+    ('salary', 'Payroll & Salary'),
+    ('payroll', 'Payroll'),
+    ('petty_cash', 'Petty Cash'),
 
-        ('assets', 'Asset Management'),
-
-        ('files', 'Files & Credentials'),
-        ('configuration', 'Configuration'),
-
-        ('upload_center', 'Upload Center'),
-
-        ('support', 'Support & Help'),
-
-        ('calendar', 'Calendar'),
-    ]
-
+    ('assets', 'Asset Management'),
+    ('files', 'Files & Credentials'),
+    ('configuration', 'Configuration'),
+    ('upload_center', 'Upload Center'),
+    ('support', 'Support & Help'),
+    ('calendar', 'Calendar'),
+]
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -657,42 +657,132 @@ class Asset(models.Model):
 # ─────────────────────────────────────────────
 #  TASK MANAGEMENT
 # ─────────────────────────────────────────────
+
 class Project(models.Model):
-    name       = models.CharField(max_length=200)
-    manager    = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='managed_projects')
+    name = models.CharField(max_length=200)
+
+    manager = models.ForeignKey(
+        Employee,
+        on_delete=models.CASCADE,
+        related_name='managed_projects'
+    )
+
     start_date = models.DateField(default=timezone.now)
-    end_date   = models.DateField(null=True, blank=True)
-    active     = models.BooleanField(default=True)
-    # Column colors for kanban board
-    todo_color         = models.CharField(max_length=7, default='#6B7280', help_text='Color for To Do column')
-    in_progress_color = models.CharField(max_length=7, default='#F59E0B', help_text='Color for In Progress column')
-    completed_color    = models.CharField(max_length=7, default='#10B981', help_text='Color for Completed column')
-    blocked_color      = models.CharField(max_length=7, default='#EF4444', help_text='Color for Blocked column')
+    end_date = models.DateField(null=True, blank=True)
+    active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name
+
+
+class TaskStatus(models.Model):
+    """
+    Dynamic Kanban status/column.
+
+    Example:
+    To Do
+    In Progress
+    Testing
+    Review
+    Completed
+    """
+
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name='task_statuses'
+    )
+
+    name = models.CharField(max_length=50)
+
+    color = models.CharField(
+        max_length=7,
+        default='#6B7280',
+        help_text='Kanban column color in hex format'
+    )
+
+    order = models.PositiveIntegerField(
+        default=0,
+        help_text='Order of the status on the Kanban board'
+    )
+
+    active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['order', 'id']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['project', 'name'],
+                name='unique_task_status_per_project'
+            )
+        ]
 
     def __str__(self):
         return self.name
 
 
 class Task(models.Model):
-    STATUS_CHOICES   = [('To Do','To Do'),('In Progress','In Progress'),('Completed','Completed'),('Blocked','Blocked')]
-    PRIORITY_CHOICES = [('Low','Low'),('Medium','Medium'),('High','High'),('Critical','Critical')]
-    title      = models.CharField(max_length=200)
-    project    = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='tasks')
-    assignee   = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='tasks')
-    due_date   = models.DateField()
-    priority   = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='Medium')
-    status     = models.CharField(max_length=15, choices=STATUS_CHOICES, default='To Do')
-    progress   = models.PositiveIntegerField(default=0)  # 0-100
-    description = models.TextField(blank=True)
-    color      = models.CharField(max_length=7, default='#FF6B00', help_text='Task card color in hex format')
-    created_at = models.DateTimeField(auto_now_add=True)
+
+    PRIORITY_CHOICES = [
+        ('Low', 'Low'),
+        ('Medium', 'Medium'),
+        ('High', 'High'),
+        ('Critical', 'Critical'),
+    ]
+
+    title = models.CharField(max_length=200)
+
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name='tasks'
+    )
+
+    assignee = models.ForeignKey(
+        Employee,
+        on_delete=models.CASCADE,
+        related_name='tasks'
+    )
+
+    due_date = models.DateField()
+
+    priority = models.CharField(
+        max_length=10,
+        choices=PRIORITY_CHOICES,
+        default='Medium'
+    )
+
+    # Dynamic Kanban status
+    status = models.ForeignKey(
+        TaskStatus,
+        on_delete=models.PROTECT,
+        related_name='tasks'
+    )
+
+    progress = models.PositiveIntegerField(
+        default=0
+    )
+
+    description = models.TextField(
+        blank=True
+    )
+
+    # Task card color
+    color = models.CharField(
+        max_length=7,
+        default='#FF6B00',
+        help_text='Task card color in hex format'
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
 
     class Meta:
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.title} [{self.status}]"
-
+        return f"{self.title} [{self.status.name}]"
 
 # ─────────────────────────────────────────────
 #  ONBOARDING / NDA

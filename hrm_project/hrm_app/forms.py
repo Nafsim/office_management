@@ -69,7 +69,6 @@ class AssetForm(forms.ModelForm):
             'purchase_date': forms.DateInput(attrs={'type': 'date'}),
         }
 
-
 class TaskForm(forms.ModelForm):
 
     class Meta:
@@ -80,7 +79,9 @@ class TaskForm(forms.ModelForm):
             'project',
             'assignee',
             'due_date',
-            'priority'
+            'priority',
+            'description',
+            'color',
         ]
 
         widgets = {
@@ -88,9 +89,26 @@ class TaskForm(forms.ModelForm):
                 attrs={
                     'type': 'date'
                 }
-            )
+            ),
+
+            'description': forms.Textarea(
+                attrs={
+                    'rows': 4
+                }
+            ),
+
+            'color': forms.TextInput(
+                attrs={
+                    'type': 'color'
+                }
+            ),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Make description and color not required
+        self.fields['description'].required = False
+        self.fields['color'].required = False
 
 class PettyCashForm(forms.ModelForm):
     class Meta:

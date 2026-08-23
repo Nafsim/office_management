@@ -46,8 +46,7 @@ from .models import (
 
     Notice, Document, DocumentRequest, SalaryStructure, Payslip, PettyCashLedger,
 
-    Asset, Project, Task, OnboardingRecord, SecureFile,
-
+    Asset, Project, Task, TaskStatus, OnboardingRecord, SecureFile,
     EmailTemplate, Holiday, NotificationRule, Role,
 
 )
@@ -492,72 +491,175 @@ def dashboard(request):
     open_tasks = 0
 
     if view_role == 'manager' or request.user.role == Role.MANAGER:
-        team_size = Employee.objects.filter(department=emp.department if emp else None, status='Active').count() if emp else 0
-        team_present = Attendance.objects.filter(date=today, employee__department=emp.department if emp else None, status__in=['Present', 'Late']).count() if emp else 0
-        pending_approvals = LeaveRequest.objects.filter(status='Pending').count()
-        team_tasks = Task.objects.filter(assignee__department=emp.department if emp else None, status='Pending').count() if emp else 0
+
+        team_size = (
+            Employee.objects.filter(
+                department=emp.department,
+                status='Active'
+            ).count()
+            if emp else 0
+        )
+
+        team_present = (
+            Attendance.objects.filter(
+                date=today,
+                employee__department=emp.department,
+                status__in=['Present', 'Late']
+            ).count()
+            if emp else 0
+        )
+
+        pending_approvals = LeaveRequest.objects.filter(
+            status='Pending'
+        ).count()
+
+        team_tasks = (
+            Task.objects.filter(
+                assignee__department=emp.department,
+                status__name='Pending'
+            ).count()
+            if emp else 0
+        )
+
     elif view_role == 'employee' or request.user.role == Role.EMPLOYEE:
-        days_present = Attendance.objects.filter(employee=emp, date__month=today.month, date__year=today.year, status='Present').count() if emp else 0
-        late_count = Attendance.objects.filter(employee=emp, date__month=today.month, date__year=today.year, status='Late').count() if emp else 0
-        open_tasks = Task.objects.filter(assignee=emp, status='Pending').count() if emp else 0
+
+        days_present = (
+            Attendance.objects.filter(
+                employee=emp,
+                date__month=today.month,
+                date__year=today.year,
+                status='Present'
+            ).count()
+            if emp else 0
+        )
+
+        late_count = (
+            Attendance.objects.filter(
+                employee=emp,
+                date__month=today.month,
+                date__year=today.year,
+                status='Late'
+            ).count()
+            if emp else 0
+        )
+
+        open_tasks = (
+            Task.objects.filter(
+                assignee=emp,
+                status__name='Pending'
+            ).count()
+            if emp else 0
+        )
+
 
     casual_total = 3
     sick_total = 3
     special_total = 2
+
     casual_balance = casual_total
     sick_balance = sick_total
     special_balance = special_total
 
     if emp:
-        casual_used = LeaveRequest.objects.filter(employee=emp, leave_type__name='Casual', status='Approved').count()
-        sick_used = LeaveRequest.objects.filter(employee=emp, leave_type__name='Sick', status='Approved').count()
-        special_used = LeaveRequest.objects.filter(employee=emp, leave_type__name='Special', status='Approved').count()
+
+        casual_used = LeaveRequest.objects.filter(
+            employee=emp,
+            leave_type__name='Casual',
+            status='Approved'
+        ).count()
+
+        sick_used = LeaveRequest.objects.filter(
+            employee=emp,
+            leave_type__name='Sick',
+            status='Approved'
+        ).count()
+
+        special_used = LeaveRequest.objects.filter(
+            employee=emp,
+            leave_type__name='Special',
+            status='Approved'
+        ).count()
+
         casual_balance = casual_total - casual_used
         sick_balance = sick_total - sick_used
         special_balance = special_total - special_used
 
-    departments = Department.objects.annotate(employee_count=Count('employee')).filter(employee_count__gt=0)
+
+    departments = Department.objects.annotate(
+        employee_count=Count('employee')
+    ).filter(
+        employee_count__gt=0
+    )
+
     workforce_data = []
+
     for dept in departments:
-        percentage = (dept.employee_count / total_employees * 100) if total_employees > 0 else 0
-        workforce_data.append({'name': dept.name, 'count': dept.employee_count, 'percentage': round(percentage, 1)})
 
-    return render(request, 'hrm/dashboard.html', _ctx(
+        percentage = (
+            dept.employee_count / total_employees * 100
+            if total_employees > 0
+            else 0
+        )
+
+        workforce_data.append({
+            'name': dept.name,
+            'count': dept.employee_count,
+            'percentage': round(percentage, 1)
+        })
+
+
+    return render(
         request,
-        emp_count=emp_count,
-        present=present,
-        pending_lv=pending_lv,
-        late_today=late_today,
-        recent_notices=recent_notices,
-        recent_tasks=recent_tasks,
-        chart=json.dumps(chart),
-        view_role=view_role,
-        team_size=team_size,
-        team_present=team_present,
-        pending_approvals=pending_approvals,
-        team_tasks=team_tasks,
-        days_present=days_present,
-        late_count=late_count,
-        open_tasks=open_tasks,
-        casual_balance=casual_balance,
-        casual_total=casual_total,
-        sick_balance=sick_balance,
-        sick_total=sick_total,
-        special_balance=special_balance,
-        special_total=special_total,
-        workforce_data=workforce_data,
-        total_employees=total_employees,
-        # Dynamic trends
-        employees_trend=employees_trend,
-        employees_trend_dir=employees_trend_dir,
-        present_trend=present_trend,
-        present_trend_dir=present_trend_dir,
-        leave_trend=leave_trend,
-        leave_trend_dir=leave_trend_dir,
-        payroll_trend=payroll_trend,
-        payroll_trend_dir=payroll_trend_dir,        
-    ))
+        'hrm/dashboard.html',
+        _ctx(
+            request,
 
+            emp_count=emp_count,
+            present=present,
+            pending_lv=pending_lv,
+            late_today=late_today,
+
+            recent_notices=recent_notices,
+            recent_tasks=recent_tasks,
+
+            chart=json.dumps(chart),
+            view_role=view_role,
+
+            team_size=team_size,
+            team_present=team_present,
+            pending_approvals=pending_approvals,
+            team_tasks=team_tasks,
+
+            days_present=days_present,
+            late_count=late_count,
+            open_tasks=open_tasks,
+
+            casual_balance=casual_balance,
+            casual_total=casual_total,
+
+            sick_balance=sick_balance,
+            sick_total=sick_total,
+
+            special_balance=special_balance,
+            special_total=special_total,
+
+            workforce_data=workforce_data,
+            total_employees=total_employees,
+
+            # Dynamic trends
+            employees_trend=employees_trend,
+            employees_trend_dir=employees_trend_dir,
+
+            present_trend=present_trend,
+            present_trend_dir=present_trend_dir,
+
+            leave_trend=leave_trend,
+            leave_trend_dir=leave_trend_dir,
+
+            payroll_trend=payroll_trend,
+            payroll_trend_dir=payroll_trend_dir,
+        )
+    )
 
 @login_required
 def notice_list(request):
@@ -950,112 +1052,66 @@ def user_permissions(request, pk=None):
 
     # Only Super Admin can manage permissions
     if request.user.role != Role.SUPER_ADMIN:
-        messages.error(
-            request,
-            "You don't have permission to access this page."
-        )
+        messages.error(request, "You don't have permission to access this page.")
         return redirect("user_list")
 
-    # ─────────────────────────────────────────────
-    # MENU LIST
-    # ─────────────────────────────────────────────
-
     MENU_CHOICES = UserPermission.MODULE_CHOICES
-
-    # ─────────────────────────────────────────────
-    # SELECT USER
-    # ─────────────────────────────────────────────
+    
 
     selected_user = None
-
     if pk is not None:
         selected_user = get_object_or_404(User, pk=pk)
 
-    # Role selected from dropdown
     selected_role = (
         request.GET.get("role", "")
         or (selected_user.role if selected_user else "")
     )
 
     # ─────────────────────────────────────────────
-    # SAVE ROLE DEFAULT PERMISSIONS
+    # POST – Save
     # ─────────────────────────────────────────────
-
     if request.method == "POST":
-
         permission_type = request.POST.get("permission_type")
 
-        # =====================================================
-        # 1. SAVE ROLE DEFAULT PERMISSIONS
-        # =====================================================
-
+        # 1. Save Role Default Permissions
         if permission_type == "role":
-
             role = request.POST.get("role")
-
             if not role:
                 messages.error(request, "Please select a role first.")
                 return redirect("user_permissions")
 
             for module, module_name in MENU_CHOICES:
-
                 RoleMenuPermission.objects.update_or_create(
                     role=role,
                     menu=module,
                     defaults={
-                        "can_view": request.POST.get(
-                            f"{module}_view"
-                        ) == "on",
-
-                        "can_create": request.POST.get(
-                            f"{module}_create"
-                        ) == "on",
-
-                        "can_edit": request.POST.get(
-                            f"{module}_edit"
-                        ) == "on",
-
-                        "can_delete": request.POST.get(
-                            f"{module}_delete"
-                        ) == "on",
+                        "can_view":   request.POST.get(f"{module}_view")   == "on",
+                        "can_create": request.POST.get(f"{module}_create") == "on",
+                        "can_edit":   request.POST.get(f"{module}_edit")   == "on",
+                        "can_delete": request.POST.get(f"{module}_delete") == "on",
                     }
                 )
 
-            messages.success(
-                request,
-                f"Default permissions for {role} updated successfully."
-            )
+            messages.success(request, f"Default permissions for {role} updated successfully.")
+            return redirect(f"{request.path}?role={role}")
 
-            return redirect(
-                f"{request.path}?role={role}"
-            )
-
-        # =====================================================
-        # 2. SAVE INDIVIDUAL USER PERMISSIONS
-        # =====================================================
-
+        # 2. Save Individual User Permissions
         elif permission_type == "user":
-
             if selected_user is None:
-                messages.error(
-                    request,
-                    "Please select a user first."
-                )
+                messages.error(request, "Please select a user first.")
                 return redirect("user_permissions")
 
-            # Delete all existing permissions for this user first
+            # Delete old permissions for this user
             UserPermission.objects.filter(user=selected_user).delete()
 
-            # Only create permissions for modules that have at least one checkbox checked
             for module, module_name in MENU_CHOICES:
-                has_any_permission = (
-                    request.POST.get(f"{module}_view") == "on" or
+                has_any = (
+                    request.POST.get(f"{module}_view")   == "on" or
                     request.POST.get(f"{module}_create") == "on" or
-                    request.POST.get(f"{module}_edit") == "on" or
+                    request.POST.get(f"{module}_edit")   == "on" or
                     request.POST.get(f"{module}_delete") == "on"
                 )
-                
-                if has_any_permission:
+                if has_any:
                     UserPermission.objects.create(
                         user=selected_user,
                         module=module,
@@ -1069,219 +1125,29 @@ def user_permissions(request, pk=None):
                 request,
                 f"Permissions for {selected_user.get_full_name() or selected_user.username} updated successfully."
             )
-
-            return redirect(
-                f"/employees/{selected_user.pk}/permissions/"
-            )
+            return redirect("user_permissions_user", pk=selected_user.pk)
 
     # ─────────────────────────────────────────────
-    # ROLE DEFAULT PERMISSIONS
+    # GET – Load data for template
     # ─────────────────────────────────────────────
-
-    role_permissions = {}
-
-    if selected_role:
-
-        role_permissions_qs = RoleMenuPermission.objects.filter(
-            role=selected_role
-        )
-
-        role_permissions = {
-            item.menu: item
-            for item in role_permissions_qs
-        }
-
-    # ─────────────────────────────────────────────
-    # INDIVIDUAL USER PERMISSIONS
-    # ─────────────────────────────────────────────
-
-    user_permissions_data = {}
-
-    if selected_user:
-
-        user_permissions_qs = UserPermission.objects.filter(
-            user=selected_user
-        )
-
-        user_permissions_data = {
-            item.module: item
-            for item in user_permissions_qs
-        }
-
-    # ─────────────────────────────────────────────
-    # BUILD MENU DATA FOR TEMPLATE
-    # ─────────────────────────────────────────────
-
-    permission_rows = []
-
-    for module, module_name in MENU_CHOICES:
-
-        role_perm = role_permissions.get(module)
-
-        user_perm = user_permissions_data.get(module)
-
-        permission_rows.append({
-            "module": module,
-            "name": module_name,
-
-            "role_can_view": (
-                role_perm.can_view
-                if role_perm else False
-            ),
-
-            "role_can_create": (
-                role_perm.can_create
-                if role_perm else False
-            ),
-
-            "role_can_edit": (
-                role_perm.can_edit
-                if role_perm else False
-            ),
-
-            "role_can_delete": (
-                role_perm.can_delete
-                if role_perm else False
-            ),
-
-            "user_can_view": (
-                user_perm.can_view
-                if user_perm else None
-            ),
-
-            "user_can_create": (
-                user_perm.can_create
-                if user_perm else None
-            ),
-
-            "user_can_edit": (
-                user_perm.can_edit
-                if user_perm else None
-            ),
-
-            "user_can_delete": (
-                user_perm.can_delete
-                if user_perm else None
-            ),
-        })
-
-    # ─────────────────────────────────────────────
-    # RENDER
-    # ─────────────────────────────────────────────
-
-    return render(
-        request,
-        "hrm/user_permissions.html",
-        _ctx(
-            request,
-
-            selected_user=selected_user,
-            selected_role=selected_role,
-
-            menu_choices=MENU_CHOICES,
-
-            role_permissions=role_permissions,
-            user_permissions_data=user_permissions_data,
-
-            permission_rows=permission_rows,
-        )
-    )
-    # ── POST ──────────────────────────────────────────────────────────────────
-    if request.method == "POST":
-        # A) ONE USER only
-        user_id = request.POST.get("user_id")
-        if user_id:
-            target = get_object_or_404(User, pk=user_id)
-            role_for_menus = target.role
-            menu_choices = menus_for_role(role_for_menus)
-
-            # Module permissions — ONLY this user
-            for menu_key, _ in menu_choices:
-                UserPermission.objects.update_or_create(
-                    user=target,
-                    module=menu_key,
-                    defaults={
-                        "can_view": request.POST.get(f"{menu_key}_view") == "on",
-                        "can_create": request.POST.get(f"{menu_key}_create") == "on",
-                        "can_edit": request.POST.get(f"{menu_key}_edit") == "on",
-                        "can_delete": request.POST.get(f"{menu_key}_delete") == "on",
-                    },
-                )
-
-            messages.success(
-                request,
-                f"Permissions updated for {target.get_full_name()} only. Other users were not changed."
-            )
-            return redirect("user_permissions", pk=target.pk)
-
-        # B) ROLE defaults only (does NOT loop every user)
-        role = request.POST.get("role", "")
-        if not role:
-            messages.error(request, "Please select a role first.")
-            return redirect("user_permissions")
-
-        menu_choices = menus_for_role(role)
-
-        RoleMenuPermission.objects.filter(role=role).delete()
-        for menu_key, _ in menu_choices:
-            if request.POST.get(f"menu_{menu_key}"):
-                RoleMenuPermission.objects.create(
-                    role=role,
-                    menu=menu_key,
-                    is_allowed=True,
-                )
-
-        messages.success(
-            request,
-            f"Default menu permissions for role '{role}' saved. "
-            "Individual user custom permissions were not changed."
-        )
-        return redirect(f"/employees/permissions/?role={role}")
-
-    # ── GET display ───────────────────────────────────────────────────────────
     saved_permissions = {}
-    allowed_menus = []
-
     if selected_user:
         saved_permissions = {
             p.module: p
             for p in UserPermission.objects.filter(user=selected_user)
         }
-        # Menus for display: from role defaults (user-specific module flags still apply in has_permission)
-        allowed_menus = list(
-            RoleMenuPermission.objects.filter(
-                role=selected_user.role,
-                is_allowed=True,
-            ).values_list("menu", flat=True)
-        )
-        # If user has any can_view, prefer those for menu checkboxes
-        user_view_menus = [
-            p.module for p in saved_permissions.values() if p.can_view
-        ]
-        if user_view_menus:
-            allowed_menus = user_view_menus
-    elif selected_role:
-        allowed_menus = list(
-            RoleMenuPermission.objects.filter(
-                role=selected_role,
-                is_allowed=True,
-            ).values_list("menu", flat=True)
-        )
 
-    role_user_count = (
-        User.objects.filter(role=selected_role).count() if selected_role else 0
-    )
+    role_user_count = User.objects.filter(role=selected_role).count() if selected_role else 0
     selected_role_label = dict(Role.choices).get(selected_role, "") if selected_role else ""
 
     return render(request, "hrm/user_permissions.html", {
-        "saved_permissions": saved_permissions,
+        "saved_permissions": saved_permissions,          # ← this was missing
         "selected_user": selected_user,
         "selected_role": selected_role,
         "selected_role_label": selected_role_label,
         "role_choices": Role.choices,
         "role_user_count": role_user_count,
-        "allowed_menus": allowed_menus,
-        "menu_choices": menu_choices,
+        "menu_choices": MENU_CHOICES,
     })
 # ─── MY PROFILE ───────────────────────────────────────────────────────────────
 @login_required
@@ -2832,31 +2698,93 @@ def task_list(request):
 
     emp = _emp(request)
 
+    # Employee can only see their own tasks
     if request.user.role == Role.EMPLOYEE:
         tasks = Task.objects.filter(
             assignee=emp
         ).select_related(
             'assignee__user',
-            'project'
+            'project',
+            'status'
         )
     else:
         tasks = Task.objects.select_related(
             'assignee__user',
-            'project'
+            'project',
+            'status'
         ).all()
 
     projects = Project.objects.all()
 
     if request.user.role == Role.EMPLOYEE and emp:
-        employees = Employee.objects.filter(pk=emp.pk).select_related('user')
+        employees = Employee.objects.filter(
+            pk=emp.pk
+        ).select_related('user')
     else:
         employees = Employee.objects.select_related('user').all()
 
-    statuses = [
-        ('To Do', '#F3F4F6', '#374151'),
-        ('In Progress', '#FEF3C7', '#D97706'),
-        ('Done', '#D1FAE5', '#10B981'),
-    ]
+    # ------------------------------------------------------------------
+    # Dynamic Kanban statuses
+    # ------------------------------------------------------------------
+    # Get statuses from database.
+    # If no status exists for a project, the default statuses will be
+    # created automatically.
+    for project in projects:
+        default_statuses = [
+            ('To Do', '#F3F4F6', 1),
+            ('In Progress', '#FEF3C7', 2),
+            ('Completed', '#D1FAE5', 3),
+        ]
+
+        for name, color, order in default_statuses:
+            TaskStatus.objects.get_or_create(
+                project=project,
+                name=name,
+                defaults={
+                    'color': color,
+                    'order': order,
+                    'active': True,
+                }
+            )
+
+    # Reload statuses after creating defaults
+    statuses = TaskStatus.objects.filter(
+        project__in=projects,
+        active=True
+    ).order_by(
+        'project',
+        'order',
+        'id'
+    )
+
+    # For the current user's projects/tasks
+    # Keep the existing board structure compatible with the template.
+    if projects.exists():
+        current_project_id = request.GET.get('project')
+
+        if current_project_id:
+            try:
+                current_project_id = int(current_project_id)
+            except (TypeError, ValueError):
+                current_project_id = None
+
+        if current_project_id:
+            current_project = projects.filter(
+                pk=current_project_id
+            ).first()
+        else:
+            current_project = projects.first()
+
+        if current_project:
+            board_statuses = TaskStatus.objects.filter(
+                project=current_project,
+                active=True
+            ).order_by('order', 'id')
+        else:
+            board_statuses = TaskStatus.objects.none()
+    else:
+        current_project = None
+        board_statuses = TaskStatus.objects.none()
 
     view_mode = request.GET.get('view', 'card')
 
@@ -2865,52 +2793,110 @@ def task_list(request):
         tasks=tasks,
         projects=projects,
         employees=employees,
+
+        # All dynamic statuses
         statuses=statuses,
+
+        # Statuses for current Kanban project
+        board_statuses=board_statuses,
+
+        current_project=current_project,
+
         view_mode=view_mode,
-        todo_count=tasks.filter(status='To Do').count(),
-        progress_count=tasks.filter(status='In Progress').count(),
-        done_count=tasks.filter(status='Completed').count(),
+
+        # Default status counts
+        todo_count=tasks.filter(
+            status__name='To Do'
+        ).count(),
+
+        progress_count=tasks.filter(
+            status__name='In Progress'
+        ).count(),
+
+        done_count=tasks.filter(
+            status__name='Completed'
+        ).count(),
     )
 
-    return render(request, 'hrm/tasks.html', context)
+    return render(
+        request,
+        'hrm/tasks.html',
+        context
+    )
 
 
 @login_required
 def task_export(request):
     if not has_permission(request.user, "tasks", "view"):
-        messages.error(request, "You don't have permission to export tasks.")
+        messages.error(
+            request,
+            "You don't have permission to export tasks."
+        )
         return redirect("task_list")
 
     if request.user.role == Role.EMPLOYEE:
-        tasks = Task.objects.filter(assignee=_emp(request)).select_related('assignee__user', 'project')
+        tasks = Task.objects.filter(
+            assignee=_emp(request)
+        ).select_related(
+            'assignee__user',
+            'project',
+            'status'
+        )
     else:
-        tasks = Task.objects.select_related('assignee__user', 'project').all()
+        tasks = Task.objects.select_related(
+            'assignee__user',
+            'project',
+            'status'
+        ).all()
 
     rows = [
         [
             task.title,
             task.project.name,
-            task.assignee.user.get_full_name() or task.assignee.user.username,
+            task.assignee.user.get_full_name()
+            or task.assignee.user.username,
             task.priority,
-            task.status,
+            task.status.name,
             task.progress,
-            task.due_date.strftime('%Y-%m-%d') if task.due_date else '',
+            task.due_date.strftime('%Y-%m-%d')
+            if task.due_date else '',
             task.description or '',
         ]
         for task in tasks
     ]
 
     sections = [
-        ('Tasks', ['Title', 'Project', 'Assignee', 'Priority', 'Status', 'Progress', 'Due Date', 'Description'], rows),
+        (
+            'Tasks',
+            [
+                'Title',
+                'Project',
+                'Assignee',
+                'Priority',
+                'Status',
+                'Progress',
+                'Due Date',
+                'Description'
+            ],
+            rows
+        ),
     ]
 
-    return _export_tabular_response('Task Export', sections, 'Tasks', request.GET.get('format'))
+    return _export_tabular_response(
+        'Task Export',
+        sections,
+        'Tasks',
+        request.GET.get('format')
+    )
 
 
 @login_required
 def task_create(request):
     if not has_permission(request.user, "tasks", "create"):
-        messages.error(request, "You don't have permission to create tasks.")
+        messages.error(
+            request,
+            "You don't have permission to create tasks."
+        )
         return redirect("task_list")
 
     form = TaskForm(request.POST or None)
@@ -2922,208 +2908,717 @@ def task_create(request):
     if form.is_valid():
         task = form.save(commit=False)
 
-        requested_status = request.POST.get('status', '').strip()
-        allowed_statuses = {choice for choice, _ in Task.STATUS_CHOICES}
-        if requested_status in allowed_statuses:
-            task.status = requested_status
-        if requested_status == 'In Progress' and (task.progress or 0) == 0:
-            task.progress = 20
-        elif requested_status == 'Completed':
-            task.progress = 100
-        elif requested_status == 'To Do':
-            task.progress = 0
+        # --------------------------------------------------------------
+        # Dynamic status
+        # --------------------------------------------------------------
+        requested_status = request.POST.get(
+            'status',
+            ''
+        ).strip()
+
+        project = task.project
+
+        # If no project is set, get the first available project
+        if not project:
+            project = Project.objects.first()
+            task.project = project
+
+        if requested_status:
+            status_obj = TaskStatus.objects.filter(
+                project=project,
+                name=requested_status,
+                active=True
+            ).first()
+
+            if status_obj:
+                task.status = status_obj
+
+        # If no status was selected, use project's first status
+        if not task.status_id:
+            status_obj = TaskStatus.objects.filter(
+                project=project,
+                active=True
+            ).order_by('order', 'id').first()
+
+            if status_obj:
+                task.status = status_obj
+            else:
+                # If no status exists for this project, create default ones
+                default_statuses = [
+                    ('To Do', '#6B7280', 0),
+                    ('In Progress', '#3B82F6', 1),
+                    ('Completed', '#10B981', 2),
+                ]
+                for name, color, order in default_statuses:
+                    status_obj, _ = TaskStatus.objects.get_or_create(
+                        project=project,
+                        name=name,
+                        defaults={'color': color, 'order': order}
+                    )
+                    if not task.status_id and name == 'To Do':
+                        task.status = status_obj
+
+        # Final check - if still no status, raise an error
+        if not task.status_id:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse(
+                    {
+                        'ok': False,
+                        'error': 'Could not determine task status. Please ensure the project has valid statuses.'
+                    },
+                    status=400
+                )
+            messages.error(
+                request,
+                'Could not determine task status. Please ensure the project has valid statuses.'
+            )
+            return render(
+                request,
+                'hrm/form.html',
+                _ctx(
+                    request,
+                    form=form,
+                    title='New Task',
+                    back='task_list'
+                )
+            )
+
+        # --------------------------------------------------------------
+        # Progress based on default statuses
+        # --------------------------------------------------------------
+        if task.status:
+            if task.status.name == 'In Progress' and (task.progress or 0) == 0:
+                task.progress = 20
+
+            elif task.status.name == 'Completed':
+                task.progress = 100
+
+            elif task.status.name == 'To Do':
+                task.progress = 0
 
         task.save()
-        messages.success(request, 'Task created.')
+
+        # Check if this is an AJAX request
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse(
+                {
+                    'ok': True,
+                    'task_id': task.pk,
+                    'title': task.title,
+                    'status': task.status.name if task.status else None
+                }
+            )
+
+        messages.success(
+            request,
+            'Task created.'
+        )
+
         return redirect('task_list')
+
+    # If form is not valid and this is AJAX, return error
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse(
+            {
+                'ok': False,
+                'error': 'Form validation failed. Please check your input.',
+                'errors': dict(form.errors.items())
+            },
+            status=400
+        )
 
     return render(
         request,
         'hrm/form.html',
-        _ctx(request, form=form, title='New Task', back='task_list')
+        _ctx(
+            request,
+            form=form,
+            title='New Task',
+            back='task_list'
+        )
     )
 
 
 @login_required
 def task_update_status(request, pk):
     if not has_permission(request.user, "tasks", "edit"):
-        return JsonResponse({'ok': False, 'error': 'Permission denied.'}, status=403)
+        return JsonResponse(
+            {
+                'ok': False,
+                'error': 'Permission denied.'
+            },
+            status=403
+        )
 
     if request.method != 'POST':
-        return HttpResponseForbidden('Invalid request method.')
+        return HttpResponseForbidden(
+            'Invalid request method.'
+        )
 
-    task = get_object_or_404(Task, pk=pk)
+    task = get_object_or_404(
+        Task.objects.select_related('status', 'project'),
+        pk=pk
+    )
 
-    if request.user.role == Role.EMPLOYEE and task.assignee != _emp(request):
+    if (
+        request.user.role == Role.EMPLOYEE
+        and task.assignee != _emp(request)
+    ):
         raise PermissionDenied
 
-    status = request.POST.get('status', '').strip()
-    allowed_statuses = {choice for choice, _ in Task.STATUS_CHOICES}
+    status_name = request.POST.get(
+        'status',
+        ''
+    ).strip()
 
-    if status not in allowed_statuses:
-        return JsonResponse({'ok': False, 'error': 'Invalid status.'}, status=400)
+    if not status_name:
+        return JsonResponse(
+            {
+                'ok': False,
+                'error': 'Status is required.'
+            },
+            status=400
+        )
 
-    task.status = status
-    if status == 'In Progress' and task.progress < 50:
+    # Find dynamic status inside the task's project
+    status_obj = TaskStatus.objects.filter(
+        project=task.project,
+        name=status_name,
+        active=True
+    ).first()
+
+    if not status_obj:
+        return JsonResponse(
+            {
+                'ok': False,
+                'error': 'Invalid status.'
+            },
+            status=400
+        )
+
+    task.status = status_obj
+
+    # --------------------------------------------------------------
+    # Progress rules
+    # --------------------------------------------------------------
+    if status_obj.name == 'In Progress' and task.progress < 50:
         task.progress = 50
-    elif status == 'Completed':
-        task.progress = 100
-    elif status == 'To Do' and task.progress > 0:
-        task.progress = 0
-    task.save(update_fields=['status', 'progress'])
 
-    return JsonResponse({
-        'ok': True,
-        'task_id': task.pk,
-        'status': task.status,
-        'progress': task.progress,
-    })
+    elif status_obj.name == 'Completed':
+        task.progress = 100
+
+    elif status_obj.name == 'To Do' and task.progress > 0:
+        task.progress = 0
+
+    task.save(
+        update_fields=[
+            'status',
+            'progress'
+        ]
+    )
+
+    return JsonResponse(
+        {
+            'ok': True,
+            'task_id': task.pk,
+            'status': task.status.name,
+            'status_id': task.status.pk,
+            'progress': task.progress,
+        }
+    )
 
 
 @login_required
 def task_edit(request, pk):
     if not has_permission(request.user, "tasks", "edit"):
-        messages.error(request, "You don't have permission to edit tasks.")
+        messages.error(
+            request,
+            "You don't have permission to edit tasks."
+        )
         return redirect("task_list")
 
-    task = get_object_or_404(Task, pk=pk)
+    task = get_object_or_404(
+        Task.objects.select_related('status', 'project'),
+        pk=pk
+    )
 
-    if request.user.role == Role.EMPLOYEE and task.assignee != _emp(request):
+    if (
+        request.user.role == Role.EMPLOYEE
+        and task.assignee != _emp(request)
+    ):
         raise PermissionDenied
 
-    form = TaskForm(request.POST or None, instance=task)
+    form = TaskForm(
+        request.POST or None,
+        instance=task
+    )
 
     if form.is_valid():
         form.save()
-        messages.success(request, 'Task updated.')
+
+        messages.success(
+            request,
+            'Task updated.'
+        )
+
         return redirect('task_list')
 
     return render(
         request,
         'hrm/form.html',
-        _ctx(request, form=form, title='Edit Task', back='task_list')
+        _ctx(
+            request,
+            form=form,
+            title='Edit Task',
+            back='task_list'
+        )
     )
 
 
 @login_required
 def task_delete(request, pk):
     if not has_permission(request.user, "tasks", "delete"):
-        messages.error(request, "You don't have permission to delete tasks.")
+        messages.error(
+            request,
+            "You don't have permission to delete tasks."
+        )
         return redirect("task_list")
 
-    task = get_object_or_404(Task, pk=pk)
+    task = get_object_or_404(
+        Task,
+        pk=pk
+    )
 
-    user_role = getattr(request.user, 'role', None)
-    is_admin = user_role in ['admin', 'super_admin', 'Admin', 'Super Admin']
+    user_role = getattr(
+        request.user,
+        'role',
+        None
+    )
+
+    is_admin = user_role in [
+        'admin',
+        'super_admin',
+        'Admin',
+        'Super Admin'
+    ]
+
     if hasattr(Role, 'SUPER_ADMIN'):
         is_admin = is_admin or user_role == Role.SUPER_ADMIN
 
     if not is_admin:
         emp = _emp(request)
+
         if not emp or task.assignee != emp:
-            raise PermissionDenied("You can only delete your own tasks.")
+            raise PermissionDenied(
+                "You can only delete your own tasks."
+            )
 
     task.delete()
-    messages.success(request, 'Task deleted.')
+
+    messages.success(
+        request,
+        'Task deleted.'
+    )
+
     return redirect('task_list')
 
 
 @login_required
 @require_POST
 def task_update_color(request, pk):
-    task = get_object_or_404(Task, pk=pk)
+    task = get_object_or_404(
+        Task,
+        pk=pk
+    )
 
-    if request.user.role == Role.EMPLOYEE and task.assignee != _emp(request):
-        return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
+    if (
+        request.user.role == Role.EMPLOYEE
+        and task.assignee != _emp(request)
+    ):
+        return JsonResponse(
+            {
+                'success': False,
+                'error': 'Permission denied'
+            },
+            status=403
+        )
 
-    color = request.POST.get('color') or request.POST.get('task_color')
+    color = (
+        request.POST.get('color')
+        or request.POST.get('task_color')
+    )
+
     if not color:
-        return JsonResponse({'success': False, 'error': 'No color provided'}, status=400)
+        return JsonResponse(
+            {
+                'success': False,
+                'error': 'No color provided'
+            },
+            status=400
+        )
 
     task.color = color
-    task.save(update_fields=['color'])
-    return JsonResponse({'success': True, 'color': task.color})
+
+    task.save(
+        update_fields=['color']
+    )
+
+    return JsonResponse(
+        {
+            'success': True,
+            'color': task.color
+        }
+    )
 
 
-# ─── NEW: detail (redirects to list + opens modal) ────────────────────────────
+# ─── TASK DETAIL ──────────────────────────────────────────────────────────────
+
 @login_required
 def task_detail(request, pk):
     if not has_permission(request.user, "tasks", "view"):
-        messages.error(request, "You don't have permission to view tasks.")
+        messages.error(
+            request,
+            "You don't have permission to view tasks."
+        )
         return redirect("task_list")
 
-    task = get_object_or_404(Task, pk=pk)
+    task = get_object_or_404(
+        Task.objects.select_related(
+            'status',
+            'project'
+        ),
+        pk=pk
+    )
 
-    if request.user.role == Role.EMPLOYEE and task.assignee != _emp(request):
+    if (
+        request.user.role == Role.EMPLOYEE
+        and task.assignee != _emp(request)
+    ):
         raise PermissionDenied
 
-    return redirect(f"{reverse('task_list')}?open={task.pk}")
+    return redirect(
+        f"{reverse('task_list')}?open={task.pk}"
+    )
 
 
-# ─── NEW: 5-step progress (each step = +20%) ─────────────────────────────────
+# ─── TASK PROGRESS ────────────────────────────────────────────────────────────
+
 @login_required
 @require_POST
 def task_update_progress(request, pk):
     if not has_permission(request.user, "tasks", "edit"):
-        return JsonResponse({'ok': False, 'error': 'Permission denied.'}, status=403)
+        return JsonResponse(
+            {
+                'ok': False,
+                'error': 'Permission denied.'
+            },
+            status=403
+        )
 
-    task = get_object_or_404(Task, pk=pk)
+    task = get_object_or_404(
+        Task.objects.select_related(
+            'status',
+            'project'
+        ),
+        pk=pk
+    )
 
-    if request.user.role == Role.EMPLOYEE and task.assignee != _emp(request):
-        return JsonResponse({'ok': False, 'error': 'Permission denied.'}, status=403)
+    if (
+        request.user.role == Role.EMPLOYEE
+        and task.assignee != _emp(request)
+    ):
+        return JsonResponse(
+            {
+                'ok': False,
+                'error': 'Permission denied.'
+            },
+            status=403
+        )
 
     try:
-        step = int(request.POST.get('step', 0))
+        step = int(
+            request.POST.get(
+                'step',
+                0
+            )
+        )
+
     except (TypeError, ValueError):
-        return JsonResponse({'ok': False, 'error': 'Invalid step.'}, status=400)
+        return JsonResponse(
+            {
+                'ok': False,
+                'error': 'Invalid step.'
+            },
+            status=400
+        )
 
     if step < 0 or step > 5:
-        return JsonResponse({'ok': False, 'error': 'Step must be 0-5.'}, status=400)
+        return JsonResponse(
+            {
+                'ok': False,
+                'error': 'Step must be 0-5.'
+            },
+            status=400
+        )
 
-    # Each step = exactly 20%
+    # Each step = 20%
     new_progress = step * 20
+
     task.progress = new_progress
 
+    # --------------------------------------------------------------
+    # Automatically select default statuses according to progress
+    # --------------------------------------------------------------
     if new_progress == 0:
-        task.status = 'To Do'
+        status_name = 'To Do'
+
     elif new_progress < 100:
-        task.status = 'In Progress'
+        status_name = 'In Progress'
+
     else:
-        task.status = 'Completed'
+        status_name = 'Completed'
 
-    task.save(update_fields=['progress', 'status'])
+    status_obj = TaskStatus.objects.filter(
+        project=task.project,
+        name=status_name,
+        active=True
+    ).first()
 
-    return JsonResponse({
-        'ok': True,
-        'progress': task.progress,
-        'status': task.status,
-    })
+    if status_obj:
+        task.status = status_obj
+
+    task.save(
+        update_fields=[
+            'progress',
+            'status'
+        ]
+    )
+
+    return JsonResponse(
+        {
+            'ok': True,
+            'progress': task.progress,
+            'status': task.status.name,
+            'status_id': task.status.pk,
+        }
+    )
 
 
-# ─── NEW: column color (applies to whole column) ──────────────────────────────
+# ─── STATUS / COLUMN COLOR ───────────────────────────────────────────────────
+
 @login_required
 @require_POST
 def task_update_column_color(request):
     if not has_permission(request.user, "tasks", "edit"):
-        return JsonResponse({'ok': False, 'error': 'Permission denied.'}, status=403)
+        return JsonResponse(
+            {
+                'ok': False,
+                'error': 'Permission denied.'
+            },
+            status=403
+        )
 
-    status = request.POST.get('status', '').strip()
-    color  = request.POST.get('color', '').strip()
+    status_id = request.POST.get(
+        'status_id'
+    )
 
-    allowed = {'To Do', 'In Progress', 'Completed'}
-    if status not in allowed or not color:
-        return JsonResponse({'ok': False, 'error': 'Invalid data.'}, status=400)
+    color = request.POST.get(
+        'color',
+        ''
+    ).strip()
 
-    field_map = {
-        'To Do': 'todo_color',
-        'In Progress': 'in_progress_color',
-        'Completed': 'completed_color',
-    }
-    field = field_map[status]
+    if not status_id or not color:
+        return JsonResponse(
+            {
+                'ok': False,
+                'error': 'Invalid data.'
+            },
+            status=400
+        )
 
-    Project.objects.all().update(**{field: color})
+    status_obj = get_object_or_404(
+        TaskStatus,
+        pk=status_id,
+        active=True
+    )
 
-    return JsonResponse({'ok': True, 'status': status, 'color': color})
+    status_obj.color = color
+
+    status_obj.save(
+        update_fields=['color']
+    )
+
+    return JsonResponse(
+        {
+            'ok': True,
+            'color': status_obj.color
+        }
+    )
+@login_required
+def task_status_create(request):
+    if not has_permission(request.user, "tasks", "edit"):
+        messages.error(
+            request,
+            "You don't have permission to create task statuses."
+        )
+        return redirect("task_list")
+
+    projects = Project.objects.all()
+
+    # Employee can only work with projects they are allowed to access
+    if request.user.role == Role.EMPLOYEE:
+        emp = _emp(request)
+
+        if emp:
+            projects = projects.filter(
+    Q(manager=emp) |
+    Q(tasks__assignee=emp)
+).distinct()
+
+    if request.method == "POST":
+        name = request.POST.get(
+            "name",
+            ""
+        ).strip()
+
+        color = request.POST.get(
+            "color",
+            "#6B7280"
+        ).strip()
+
+        project_id = request.POST.get(
+            "project"
+        )
+
+        if not name:
+            messages.error(
+                request,
+                "Status name is required."
+            )
+            return redirect("task_list")
+
+        if not project_id:
+            messages.error(
+                request,
+                "Please select a project."
+            )
+            return redirect("task_list")
+
+        project = get_object_or_404(
+            projects,
+            pk=project_id
+        )
+
+        # Prevent duplicate status names inside the same project
+        if TaskStatus.objects.filter(
+            project=project,
+            name__iexact=name
+        ).exists():
+            messages.error(
+                request,
+                f"Status '{name}' already exists."
+            )
+            return redirect("task_list")
+
+        # Put new status at the end
+        last_status = TaskStatus.objects.filter(
+            project=project
+        ).order_by(
+            "-order"
+        ).first()
+
+        next_order = (
+            last_status.order + 1
+            if last_status
+            else 1
+        )
+
+        TaskStatus.objects.create(
+            project=project,
+            name=name,
+            color=color,
+            order=next_order,
+            active=True
+        )
+
+        messages.success(
+            request,
+            f"Status '{name}' created successfully."
+        )
+
+        return redirect(
+            f"{reverse('task_list')}?project={project.pk}"
+        )
+
+    return render(
+        request,
+        "hrm/task_status_form.html",
+        _ctx(
+            request,
+            projects=projects,
+            title="Create Task Status",
+            back="task_list"
+        )
+    )
+    return JsonResponse(
+        {
+            'ok': True,
+            'status': status_obj.name,
+            'status_id': status_obj.pk,
+            'color': status_obj.color,
+        }
+    )
+
+
+@login_required
+@require_POST
+def task_status_delete(request, pk):
+    if not has_permission(request.user, "tasks", "edit"):
+        return JsonResponse(
+            {
+                'ok': False,
+                'error': 'Permission denied.'
+            },
+            status=403
+        )
+
+    status_obj = get_object_or_404(
+        TaskStatus,
+        pk=pk,
+        active=True
+    )
+
+    # Prevent deleting default statuses
+    default_statuses = ['To Do', 'In Progress', 'Completed']
+    if status_obj.name in default_statuses:
+        return JsonResponse(
+            {
+                'ok': False,
+                'error': 'Cannot delete default statuses.'
+            },
+            status=400
+        )
+
+    # Reassign tasks to "To Do" status
+    project = status_obj.project
+    todo_status = TaskStatus.objects.filter(
+        project=project,
+        name='To Do'
+    ).first()
+
+    if todo_status:
+        Task.objects.filter(status=status_obj).update(status=todo_status)
+
+    status_obj.delete()
+
+    return JsonResponse(
+        {
+            'ok': True,
+            'message': f'Status "{status_obj.name}" deleted successfully.'
+        }
+    )
+
+
 # ─── DOCUMENTS ────────────────────────────────────────────────────────────────
 
 @login_required

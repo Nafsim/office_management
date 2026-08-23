@@ -217,8 +217,17 @@
       {% endfor %}
 
       <div style="text-align:center; margin-top:12px;">
-        <button type="button" class="btn" style="background:#F3F4F6; border:1px dashed #ccc; color:#555;"
-                onclick="openAddTaskModal('To Do')">+ Add Task</button>
+        <button
+  type="button"
+  class="btn"
+  style="background:#F3F4F6; border:1px dashed #ccc;"
+  onclick="openAddTaskModal(
+    '{{ status.id }}',
+    '{{ status.project.id }}'
+  )"
+>
+  + Add Task
+</button>
       </div>
     </div>
   </div>
