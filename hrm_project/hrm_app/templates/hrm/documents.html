@@ -202,8 +202,12 @@
           <a href="{% url 'document_download' doc.pk %}" class="btn ghost sm">Download</a>
 
           {% if user.role == 'super_admin' or user.role == 'admin' %}
-            <a href="{% url 'document_delete' doc.pk %}" class="btn ghost sm red" onclick="return confirm('Delete this document?')">Delete</a>
-          {% endif %}
+  <a href="{% url 'document_delete' doc.pk %}"
+     class="btn ghost sm red delete-doc-btn"
+     data-name="{{ doc.name }}">
+    Delete
+  </a>
+{% endif %}
         </td>
       </tr>
       {% empty %}
@@ -216,5 +220,31 @@
 </div>
 
 {% endif %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.delete-doc-btn').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
 
+      const url = this.getAttribute('href');
+      const name = this.getAttribute('data-name') || 'this document';
+
+      Swal.fire({
+        title: 'Are you sure?',
+        text: `You want to permanently delete "${name}"?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#EF4444',
+        cancelButtonColor: '#6B7280',
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'Cancel'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.href = url;
+        }
+      });
+    });
+  });
+});
+</script>
 {% endblock %}

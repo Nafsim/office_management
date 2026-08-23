@@ -102,7 +102,7 @@ class PettyCashForm(forms.ModelForm):
 class DocumentForm(forms.ModelForm):
     class Meta:
         model  = Document
-        fields = ['name', 'file', 'category', 'employee', 'is_public', 'expiry_date']
+        fields = ['name', 'file', 'category', 'document_type', 'employee', 'is_public', 'expiry_date']
         widgets = {'expiry_date': forms.DateInput(attrs={'type': 'date'})}
 
 

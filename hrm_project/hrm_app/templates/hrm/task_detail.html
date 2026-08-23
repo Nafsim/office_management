@@ -44,7 +44,7 @@
   </div>
 </div>
 
-<!-- ================= TASK DETAILS + PROGRESS MODAL (the "on-click page") ================= -->
+<!-- ================= TASK DETAILS + PROGRESS MODAL ================= -->
 <div id="taskModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.45); align-items:center; justify-content:center; z-index:999;">
   <div style="background:white; width:480px; max-width:95vw; max-height:90vh; overflow-y:auto; border-radius:16px; padding:24px;">
     <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -66,7 +66,6 @@
       </div>
       <p style="margin:0 0 16px;">Progress — <span id="modalProgress">0</span>%</p>
 
-      <!-- 5-step checklist -->
       <div id="progressSteps" style="display:flex; flex-direction:column; gap:8px;">
         <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
           <input type="checkbox" class="progress-step" data-step="1" onchange="setProgressStep(1)">
@@ -141,7 +140,11 @@
         <td style="padding:12px 16px;">{{ task.due_date }}</td>
         <td style="padding:12px 16px;" onclick="event.stopPropagation()">
           <a href="{% url 'task_edit' task.pk %}" title="Edit" style="text-decoration:none; margin-right:8px;">✎</a>
-          <a href="{% url 'task_delete' task.pk %}" title="Delete" onclick="return confirm('Delete this task?')" style="text-decoration:none; color:#EF4444;">🗑</a>
+          <a href="{% url 'task_delete' task.pk %}" 
+             class="delete-task-btn" 
+             data-title="{{ task.title }}"
+             title="Delete" 
+             style="text-decoration:none; color:#EF4444;">🗑</a>
         </td>
       </tr>
       {% empty %}
@@ -200,7 +203,11 @@
             </div>
             <div style="display:flex; gap:6px; align-items:center;" onclick="event.stopPropagation()">
               <a href="{% url 'task_edit' task.pk %}" title="Edit" style="font-size:16px; text-decoration:none; color:#555;">✎</a>
-              <a href="{% url 'task_delete' task.pk %}" title="Delete" onclick="return confirm('Delete this task?')" style="font-size:16px; text-decoration:none; color:#EF4444;">🗑</a>
+              <a href="{% url 'task_delete' task.pk %}" 
+                 class="delete-task-btn" 
+                 data-title="{{ task.title }}"
+                 title="Delete" 
+                 style="font-size:16px; text-decoration:none; color:#EF4444;">🗑</a>
             </div>
           </div>
         </div>
@@ -263,7 +270,11 @@
             </div>
             <div style="display:flex; gap:6px; align-items:center;" onclick="event.stopPropagation()">
               <a href="{% url 'task_edit' task.pk %}" title="Edit" style="font-size:16px; text-decoration:none; color:#555;">✎</a>
-              <a href="{% url 'task_delete' task.pk %}" title="Delete" onclick="return confirm('Delete this task?')" style="font-size:16px; text-decoration:none; color:#EF4444;">🗑</a>
+              <a href="{% url 'task_delete' task.pk %}" 
+                 class="delete-task-btn" 
+                 data-title="{{ task.title }}"
+                 title="Delete" 
+                 style="font-size:16px; text-decoration:none; color:#EF4444;">🗑</a>
             </div>
           </div>
         </div>
@@ -318,7 +329,11 @@
             </div>
             <div style="display:flex; gap:6px; align-items:center;" onclick="event.stopPropagation()">
               <a href="{% url 'task_edit' task.pk %}" title="Edit" style="font-size:16px; text-decoration:none; color:#555;">✎</a>
-              <a href="{% url 'task_delete' task.pk %}" title="Delete" onclick="return confirm('Delete this task?')" style="font-size:16px; text-decoration:none; color:#EF4444;">🗑</a>
+              <a href="{% url 'task_delete' task.pk %}" 
+                 class="delete-task-btn" 
+                 data-title="{{ task.title }}"
+                 title="Delete" 
+                 style="font-size:16px; text-decoration:none; color:#EF4444;">🗑</a>
             </div>
           </div>
         </div>
@@ -429,7 +444,6 @@ function openTaskModal(taskId, title, priority, project, assignee, date, progres
   document.getElementById("modalProgressBar").style.width = progress + '%';
   document.getElementById("modalEditLink").href = editUrl;
 
-  // Sync the 5 checkboxes with current progress
   const steps = Math.round(progress / 20);
   document.querySelectorAll('.progress-step').forEach(cb => {
     cb.checked = parseInt(cb.dataset.step) <= steps;
@@ -457,7 +471,6 @@ async function setProgressStep(step) {
   document.getElementById("modalProgress").textContent = data.progress;
   document.getElementById("modalProgressBar").style.width = data.progress + '%';
 
-  // Update checkboxes to match the new highest step
   const highest = Math.round(data.progress / 20);
   document.querySelectorAll('.progress-step').forEach(cb => {
     cb.checked = parseInt(cb.dataset.step) <= highest;
@@ -499,7 +512,6 @@ function closeAddTaskModal() {
   document.getElementById("addTaskModal").style.display = "none";
 }
 
-// Column color change
 async function updateColumnColor(status, color) {
   const response = await fetch(`/tasks/column-color/`, {
     method: 'POST',
@@ -514,19 +526,43 @@ async function updateColumnColor(status, color) {
     alert('Could not update column color.');
     return;
   }
-  // Simple reload so all cards pick up the new color
   window.location.reload();
 }
 
-// Auto-open modal if ?open=ID is present (from the task_detail redirect)
+// ================= SWEETALERT DELETE =================
 document.addEventListener('DOMContentLoaded', function () {
+  // Auto-open modal if ?open=ID is present
   const params = new URLSearchParams(window.location.search);
   const openId = params.get('open');
   if (openId) {
-    // You can enhance this later to load full data via AJAX.
-    // For now just remove the param so the URL is clean.
     history.replaceState(null, '', window.location.pathname);
   }
+
+  // SweetAlert Delete buttons
+  document.querySelectorAll('.delete-task-btn').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation(); // important for Kanban cards
+
+      const url = this.getAttribute('href');
+      const title = this.getAttribute('data-title') || 'this task';
+
+      Swal.fire({
+        title: 'Are you sure?',
+        text: `You want to permanently delete "${title}"?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#EF4444',
+        cancelButtonColor: '#6B7280',
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'Cancel'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.href = url;
+        }
+      });
+    });
+  });
 });
 </script>
 

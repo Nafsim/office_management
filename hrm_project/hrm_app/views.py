@@ -3075,7 +3075,11 @@ def document_list(request):
         return redirect("dashboard")
 
     emp = _emp(request)
+    document_type_filter = request.GET.get('document_type', 'all')
     
+    print(f"DEBUG: document_type_filter = {document_type_filter}")
+    
+    # Base query based on user role
     if request.user.role == Role.EMPLOYEE:
         # Employee sees public documents and their own documents
         docs = Document.objects.filter(
@@ -3089,6 +3093,20 @@ def document_list(request):
     else:
         # Super admin sees all documents
         docs = Document.objects.all()
+    
+    print(f"DEBUG: docs count before filter = {docs.count()}")
+    
+    # Filter by document type if specified
+    if document_type_filter != 'all' and document_type_filter != 'request':
+        docs = docs.filter(document_type=document_type_filter)
+        print(f"DEBUG: docs count after filter = {docs.count()}")
+    
+    # Get document requests separately if filtering by request type
+    requests = []
+    if document_type_filter == 'request':
+        requests = DocumentRequest.objects.select_related(
+            'requester', 'employee__user'
+        ).all().order_by('-requested_at')
 
 
 
@@ -3120,6 +3138,8 @@ def document_list(request):
         _ctx(
             request,
             docs=docs,
+            requests=requests,
+            document_type_filter=document_type_filter,
             category_count=category_count,
             total_documents=total_documents,
             pending_requests=pending_requests,
@@ -3172,6 +3192,10 @@ def document_upload(request):
         d = form.save(commit=False)
 
         d.owner = request.user
+        
+        # Set default document_type to 'office' if not specified
+        if not d.document_type:
+            d.document_type = 'office'
 
         d.save()
 
