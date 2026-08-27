@@ -5,7 +5,7 @@ def role_menu_permissions(request):
 
     if request.user.is_authenticated:
         if request.user.role == "super_admin":
-          allowed_menus = []         
+          allowed_menus = []
         else:
             # Use user-specific permissions instead of role-based
             allowed_menus = list(

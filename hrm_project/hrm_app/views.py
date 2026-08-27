@@ -2921,67 +2921,53 @@ def task_create(request):
         # If no project is set, get the first available project
         if not project:
             project = Project.objects.first()
+            if not project:
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse(
+                        {
+                            'ok': False,
+                            'error': 'No project found. Please create a project first.'
+                        },
+                        status=400
+                    )
+                messages.error(request, 'No project found. Please create a project first.')
+                return render(
+                    request,
+                    'hrm/form.html',
+                    _ctx(
+                        request,
+                        form=form,
+                        title='New Task',
+                        back='task_list'
+                    )
+                )
             task.project = project
 
+        # Get or create a status for this project
+        status_obj = None
         if requested_status:
             status_obj = TaskStatus.objects.filter(
                 project=project,
-                name=requested_status,
-                active=True
+                name=requested_status
             ).first()
 
-            if status_obj:
-                task.status = status_obj
-
-        # If no status was selected, use project's first status
-        if not task.status_id:
+        if not status_obj:
+            # Get first status or create default
             status_obj = TaskStatus.objects.filter(
-                project=project,
-                active=True
+                project=project
             ).order_by('order', 'id').first()
 
-            if status_obj:
-                task.status = status_obj
-            else:
-                # If no status exists for this project, create default ones
-                default_statuses = [
-                    ('To Do', '#6B7280', 0),
-                    ('In Progress', '#3B82F6', 1),
-                    ('Completed', '#10B981', 2),
-                ]
-                for name, color, order in default_statuses:
-                    status_obj, _ = TaskStatus.objects.get_or_create(
-                        project=project,
-                        name=name,
-                        defaults={'color': color, 'order': order}
-                    )
-                    if not task.status_id and name == 'To Do':
-                        task.status = status_obj
+            if not status_obj:
+                # Create default statuses
+                status_obj = TaskStatus.objects.create(
+                    project=project,
+                    name='To Do',
+                    color='#6B7280',
+                    order=0,
+                    active=True
+                )
 
-        # Final check - if still no status, raise an error
-        if not task.status_id:
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse(
-                    {
-                        'ok': False,
-                        'error': 'Could not determine task status. Please ensure the project has valid statuses.'
-                    },
-                    status=400
-                )
-            messages.error(
-                request,
-                'Could not determine task status. Please ensure the project has valid statuses.'
-            )
-            return render(
-                request,
-                'hrm/form.html',
-                _ctx(
-                    request,
-                    form=form,
-                    title='New Task',
-                    back='task_list'
-                )
-            )
+        task.status = status_obj
 
         # --------------------------------------------------------------
         # Progress based on default statuses
@@ -3941,7 +3927,7 @@ def document_delete(request, pk):
 @login_required
 def document_request_list(request):
     if request.user.role not in [Role.MANAGER, Role.EMPLOYEE, Role.SUPER_ADMIN]:
-        if not has_permission(request.user, "documents", "view"):
+        if not has_permission(request.user, "documents_request", "view"):
             messages.error(request, "You don't have permission to view document requests.")
             return redirect("document_list")
 
@@ -3977,7 +3963,7 @@ def document_request_create(request):
         return redirect("document_list")
 
     if request.user.role == Role.EMPLOYEE:
-        if not has_permission(request.user, "documents", "create"):
+        if not has_permission(request.user, "documents_request", "create"):
             messages.error(request, "You don't have permission to request documents.")
             return redirect("document_list")
 
@@ -4019,7 +4005,7 @@ def document_request_create(request):
 
 @manager_or_admin
 def document_request_approve(request, pk):
-    if not has_permission(request.user, "documents", "edit"):
+    if not has_permission(request.user, "documents_request", "edit"):
         messages.error(request, "You don't have permission to approve document requests.")
         return redirect("document_request_list")
 
@@ -4052,7 +4038,7 @@ def document_request_approve(request, pk):
 
 @manager_or_admin
 def document_generate(request, pk):
-    if not has_permission(request.user, "documents", "create"):
+    if not has_permission(request.user, "documents_generate", "create"):
         messages.error(request, "You don't have permission to generate documents.")
         return redirect("document_request_list")
 

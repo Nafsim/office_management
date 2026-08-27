@@ -38,31 +38,41 @@
 <!-- Menu tabs (grey by default, orange when active) -->
 <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
   {% with f=document_type_filter|default:'all' %}
+  {% if user.role == 'super_admin' or 'documents' in allowed_menus %}
   <a href="{% url 'document_list' %}?document_type=all"
      class="btn"
      style="{% if f == 'all' %}background:#FF6B00;color:white;border:none;{% else %}background:#E5E7EB;color:#374151;border:none;{% endif %}">
     All Documents
   </a>
+  {% endif %}
+  {% if user.role == 'super_admin' or 'documents_request' in allowed_menus %}
   <a href="{% url 'document_list' %}?document_type=request"
      class="btn"
      style="{% if f == 'request' %}background:#FF6B00;color:white;border:none;{% else %}background:#E5E7EB;color:#374151;border:none;{% endif %}">
     Request Documents
   </a>
+  {% endif %}
+  {% if user.role == 'super_admin' or 'documents_generate' in allowed_menus %}
   <a href="{% url 'document_list' %}?document_type=generated"
      class="btn"
      style="{% if f == 'generated' %}background:#FF6B00;color:white;border:none;{% else %}background:#E5E7EB;color:#374151;border:none;{% endif %}">
     Generated Documents
   </a>
+  {% endif %}
+  {% if user.role == 'super_admin' or 'documents_employee' in allowed_menus %}
   <a href="{% url 'document_list' %}?document_type=employee"
      class="btn"
      style="{% if f == 'employee' %}background:#FF6B00;color:white;border:none;{% else %}background:#E5E7EB;color:#374151;border:none;{% endif %}">
     Employee Documents
   </a>
+  {% endif %}
+  {% if user.role == 'super_admin' or 'documents_office' in allowed_menus %}
   <a href="{% url 'document_list' %}?document_type=office"
      class="btn"
      style="{% if f == 'office' %}background:#FF6B00;color:white;border:none;{% else %}background:#E5E7EB;color:#374151;border:none;{% endif %}">
     Office Documents
   </a>
+  {% endif %}
   {% endwith %}
 </div>
 
