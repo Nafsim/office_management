@@ -300,14 +300,14 @@ path(
 
 
 
-
-
+    # ─── TASKS ──────────────────────────────────────────────────────────────
     path('tasks/',                         views.task_list,                name='task_list'),
     path('tasks/export/',                  views.task_export,              name='task_export'),
     path('tasks/create/',                  views.task_create,              name='task_create'),
 
-# Status / Kanban column management
+    # Status / Kanban column management
     path('tasks/status/create/',           views.task_status_create,       name='task_status_create'),
+    path('tasks/status/<int:pk>/delete/',  views.task_status_delete,       name='task_status_delete'),
 
     path('tasks/<int:pk>/',                views.task_detail,              name='task_detail'),
     path('tasks/<int:pk>/status/',         views.task_update_status,        name='task_update_status'),
@@ -316,10 +316,6 @@ path(
     path('tasks/<int:pk>/color/',          views.task_update_color,          name='task_update_color'),
     path('tasks/<int:pk>/progress/',       views.task_update_progress,      name='task_update_progress'),
     path('tasks/column-color/',            views.task_update_column_color,   name='task_update_column_color'),
-    
-
-
-
     # Documents
 
 

@@ -2824,6 +2824,108 @@ def task_list(request):
         context
     )
 
+@login_required
+def task_create(request):
+    if not has_permission(request.user, "tasks", "create"):
+        messages.error(request, "You don't have permission to create tasks.")
+        return redirect("task_list")
+
+    form = TaskForm(request.POST or None)
+
+    if request.method == "GET":
+        if request.user.role == Role.EMPLOYEE:
+            form.fields['assignee'].initial = _emp(request)
+
+    if form.is_valid():
+        task = form.save(commit=False)
+
+        requested_status = request.POST.get('status', '').strip()
+        project = task.project
+
+        if not project:
+            project = Project.objects.first()
+            if not project:
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'ok': False, 'error': 'No project found.'}, status=400)
+                messages.error(request, 'No project found. Please create a project first.')
+                return render(request, 'hrm/form.html', _ctx(request, form=form, title='New Task', back='task_list'))
+            task.project = project
+
+        status_obj = None
+        if requested_status:
+            status_obj = TaskStatus.objects.filter(project=project, name=requested_status).first()
+
+        if not status_obj:
+            status_obj = TaskStatus.objects.filter(project=project).order_by('order', 'id').first()
+            if not status_obj:
+                status_obj = TaskStatus.objects.create(
+                    project=project,
+                    name='To Do',
+                    color='#6B7280',
+                    order=0,
+                    active=True
+                )
+
+                # Get or create a status for this project
+        status_obj = None
+        if requested_status:
+            status_obj = TaskStatus.objects.filter(
+                project=project,
+                name=requested_status
+            ).first()
+
+        if not status_obj:
+            # Try to get the first status of this project
+            status_obj = TaskStatus.objects.filter(
+                project=project
+            ).order_by('order', 'id').first()
+
+        if not status_obj:
+            # Create a default "To Do" status
+            status_obj = TaskStatus.objects.create(
+                project=project,
+                name='To Do',
+                color='#6B7280',
+                order=0,
+                active=True
+            )
+
+        # Force set the status (never leave it None)
+        task.status = status_obj
+
+        # Progress based on status
+        if task.status.name == 'In Progress' and (task.progress or 0) == 0:
+            task.progress = 20
+        elif task.status.name == 'Completed':
+            task.progress = 100
+        elif task.status.name == 'To Do':
+            task.progress = 0
+
+        task.save()
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'ok': True,
+                'task_id': task.pk,
+                'title': task.title,
+                'status': task.status.name if task.status else None
+            })
+
+        messages.success(request, 'Task created.')
+        return redirect('task_list')
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        print("========== TASK CREATE FORM ERRORS ==========")
+        print(form.errors)
+        print("POST data:", dict(request.POST))
+        print("=============================================")
+        return JsonResponse({
+            'ok': False,
+            'error': 'Form validation failed. Please check your input.',
+            'errors': dict(form.errors.items())
+        }, status=400)
+
+    return render(request, 'hrm/form.html', _ctx(request, form=form, title='New Task', back='task_list'))
 
 @login_required
 def task_export(request):
@@ -2853,13 +2955,11 @@ def task_export(request):
         [
             task.title,
             task.project.name,
-            task.assignee.user.get_full_name()
-            or task.assignee.user.username,
+            task.assignee.user.get_full_name() or task.assignee.user.username,
             task.priority,
-            task.status.name,
+            task.status.name if task.status else '',
             task.progress,
-            task.due_date.strftime('%Y-%m-%d')
-            if task.due_date else '',
+            task.due_date.strftime('%Y-%m-%d') if task.due_date else '',
             task.description or '',
         ]
         for task in tasks
@@ -2887,141 +2987,6 @@ def task_export(request):
         sections,
         'Tasks',
         request.GET.get('format')
-    )
-
-
-@login_required
-def task_create(request):
-    if not has_permission(request.user, "tasks", "create"):
-        messages.error(
-            request,
-            "You don't have permission to create tasks."
-        )
-        return redirect("task_list")
-
-    form = TaskForm(request.POST or None)
-
-    if request.method == "GET":
-        if request.user.role == Role.EMPLOYEE:
-            form.fields['assignee'].initial = _emp(request)
-
-    if form.is_valid():
-        task = form.save(commit=False)
-
-        # --------------------------------------------------------------
-        # Dynamic status
-        # --------------------------------------------------------------
-        requested_status = request.POST.get(
-            'status',
-            ''
-        ).strip()
-
-        project = task.project
-
-        # If no project is set, get the first available project
-        if not project:
-            project = Project.objects.first()
-            if not project:
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return JsonResponse(
-                        {
-                            'ok': False,
-                            'error': 'No project found. Please create a project first.'
-                        },
-                        status=400
-                    )
-                messages.error(request, 'No project found. Please create a project first.')
-                return render(
-                    request,
-                    'hrm/form.html',
-                    _ctx(
-                        request,
-                        form=form,
-                        title='New Task',
-                        back='task_list'
-                    )
-                )
-            task.project = project
-
-        # Get or create a status for this project
-        status_obj = None
-        if requested_status:
-            status_obj = TaskStatus.objects.filter(
-                project=project,
-                name=requested_status
-            ).first()
-
-        if not status_obj:
-            # Get first status or create default
-            status_obj = TaskStatus.objects.filter(
-                project=project
-            ).order_by('order', 'id').first()
-
-            if not status_obj:
-                # Create default statuses
-                status_obj = TaskStatus.objects.create(
-                    project=project,
-                    name='To Do',
-                    color='#6B7280',
-                    order=0,
-                    active=True
-                )
-
-        task.status = status_obj
-
-        # --------------------------------------------------------------
-        # Progress based on default statuses
-        # --------------------------------------------------------------
-        if task.status:
-            if task.status.name == 'In Progress' and (task.progress or 0) == 0:
-                task.progress = 20
-
-            elif task.status.name == 'Completed':
-                task.progress = 100
-
-            elif task.status.name == 'To Do':
-                task.progress = 0
-
-        task.save()
-
-        # Check if this is an AJAX request
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse(
-                {
-                    'ok': True,
-                    'task_id': task.pk,
-                    'title': task.title,
-                    'status': task.status.name if task.status else None
-                }
-            )
-
-        messages.success(
-            request,
-            'Task created.'
-        )
-
-        return redirect('task_list')
-
-    # If form is not valid and this is AJAX, return error
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return JsonResponse(
-            {
-                'ok': False,
-                'error': 'Form validation failed. Please check your input.',
-                'errors': dict(form.errors.items())
-            },
-            status=400
-        )
-
-    return render(
-        request,
-        'hrm/form.html',
-        _ctx(
-            request,
-            form=form,
-            title='New Task',
-            back='task_list'
-        )
     )
 
 
@@ -3083,6 +3048,8 @@ def task_update_status(request, pk):
         )
 
     task.status = status_obj
+
+    
 
     # --------------------------------------------------------------
     # Progress rules
@@ -3546,14 +3513,7 @@ def task_status_create(request):
             back="task_list"
         )
     )
-    return JsonResponse(
-        {
-            'ok': True,
-            'status': status_obj.name,
-            'status_id': status_obj.pk,
-            'color': status_obj.color,
-        }
-    )
+    
 
 
 @login_required

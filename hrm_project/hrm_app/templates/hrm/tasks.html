@@ -18,9 +18,9 @@
             style="background:#FF6B00; color:white; border:none; display:flex; align-items:center; gap:6px; cursor:pointer;">
       Export
     </button>
-     <a href="{% url 'task_status_create' %}" class="btn" style="background:#FF6B00; color:white;">
-  + Create Status
-</a>
+    <a href="{% url 'task_status_create' %}" class="btn" style="background:#FF6B00; color:white;">
+      + Create Status
+    </a>
     <button onclick="location.reload()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">Refresh</button>
     {% if view_mode == 'table' %}
       <a href="?view=card" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">Card View</a>
@@ -125,15 +125,15 @@
         <td style="padding:12px 16px;">{{ task.project.name }}</td>
         <td style="padding:12px 16px;">{{ task.assignee.user.get_full_name|default:task.assignee.user.username }}</td>
         <td style="padding:12px 16px;">{{ task.priority }}</td>
-        <td style="padding:12px 16px;">{{ task.status }}</td>
+        <td style="padding:12px 16px;">{{ task.status.name }}</td>
         <td style="padding:12px 16px;">{{ task.progress|default:0 }}%</td>
         <td style="padding:12px 16px;">{{ task.due_date }}</td>
         <td style="padding:12px 16px;" onclick="event.stopPropagation()">
           <a href="{% url 'task_edit' task.pk %}" title="Edit" style="text-decoration:none; margin-right:8px;">✎</a>
-          <a href="{% url 'task_delete' task.pk %}" 
-             class="delete-task-btn" 
+          <a href="{% url 'task_delete' task.pk %}"
+             class="delete-task-btn"
              data-title="{{ task.title }}"
-             title="Delete" 
+             title="Delete"
              style="text-decoration:none; color:#EF4444;">🗑</a>
         </td>
       </tr>
@@ -158,16 +158,8 @@
 
     <!-- COLUMN HEADER -->
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:8px;">
-
       <div style="display:flex; align-items:center; gap:8px;">
-
-        <span style="
-          background:{{ status.color }};
-          color:white;
-          padding:6px 14px;
-          border-radius:999px;
-          font-weight:600;
-        ">
+        <span style="background:{{ status.color }}; color:white; padding:6px 14px; border-radius:999px; font-weight:600;">
           {{ status.name }}
         </span>
 
@@ -181,41 +173,27 @@
 
         <button
           type="button"
-          onclick="console.log('Delete button clicked for status:', '{{ status.id }}', '{{ status.name|escapejs }}'); deleteStatus('{{ status.id }}', '{{ status.name|escapejs }}');"
+          onclick="deleteStatus('{{ status.id }}', '{{ status.name|escapejs }}')"
           title="Delete this status"
           style="border:none; background:none; cursor:pointer; color:#EF4444; font-size:16px;"
         >
           🗑
         </button>
-
       </div>
 
-      <span style="
-        background:#F3F4F6;
-        padding:4px 10px;
-        border-radius:999px;
-      ">
+      <span style="background:#F3F4F6; padding:4px 10px; border-radius:999px;">
         {{ status.tasks.count }}
       </span>
-
     </div>
-
 
     <!-- TASK COLUMN -->
     <div
       ondrop="drop(event, '{{ status.name|escapejs }}')"
       ondragover="allowDrop(event)"
-      style="
-        background:white;
-        border:2px solid #E5E7EB;
-        border-radius:12px;
-        padding:8px;
-        min-height:350px;
-      "
+      style="background:white; border:2px solid #E5E7EB; border-radius:12px; padding:8px; min-height:350px;"
     >
 
       {% for task in tasks %}
-
         {% if task.status_id == status.id %}
 
         <!-- TASK CARD -->
@@ -223,7 +201,6 @@
           draggable="true"
           ondragstart="drag(event)"
           data-task-id="{{ task.pk }}"
-
           onclick="openTaskModal(
             {{ task.pk }},
             '{{ task.title|escapejs }}',
@@ -234,7 +211,6 @@
             {{ task.progress|default:0 }},
             '{% url "task_edit" task.pk %}'
           )"
-
           style="
             background:{{ status.color }}18;
             border:1px solid #E5E7EB;
@@ -245,60 +221,22 @@
             cursor:pointer;
           "
         >
-
-          <!-- PRIORITY -->
-          <span style="
-            background:#EF4444;
-            color:white;
-            padding:3px 10px;
-            border-radius:999px;
-            font-size:13px;
-          ">
+          <span style="background:#EF4444; color:white; padding:3px 10px; border-radius:999px; font-size:13px;">
             {{ task.priority }}
           </span>
 
-          <!-- TITLE -->
-          <h4 style="margin:10px 0 4px;">
-            {{ task.title }}
-          </h4>
+          <h4 style="margin:10px 0 4px;">{{ task.title }}</h4>
+          <small style="color:#6B7280;">{{ task.project.name }}</small>
 
-          <!-- PROJECT -->
-          <small style="color:#6B7280;">
-            {{ task.project.name }}
-          </small>
-
-
-          <!-- PROGRESS -->
           {% if task.progress > 0 %}
-
           <div style="margin-top:12px;">
-
-            <div style="
-              height:6px;
-              background:#E5E7EB;
-              border-radius:999px;
-            ">
-              <div style="
-                width:{{ task.progress }}%;
-                height:6px;
-                background:{{ status.color }};
-                border-radius:999px;
-              "></div>
+            <div style="height:6px; background:#E5E7EB; border-radius:999px;">
+              <div style="width:{{ task.progress }}%; height:6px; background:{{ status.color }}; border-radius:999px;"></div>
             </div>
-
           </div>
-
           {% endif %}
 
-
-          <!-- CARD FOOTER -->
-          <div style="
-            margin-top:12px;
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-          ">
-
+          <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center;">
             <div style="
               background:{{ status.color }};
               color:white;
@@ -313,102 +251,49 @@
               {{ task.assignee.user.first_name|first }}{{ task.assignee.user.last_name|first }}
             </div>
 
-
-            <div
-              style="display:flex; gap:6px;"
-              onclick="event.stopPropagation()"
-            >
-
-              <a
-                href="{% url 'task_edit' task.pk %}"
-                style="text-decoration:none; color:#555;"
-              >
-                ✎
-              </a>
-
-              <a
-                href="{% url 'task_delete' task.pk %}"
-                class="delete-task-btn"
-                data-title="{{ task.title }}"
-                style="text-decoration:none; color:#EF4444;"
-              >
-                🗑
-              </a>
-
+            <div style="display:flex; gap:6px;" onclick="event.stopPropagation()">
+              <a href="{% url 'task_edit' task.pk %}" style="text-decoration:none; color:#555;">✎</a>
+              <a href="{% url 'task_delete' task.pk %}"
+                 class="delete-task-btn"
+                 data-title="{{ task.title }}"
+                 style="text-decoration:none; color:#EF4444;">🗑</a>
             </div>
-
           </div>
-
         </div>
 
         {% endif %}
-
       {% empty %}
-
-        <p style="text-align:center; color:#999;">
-          No Task
-        </p>
-
+        <p style="text-align:center; color:#999;">No Task</p>
       {% endfor %}
 
-
-      <!-- ADD TASK -->
+      <!-- ADD TASK BUTTON -->
       <div style="text-align:center; margin-top:12px;">
-
         <button
           type="button"
           class="btn"
-          style="
-            background:#F3F4F6;
-            border:1px dashed #ccc;
-          "
-          onclick="openAddTaskModal(
-            '{{ status.name|escapejs }}',
-            '{{ status.project.id }}'
-          )"
+          style="background:#F3F4F6; border:1px dashed #ccc;"
+          onclick="openAddTaskModal('{{ status.name|escapejs }}', '{{ status.project_id }}')"
         >
           + Add Task
         </button>
-
       </div>
 
     </div>
-
   </div>
 
   {% empty %}
-
-  <div style="
-    grid-column:1/-1;
-    text-align:center;
-    padding:50px;
-    color:#999;
-  ">
+  <div style="grid-column:1/-1; text-align:center; padding:50px; color:#999;">
     No task statuses found.
   </div>
-
   {% endfor %}
 
 </div>
 
 {% else %}
-
-<div style="
-  background:white;
-  border:1px solid #E5E7EB;
-  border-radius:12px;
-  padding:50px;
-  text-align:center;
-">
-
+<div style="background:white; border:1px solid #E5E7EB; border-radius:12px; padding:50px; text-align:center;">
   <h3>No Project Found</h3>
-
-  <p style="color:#777;">
-    Create a project first to manage tasks.
-  </p>
-
+  <p style="color:#777;">Create a project first to manage tasks.</p>
 </div>
-
 {% endif %}
 {% endif %}
 
@@ -418,7 +303,10 @@
     <h2 style="margin:0; font-size:22px;">Add Task</h2>
     <form id="addTaskForm">
       <input type="hidden" name="status" id="taskStatusField">
-      <div style="margin-top:12px;"><label>Title</label><input type="text" name="title" class="input" required style="width:100%; padding:10px; border:1px solid var(--line); border-radius:6px;"></div>
+      <div style="margin-top:12px;">
+        <label>Title</label>
+        <input type="text" name="title" class="input" required style="width:100%; padding:10px; border:1px solid var(--line); border-radius:6px;">
+      </div>
       <div style="margin-top:12px;">
         <label>Project</label>
         <select name="project" id="taskProjectField" class="input" required style="width:100%; padding:10px; border:1px solid var(--line); border-radius:6px;">
@@ -430,16 +318,23 @@
       <div style="margin-top:12px;">
         <label>Assignee</label>
         <select name="assignee" class="input" required style="width:100%; padding:10px; border:1px solid var(--line); border-radius:6px;">
-          {% for employee in employees %}<option value="{{ employee.id }}">{{ employee.user.get_full_name|default:employee.user.username }}</option>{% endfor %}
+          {% for employee in employees %}
+          <option value="{{ employee.id }}">{{ employee.user.get_full_name|default:employee.user.username }}</option>
+          {% endfor %}
         </select>
       </div>
       <div style="margin-top:12px;">
         <label>Priority</label>
         <select name="priority" class="input" style="width:100%; padding:10px; border:1px solid var(--line); border-radius:6px;">
-          <option>High</option><option selected>Medium</option><option>Low</option>
+          <option>High</option>
+          <option selected>Medium</option>
+          <option>Low</option>
         </select>
       </div>
-      <div style="margin-top:12px;"><label>Due Date</label><input type="date" name="due_date" class="input" style="width:100%; padding:10px; border:1px solid var(--line); border-radius:6px;"></div>
+      <div style="margin-top:12px;">
+        <label>Due Date</label>
+        <input type="date" name="due_date" class="input" style="width:100%; padding:10px; border:1px solid var(--line); border-radius:6px;">
+      </div>
       <button type="submit" class="btn" style="margin-top:16px; background:#FF6B00; color:white;">Save Task</button>
     </form>
     <button onclick="closeAddTaskModal()" class="btn" style="margin-top:10px; background:#ccc;">Cancel</button>
@@ -455,24 +350,23 @@ function getCsrfToken() {
 function allowDrop(e) { e.preventDefault(); }
 function drag(e) { e.dataTransfer.setData("taskId", e.target.getAttribute("data-task-id")); }
 
-async function drop(e, newStatus) {
+async function drop(e, newStatusName) {
   e.preventDefault();
   e.stopPropagation();
   const taskId = e.dataTransfer.getData("taskId");
-  console.log('Drop event - taskId:', taskId, 'newStatus:', newStatus);
-  if (!taskId) {
-    console.log('No taskId found');
-    return;
-  }
+  if (!taskId) return;
+
   const res = await fetch(`/tasks/${taskId}/status/`, {
     method: 'POST',
-    headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': getCsrfToken()},
-    body: new URLSearchParams({ status: newStatus })
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-CSRFToken': getCsrfToken()
+    },
+    body: new URLSearchParams({ status: newStatusName })
   });
-  console.log('Response status:', res.status);
-  const data = await res.json();
-  console.log('Response data:', data);
-  if (data.ok) {
+
+  const data = await res.json().catch(() => ({}));
+  if (res.ok && data.ok) {
     location.reload();
   } else {
     alert(data.error || 'Could not update status');
@@ -534,12 +428,15 @@ async function setProgressStep(clickedStep) {
   });
 }
 
-async function updateTaskStatus(status) {
+async function updateTaskStatus(statusName) {
   if (!window.selectedTaskId) return;
   const res = await fetch(`/tasks/${window.selectedTaskId}/status/`, {
     method: 'POST',
-    headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': getCsrfToken()},
-    body: new URLSearchParams({ status })
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-CSRFToken': getCsrfToken()
+    },
+    body: new URLSearchParams({ status: statusName })
   });
   if (res.ok) location.reload();
   else alert('Could not update status');
@@ -553,9 +450,9 @@ function closeTaskModal() {
   window.selectedTaskId = null;
 }
 
-function openAddTaskModal(statusId, projectId) {
+function openAddTaskModal(statusName, projectId) {
   document.getElementById('addTaskModal').style.display = 'flex';
-  document.getElementById('taskStatusField').value = statusId;   // now sends ID
+  document.getElementById('taskStatusField').value = statusName;   // send NAME (important!)
   const projectSelect = document.getElementById('taskProjectField');
   if (projectSelect) {
     projectSelect.value = projectId;
@@ -571,12 +468,10 @@ document.getElementById('addTaskForm').addEventListener('submit', async function
   e.preventDefault();
 
   const formData = new FormData(this);
-  if (!formData.has('csrfmiddlewaretoken')) {
-    formData.append('csrfmiddlewaretoken', getCsrfToken());
-  }
+  formData.append('csrfmiddlewaretoken', getCsrfToken());
 
   try {
-    const res = await fetch('/tasks/create/', {
+    const res = await fetch('{% url "task_create" %}', {
       method: 'POST',
       body: formData,
       headers: {
@@ -584,7 +479,7 @@ document.getElementById('addTaskForm').addEventListener('submit', async function
       }
     });
 
-    if (res.redirected || res.ok) {
+    if (res.ok || res.redirected) {
       location.reload();
       return;
     }
@@ -592,10 +487,11 @@ document.getElementById('addTaskForm').addEventListener('submit', async function
     const contentType = res.headers.get('content-type') || '';
     if (contentType.includes('application/json')) {
       const data = await res.json();
-      alert(data.error || data.message || 'Could not create task');
+      console.error('Create error:', data);
+      alert(data.error || data.message || JSON.stringify(data.errors) || 'Could not create task');
     } else {
       const text = await res.text();
-      console.error('Create task failed:', res.status, text.slice(0, 400));
+      console.error('Create task failed:', res.status, text.slice(0, 600));
       alert(`Could not create task (HTTP ${res.status}). See console.`);
     }
   } catch (err) {
@@ -617,21 +513,8 @@ async function updateColumnColor(statusId, color) {
     })
   });
 
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
   if (data.ok) {
-    // Update the color picker value
-    const colorPicker = document.querySelector(`input[onchange*="'${statusId}'"]`);
-    if (colorPicker) {
-      colorPicker.value = data.color;
-    }
-    
-    // Update the column header badge
-    const statusBadge = document.querySelector(`span[style*="background:${colorPicker?.getAttribute('value')}"]`);
-    if (statusBadge) {
-      statusBadge.style.background = data.color;
-    }
-    
-    // Reload to update all card elements with the new color
     location.reload();
   } else {
     alert('Could not update column color');
@@ -639,14 +522,10 @@ async function updateColumnColor(statusId, color) {
 }
 
 async function deleteStatus(statusId, statusName) {
-  console.log('Deleting status:', statusId, statusName);
-
-  if (typeof Swal === 'undefined') {
-    if (!confirm(`Delete the "${statusName}" status column?`)) return;
-  } else {
+  if (typeof Swal !== 'undefined') {
     const result = await Swal.fire({
       title: 'Are you sure?',
-      text: `You want to delete the "${statusName}" status column?`,
+      text: `Delete the "${statusName}" status column?`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#EF4444',
@@ -655,6 +534,8 @@ async function deleteStatus(statusId, statusName) {
       cancelButtonText: 'Cancel'
     });
     if (!result.isConfirmed) return;
+  } else {
+    if (!confirm(`Delete "${statusName}"?`)) return;
   }
 
   try {
@@ -667,33 +548,31 @@ async function deleteStatus(statusId, statusName) {
       }
     });
 
-    let data = {};
     const contentType = res.headers.get('content-type') || '';
-    if (contentType.includes('application/json')) {
-      data = await res.json();
-    } else {
-      const text = await res.text();
-      console.error('Non-JSON response:', res.status, text.slice(0, 300));
-      alert(`Server error (${res.status}). Check console.`);
+    if (!contentType.includes('application/json')) {
+      console.error('Non-JSON response:', res.status, await res.text());
+      alert(`Server error (${res.status}). Check console / urls.py`);
       return;
     }
 
+    const data = await res.json();
     if (res.ok && data.ok) {
       location.reload();
     } else {
       alert(data.error || `Could not delete status (${res.status})`);
     }
   } catch (err) {
-    console.error('Delete status failed:', err);
-    alert('Network or server error. See console for details.');
+    console.error(err);
+    alert('Network or server error. See console.');
   }
 }
+
 // ================= SWEETALERT DELETE =================
 document.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('.delete-task-btn').forEach(function (btn) {
     btn.addEventListener('click', function (e) {
       e.preventDefault();
-      e.stopPropagation(); // important for Kanban cards
+      e.stopPropagation();
 
       const url = this.getAttribute('href');
       const title = this.getAttribute('data-title') || 'this task';
