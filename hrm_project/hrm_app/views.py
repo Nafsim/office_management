@@ -2688,6 +2688,7 @@ def leave_action(request, pk, action):
 
 
     return redirect('leave_list')
+
 # ─── TASKS ────────────────────────────────────────────────────────────────────
 
 @login_required
@@ -2698,7 +2699,9 @@ def task_list(request):
 
     emp = _emp(request)
 
-    # Employee can only see their own tasks
+    # ------------------------------------------------------------------
+    # Tasks
+    # ------------------------------------------------------------------
     if request.user.role == Role.EMPLOYEE:
         tasks = Task.objects.filter(
             assignee=emp
@@ -2713,9 +2716,19 @@ def task_list(request):
             'project',
             'status'
         ).all()
+    
+    print(f"DEBUG: tasks count = {tasks.count()}")
+    for task in tasks[:5]:
+        print(f"DEBUG: task id={task.pk}, title='{task.title}', project='{task.project.name}', assignee='{task.assignee.user.get_full_name()}', priority='{task.priority}', status='{task.status.name}', progress={task.progress}")
 
+    # ------------------------------------------------------------------
+    # Projects
+    # ------------------------------------------------------------------
     projects = Project.objects.all()
 
+    # ------------------------------------------------------------------
+    # Employees
+    # ------------------------------------------------------------------
     if request.user.role == Role.EMPLOYEE and emp:
         employees = Employee.objects.filter(
             pk=emp.pk
@@ -2724,15 +2737,15 @@ def task_list(request):
         employees = Employee.objects.select_related('user').all()
 
     # ------------------------------------------------------------------
-    # Dynamic Kanban statuses
+    # Create default statuses for every project
     # ------------------------------------------------------------------
-    for project in projects:
-        default_statuses = [
-            ('To Do', '#F3F4F6', 1),
-            ('In Progress', '#FEF3C7', 2),
-            ('Completed', '#D1FAE5', 3),
-        ]
+    default_statuses = [
+        ('To Do', '#F3F4F6', 1),
+        ('In Progress', '#FEF3C7', 2),
+        ('Completed', '#D1FAE5', 3),
+    ]
 
+    for project in projects:
         for name, color, order in default_statuses:
             TaskStatus.objects.get_or_create(
                 project=project,
@@ -2744,7 +2757,9 @@ def task_list(request):
                 }
             )
 
-    # Reload statuses after creating defaults
+    # ------------------------------------------------------------------
+    # All active statuses
+    # ------------------------------------------------------------------
     statuses = TaskStatus.objects.filter(
         project__in=projects,
         active=True
@@ -2753,11 +2768,12 @@ def task_list(request):
         'order',
         'id'
     )
-    
+
     # ------------------------------------------------------------------
-    # Current project
+    # Current project for Card/Kanban
     # ------------------------------------------------------------------
     if projects.exists():
+
         current_project_id = request.GET.get('project')
 
         if current_project_id:
@@ -2766,44 +2782,88 @@ def task_list(request):
             except (TypeError, ValueError):
                 current_project_id = None
 
+        # If project is selected from URL
         if current_project_id:
             current_project = projects.filter(
                 pk=current_project_id
             ).first()
-        else:
-            current_project = (
-                projects.filter(
-                    pk__in=tasks.values_list('project_id', flat=True)
-                ).first()
-                or projects.first()
-            )
 
+        # Otherwise use project of existing tasks
+        else:
+            current_project = projects.filter(
+                pk__in=tasks.values_list(
+                    'project_id',
+                    flat=True
+                )
+            ).order_by('id').first()
+
+            # If no task/project match, use first project
+            if not current_project:
+                current_project = projects.first()
+
+        # ------------------------------------------------------------------
+        # Statuses for current project
+        # ------------------------------------------------------------------
         if current_project:
             board_statuses = TaskStatus.objects.filter(
                 project=current_project,
                 active=True
-            ).order_by('order', 'id')
+            ).order_by(
+                'order',
+                'id'
+            )
+
+            # IMPORTANT:
+            # Card view will use ONLY tasks from current project
+            board_tasks = tasks.filter(
+                project=current_project
+            ).select_related('status', 'assignee__user', 'project')
+            
+            print(f"DEBUG: current_project = {current_project}")
+            print(f"DEBUG: board_statuses count = {board_statuses.count()}")
+            print(f"DEBUG: board_tasks count = {board_tasks.count()}")
+            print(f"DEBUG: board_tasks = {list(board_tasks.values_list('title', 'status_id'))}")
+
         else:
             board_statuses = TaskStatus.objects.none()
+            board_tasks = tasks.none()
 
     else:
         current_project = None
         board_statuses = TaskStatus.objects.none()
+        board_tasks = tasks.none()
 
+    # ------------------------------------------------------------------
+    # View mode
+    # ------------------------------------------------------------------
+    view_mode = request.GET.get(
+        'view',
+        'card'
+    )
 
-
-    view_mode = request.GET.get('view', 'card')
-
+    # ------------------------------------------------------------------
+    # Context
+    # ------------------------------------------------------------------
     context = _ctx(
         request,
+
+        # Table view
         tasks=tasks,
+
+        # Card/Kanban view
+        board_tasks=board_tasks,
+
         projects=projects,
         employees=employees,
+
         statuses=statuses,
         board_statuses=board_statuses,
+
         current_project=current_project,
+
         view_mode=view_mode,
 
+        # Counts
         todo_count=tasks.filter(
             status__name='To Do'
         ).count(),
@@ -2822,6 +2882,8 @@ def task_list(request):
         'hrm/tasks.html',
         context
     )
+
+
 @login_required
 def task_create(request):
     if not has_permission(request.user, "tasks", "create"):
@@ -2891,6 +2953,8 @@ def task_create(request):
             "status",
             ""
         ).strip()
+        
+        print(f"DEBUG TASK CREATE: requested_status = '{requested_status}'")
 
         # -----------------------------------------
         # Find status for this project
@@ -2903,6 +2967,10 @@ def task_create(request):
                 name__iexact=requested_status,
                 active=True
             ).first()
+            
+            print(f"DEBUG TASK CREATE: status_obj found = {status_obj}")
+            if status_obj:
+                print(f"DEBUG TASK CREATE: status_obj.id = {status_obj.id}, status_obj.name = '{status_obj.name}'")
 
         # -----------------------------------------
         # If selected status not found,
@@ -2916,6 +2984,8 @@ def task_create(request):
                 "order",
                 "id"
             ).first()
+            
+            print(f"DEBUG TASK CREATE: Using fallback status = {status_obj}")
 
         # -----------------------------------------
         # If project has no status,
@@ -2929,12 +2999,16 @@ def task_create(request):
                 order=0,
                 active=True
             )
+            
+            print(f"DEBUG TASK CREATE: Created default status = {status_obj}")
 
         # -----------------------------------------
         # VERY IMPORTANT
         # Assign FK directly
         # -----------------------------------------
         task.status_id = status_obj.id
+        
+        print(f"DEBUG TASK CREATE: task.status_id set to {task.status_id}")
 
         # -----------------------------------------
         # Set progress
