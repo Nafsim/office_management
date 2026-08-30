@@ -106,10 +106,10 @@ class TaskForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Make description and color not required
+
         self.fields['description'].required = False
         self.fields['color'].required = False
-
+        
 class PettyCashForm(forms.ModelForm):
     class Meta:
         model  = PettyCashLedger

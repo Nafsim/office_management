@@ -2726,9 +2726,6 @@ def task_list(request):
     # ------------------------------------------------------------------
     # Dynamic Kanban statuses
     # ------------------------------------------------------------------
-    # Get statuses from database.
-    # If no status exists for a project, the default statuses will be
-    # created automatically.
     for project in projects:
         default_statuses = [
             ('To Do', '#F3F4F6', 1),
@@ -2756,9 +2753,10 @@ def task_list(request):
         'order',
         'id'
     )
-
-    # For the current user's projects/tasks
-    # Keep the existing board structure compatible with the template.
+    
+    # ------------------------------------------------------------------
+    # Current project
+    # ------------------------------------------------------------------
     if projects.exists():
         current_project_id = request.GET.get('project')
 
@@ -2773,7 +2771,12 @@ def task_list(request):
                 pk=current_project_id
             ).first()
         else:
-            current_project = projects.first()
+            current_project = (
+                projects.filter(
+                    pk__in=tasks.values_list('project_id', flat=True)
+                ).first()
+                or projects.first()
+            )
 
         if current_project:
             board_statuses = TaskStatus.objects.filter(
@@ -2782,9 +2785,12 @@ def task_list(request):
             ).order_by('order', 'id')
         else:
             board_statuses = TaskStatus.objects.none()
+
     else:
         current_project = None
         board_statuses = TaskStatus.objects.none()
+
+
 
     view_mode = request.GET.get('view', 'card')
 
@@ -2793,18 +2799,11 @@ def task_list(request):
         tasks=tasks,
         projects=projects,
         employees=employees,
-
-        # All dynamic statuses
         statuses=statuses,
-
-        # Statuses for current Kanban project
         board_statuses=board_statuses,
-
         current_project=current_project,
-
         view_mode=view_mode,
 
-        # Default status counts
         todo_count=tasks.filter(
             status__name='To Do'
         ).count(),
@@ -2823,110 +2822,202 @@ def task_list(request):
         'hrm/tasks.html',
         context
     )
-
 @login_required
 def task_create(request):
     if not has_permission(request.user, "tasks", "create"):
-        messages.error(request, "You don't have permission to create tasks.")
+        messages.error(
+            request,
+            "You don't have permission to create tasks."
+        )
         return redirect("task_list")
 
     form = TaskForm(request.POST or None)
 
+    # Employee can only create task for themselves
     if request.method == "GET":
         if request.user.role == Role.EMPLOYEE:
-            form.fields['assignee'].initial = _emp(request)
+            form.fields["assignee"].initial = _emp(request)
 
     if form.is_valid():
+
+        # -----------------------------------------
+        # Create task object without saving
+        # -----------------------------------------
         task = form.save(commit=False)
 
-        requested_status = request.POST.get('status', '').strip()
+        # -----------------------------------------
+        # Get project
+        # -----------------------------------------
         project = task.project
 
         if not project:
-            project = Project.objects.first()
+            project = Project.objects.filter(
+                active=True
+            ).order_by("id").first()
+
             if not project:
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return JsonResponse({'ok': False, 'error': 'No project found.'}, status=400)
-                messages.error(request, 'No project found. Please create a project first.')
-                return render(request, 'hrm/form.html', _ctx(request, form=form, title='New Task', back='task_list'))
-            task.project = project
 
-        status_obj = None
-        if requested_status:
-            status_obj = TaskStatus.objects.filter(project=project, name=requested_status).first()
+                if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                    return JsonResponse(
+                        {
+                            "ok": False,
+                            "error": "No project found. Please create a project first."
+                        },
+                        status=400
+                    )
 
-        if not status_obj:
-            status_obj = TaskStatus.objects.filter(project=project).order_by('order', 'id').first()
-            if not status_obj:
-                status_obj = TaskStatus.objects.create(
-                    project=project,
-                    name='To Do',
-                    color='#6B7280',
-                    order=0,
-                    active=True
+                messages.error(
+                    request,
+                    "No project found. Please create a project first."
                 )
 
-                # Get or create a status for this project
+                return render(
+                    request,
+                    "hrm/form.html",
+                    _ctx(
+                        request,
+                        form=form,
+                        title="New Task",
+                        back="task_list"
+                    )
+                )
+
+            task.project = project
+
+        # -----------------------------------------
+        # Get requested status
+        # -----------------------------------------
+        requested_status = request.POST.get(
+            "status",
+            ""
+        ).strip()
+
+        # -----------------------------------------
+        # Find status for this project
+        # -----------------------------------------
         status_obj = None
+
         if requested_status:
             status_obj = TaskStatus.objects.filter(
                 project=project,
-                name=requested_status
+                name__iexact=requested_status,
+                active=True
             ).first()
 
-        if not status_obj:
-            # Try to get the first status of this project
+        # -----------------------------------------
+        # If selected status not found,
+        # use first active status
+        # -----------------------------------------
+        if status_obj is None:
             status_obj = TaskStatus.objects.filter(
-                project=project
-            ).order_by('order', 'id').first()
+                project=project,
+                active=True
+            ).order_by(
+                "order",
+                "id"
+            ).first()
 
-        if not status_obj:
-            # Create a default "To Do" status
+        # -----------------------------------------
+        # If project has no status,
+        # create default status
+        # -----------------------------------------
+        if status_obj is None:
             status_obj = TaskStatus.objects.create(
                 project=project,
-                name='To Do',
-                color='#6B7280',
+                name="To Do",
+                color="#6B7280",
                 order=0,
                 active=True
             )
 
-        # Force set the status (never leave it None)
-        task.status = status_obj
+        # -----------------------------------------
+        # VERY IMPORTANT
+        # Assign FK directly
+        # -----------------------------------------
+        task.status_id = status_obj.id
 
-        # Progress based on status
-        if task.status.name == 'In Progress' and (task.progress or 0) == 0:
-            task.progress = 20
-        elif task.status.name == 'Completed':
+        # -----------------------------------------
+        # Set progress
+        # -----------------------------------------
+        status_name = status_obj.name.strip().lower()
+
+        if status_name == "completed":
             task.progress = 100
-        elif task.status.name == 'To Do':
+
+        elif status_name == "in progress":
+            if not task.progress:
+                task.progress = 20
+
+        elif status_name == "to do":
             task.progress = 0
 
+        # -----------------------------------------
+        # DEBUG
+        # -----------------------------------------
+        print("\n========== TASK CREATE ==========")
+        print("Task title:", task.title)
+        print("Project:", project)
+        print("Project ID:", project.id)
+        print("Requested status:", requested_status)
+        print("Status object:", status_obj)
+        print("Status ID:", status_obj.id)
+        print("Task status_id:", task.status_id)
+        print("=================================\n")
+
+        # -----------------------------------------
+        # Save
+        # -----------------------------------------
         task.save()
 
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({
-                'ok': True,
-                'task_id': task.pk,
-                'title': task.title,
-                'status': task.status.name if task.status else None
-            })
+        # -----------------------------------------
+        # AJAX response
+        # -----------------------------------------
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse(
+                {
+                    "ok": True,
+                    "task_id": task.pk,
+                    "title": task.title,
+                    "status": status_obj.name
+                }
+            )
 
-        messages.success(request, 'Task created.')
-        return redirect('task_list')
+        messages.success(
+            request,
+            "Task created."
+        )
 
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return redirect("task_list")
+
+    # -----------------------------------------
+    # Form errors - AJAX
+    # -----------------------------------------
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+
         print("========== TASK CREATE FORM ERRORS ==========")
         print(form.errors)
         print("POST data:", dict(request.POST))
         print("=============================================")
-        return JsonResponse({
-            'ok': False,
-            'error': 'Form validation failed. Please check your input.',
-            'errors': dict(form.errors.items())
-        }, status=400)
 
-    return render(request, 'hrm/form.html', _ctx(request, form=form, title='New Task', back='task_list'))
+        return JsonResponse(
+            {
+                "ok": False,
+                "error": "Form validation failed. Please check your input.",
+                "errors": dict(form.errors.items())
+            },
+            status=400
+        )
 
+    return render(
+        request,
+        "hrm/form.html",
+        _ctx(
+            request,
+            form=form,
+            title="New Task",
+            back="task_list"
+        )
+    )
 @login_required
 def task_export(request):
     if not has_permission(request.user, "tasks", "view"):

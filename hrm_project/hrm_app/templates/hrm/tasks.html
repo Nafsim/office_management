@@ -194,7 +194,7 @@
     >
 
       {% for task in tasks %}
-        {% if task.status_id == status.id %}
+        {% if task.status and task.status.id == status.id %}
 
         <!-- TASK CARD -->
         <div
