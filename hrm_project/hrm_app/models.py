@@ -1,3 +1,4 @@
+import os
 from django.db import models
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.utils import timezone
@@ -460,11 +461,15 @@ class Document(models.Model):
 
     @property
     def size_display(self):
-        size = self.file.size if self.file else 0
-        if size > 1_000_000:
-            return f"{size/1_000_000:.1f} MB"
-        return f"{size/1_000:.0f} KB"
-
+        try:
+            if self.file and self.file.name:
+                size = self.file.size
+                if size > 1_000_000:
+                    return f"{size/1_000_000:.1f} MB"
+                return f"{size/1_000:.0f} KB"
+        except (ValueError, OSError, FileNotFoundError):
+            pass
+        return "—"
 
 # ─────────────────────────────────────────────
 #  DOCUMENT REQUEST
@@ -687,24 +692,14 @@ class Project(models.Model):
 class TaskStatus(models.Model):
     """
     Dynamic Kanban status/column.
-
-    Examples:
-    To Do
-    In Progress
-    Testing
-    Review
-    Completed
     """
-
     project = models.ForeignKey(
         Project,
         on_delete=models.CASCADE,
         related_name="task_statuses"
     )
 
-    name = models.CharField(
-        max_length=50
-    )
+    name = models.CharField(max_length=50)
 
     color = models.CharField(
         max_length=7,
@@ -717,13 +712,10 @@ class TaskStatus(models.Model):
         help_text="Order of the status on the Kanban board"
     )
 
-    active = models.BooleanField(
-        default=True
-    )
+    active = models.BooleanField(default=True)
 
     class Meta:
         ordering = ["order", "id"]
-
         constraints = [
             models.UniqueConstraint(
                 fields=["project", "name"],
@@ -744,9 +736,7 @@ class Task(models.Model):
         ("Critical", "Critical"),
     ]
 
-    title = models.CharField(
-        max_length=200
-    )
+    title = models.CharField(max_length=200)
 
     project = models.ForeignKey(
         Project,
@@ -774,13 +764,9 @@ class Task(models.Model):
         related_name="tasks"
     )
 
-    progress = models.PositiveIntegerField(
-        default=0
-    )
+    progress = models.PositiveIntegerField(default=0)
 
-    description = models.TextField(
-        blank=True
-    )
+    description = models.TextField(blank=True)
 
     color = models.CharField(
         max_length=7,
@@ -788,9 +774,22 @@ class Task(models.Model):
         help_text="Task card color"
     )
 
-    created_at = models.DateTimeField(
-        auto_now_add=True
+    # New fields for attachments
+    image = models.ImageField(
+        upload_to='task_images/',
+        blank=True,
+        null=True,
+        help_text="Optional image for this task"
     )
+
+    document = models.FileField(
+        upload_to='task_documents/',
+        blank=True,
+        null=True,
+        help_text="Optional document for this task"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["-created_at"]
@@ -803,7 +802,6 @@ class Task(models.Model):
 class TaskStep(models.Model):
     """
     Dynamic steps for a task.
-    Users can add as many steps as needed and mark them as complete.
     Progress is calculated based on completed steps.
     """
     task = models.ForeignKey(
@@ -811,29 +809,27 @@ class TaskStep(models.Model):
         on_delete=models.CASCADE,
         related_name="steps"
     )
-    
+
     title = models.CharField(
         max_length=200,
         help_text="Step description"
     )
-    
+
     completed = models.BooleanField(
         default=False,
         help_text="Whether this step is completed"
     )
-    
+
     order = models.PositiveIntegerField(
         default=0,
         help_text="Order of the step"
     )
-    
-    created_at = models.DateTimeField(
-        auto_now_add=True
-    )
-    
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
     class Meta:
         ordering = ["order", "id"]
-    
+
     def __str__(self):
         return f"{self.task.title} - {self.title}"
 # ─────────────────────────────────────────────

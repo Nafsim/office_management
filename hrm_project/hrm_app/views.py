@@ -3425,9 +3425,14 @@ def task_detail(request, pk):
 # ─── TASK PROGRESS ────────────────────────────────────────────────────────────
 
 def _recalculate_task_step_progress(task):
-    """Each completed task step counts as 20% progress, capped at 100%."""
-    completed_steps = task.steps.filter(completed=True).count()
-    task.progress = min(100, completed_steps * 20)
+    """Progress is based on the ratio of completed steps to total steps."""
+    total_steps = task.steps.count()
+    if total_steps == 0:
+        task.progress = 0
+    else:
+        completed_steps = task.steps.filter(completed=True).count()
+        task.progress = int(round((completed_steps / total_steps) * 100))
+        task.progress = max(0, min(100, task.progress))
     return task.progress
 
 
@@ -3489,18 +3494,22 @@ def task_update_progress(request, pk):
             status=400
         )
 
-    # Each step = 20%
-    new_progress = step * 20
+    # Dynamic progress based on actual step completion ratio.
+    total_steps = task.steps.count()
+    if total_steps == 0:
+        new_progress = 0
+    else:
+        new_progress = int(round((step / total_steps) * 100))
 
-    task.progress = new_progress
+    task.progress = max(0, min(100, new_progress))
 
     # --------------------------------------------------------------
     # Automatically select default statuses according to progress
     # --------------------------------------------------------------
-    if new_progress == 0:
+    if task.progress == 0:
         status_name = 'To Do'
 
-    elif new_progress < 100:
+    elif task.progress < 100:
         status_name = 'In Progress'
 
     else:
@@ -3756,7 +3765,64 @@ def task_step_reorder(request, task_id):
     
     return JsonResponse({'ok': True})
 
+@login_required
+@require_POST
+def task_upload_image(request, pk):
+    if not has_permission(request.user, "tasks", "edit"):
+        return JsonResponse({'ok': False, 'error': 'Permission denied.'}, status=403)
 
+    task = get_object_or_404(Task, pk=pk)
+
+    if request.user.role == Role.EMPLOYEE and task.assignee != _emp(request):
+        return JsonResponse({'ok': False, 'error': 'Permission denied.'}, status=403)
+
+    if 'image' not in request.FILES:
+        return JsonResponse({'ok': False, 'error': 'No image uploaded.'}, status=400)
+
+    task.image = request.FILES['image']
+    task.save(update_fields=['image'])
+
+    return JsonResponse({
+        'ok': True,
+        'image_url': task.image.url if task.image else None
+    })
+
+
+@login_required
+@require_POST
+def task_upload_document(request, pk):
+    if not has_permission(request.user, "tasks", "edit"):
+        return JsonResponse({'ok': False, 'error': 'Permission denied.'}, status=403)
+
+    task = get_object_or_404(Task, pk=pk)
+
+    if request.user.role == Role.EMPLOYEE and task.assignee != _emp(request):
+        return JsonResponse({'ok': False, 'error': 'Permission denied.'}, status=403)
+
+    if 'document' not in request.FILES:
+        return JsonResponse({'ok': False, 'error': 'No document uploaded.'}, status=400)
+
+    task.document = request.FILES['document']
+    task.save(update_fields=['document'])
+
+    return JsonResponse({
+        'ok': True,
+        'document_url': task.document.url if task.document else None,
+        'document_name': task.document.name.split('/')[-1] if task.document else None
+    })
+@login_required
+def task_get_attachments(request, pk):
+    task = get_object_or_404(Task, pk=pk)
+
+    if request.user.role == Role.EMPLOYEE and task.assignee != _emp(request):
+        return JsonResponse({'ok': False, 'error': 'Permission denied.'}, status=403)
+
+    return JsonResponse({
+        'ok': True,
+        'image_url': task.image.url if task.image else None,
+        'document_url': task.document.url if task.document else None,
+        'document_name': task.document.name.split('/')[-1] if task.document else None,
+    })
 # ─── STATUS / COLUMN COLOR ───────────────────────────────────────────────────
 
 @login_required
@@ -3836,7 +3902,7 @@ def task_status_create(request):
 
         color = request.POST.get(
             "color",
-            "#6B7280"
+            "#4771C4"
         ).strip()
 
         project_id = request.POST.get(
@@ -4138,17 +4204,17 @@ def document_download(request, pk):
         if not (doc.is_public or doc.employee == _emp(request)):
             raise Http404
 
-    if not doc.file:
+    if not doc.file or not doc.file.name:
         raise Http404("File not found")
 
     # Use the original filename stored in the FileField
     filename = doc.file.name.split('/')[-1]   # strips the 'documents/' prefix
 
-    return FileResponse(
-        doc.file.open('rb'),
-        as_attachment=True,
-        filename=filename
-    )
+    try:
+        response = FileResponse(doc.file.open('rb'), as_attachment=True, filename=filename)
+        return response
+    except FileNotFoundError:
+        raise Http404("File not found on disk")
 
 # ─── DOCUMENTS ────────────────────────────────────────────────────────────────
 
@@ -4840,11 +4906,15 @@ def asset_list(request):
     available_assets = Asset.objects.filter(status='Available').count()
     overdue_assets = Asset.objects.filter(status='Overdue').count()
 
+    # NEW → needed for the Assign popup
+    employees = Employee.objects.select_related('user').filter(user__is_active=True).order_by('user__first_name')
+
     ctx = _ctx(request, assets=assets, q=q,
                total_assets=total_assets,
                in_use_assets=in_use_assets,
                available_assets=available_assets,
-               overdue_assets=overdue_assets)
+               overdue_assets=overdue_assets,
+               employees=employees)          # ← added
     return render(request, 'hrm/assets.html', ctx)
 
 
@@ -4938,19 +5008,38 @@ def asset_assign(request, pk):
     asset = get_object_or_404(Asset, pk=pk)
 
     if request.method == 'POST':
-        employee_id = request.POST.get('assigned_to') or getattr(request.user.employee, 'id', None)
-        assigned_to = get_object_or_404(Employee, pk=employee_id) if employee_id else None
-        asset.assigned_to = assigned_to
+        # Support both the old form and the new modal
+        employee_id = request.POST.get('employee_id') or request.POST.get('assigned_to')
+
+        if not employee_id:
+            messages.error(request, "Please select an employee.")
+            return redirect("asset_list")
+
+        employee = get_object_or_404(Employee, pk=employee_id)
+
+        # Auto return previous assignment
+        previous_employee = asset.assigned_to
+
+        asset.assigned_to = employee
         asset.assigned_on = date.today()
         asset.status = 'In Use'
         asset.save(update_fields=['assigned_to', 'assigned_on', 'status'])
-        messages.success(request, f'Asset {asset.asset_id} assigned successfully.')
+
+        if previous_employee and previous_employee != employee:
+            messages.success(
+                request,
+                f'Asset {asset.asset_id} was automatically returned from {previous_employee.user.get_full_name()} '
+                f'and assigned to {employee.user.get_full_name()}.'
+            )
+        else:
+            messages.success(request, f'Asset {asset.asset_id} assigned to {employee.user.get_full_name()}.')
+
         return redirect('asset_list')
 
+    # GET request (old form still works)
     form = AssetForm(instance=asset)
     form.initial['status'] = 'In Use'
     return render(request, 'hrm/form.html', _ctx(request, form=form, title='Assign Asset', back='asset_list'))
-
 
 @manager_or_admin
 def asset_return(request, pk):

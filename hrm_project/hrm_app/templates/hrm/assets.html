@@ -101,15 +101,32 @@
         <td>
           <a href="{% url 'asset_edit' asset.pk %}" class="btn ghost sm">View</a>
           <a href="{% url 'asset_edit' asset.pk %}" class="btn ghost sm">Edit</a>
+
           {% if asset.status == 'Available' %}
-            <a href="{% url 'asset_assign' asset.pk %}" class="btn ghost sm">Assign</a>
-            {% if user.role == 'super_admin' or user.role == 'manager' %}
-              <a href="{% url 'asset_delete' asset.pk %}" class="btn ghost sm red" onclick="return confirm('Delete this asset?')">Delete</a>
-            {% endif %}
-          {% elif asset.status == 'In Use' or asset.status == 'Overdue' %}
-            <a href="{% url 'asset_return' asset.pk %}" class="btn ghost sm" onclick="return confirm('Return this asset?')">Return</a>
-          {% endif %}
-        </td>
+            <button type="button" class="btn ghost sm"
+            onclick="openAssignModal({{ asset.pk }}, '{{ asset.name|escapejs }}')">
+      Assign
+    </button>
+
+    {% if user.role == 'super_admin' or user.role == 'manager' %}
+      <button type="button" class="btn ghost sm red"
+              onclick="confirmDelete({{ asset.pk }}, '{{ asset.name|escapejs }}')">
+        Delete
+      </button>
+    {% endif %}
+
+  {% elif asset.status == 'In Use' or asset.status == 'Overdue' %}
+    <button type="button" class="btn ghost sm"
+            onclick="confirmReturn({{ asset.pk }}, '{{ asset.name|escapejs }}')">
+      Return
+    </button>
+
+    <button type="button" class="btn ghost sm"
+            onclick="openAssignModal({{ asset.pk }}, '{{ asset.name|escapejs }}')">
+      Re-assign
+    </button>
+  {% endif %}
+</td>
       </tr>
       {% empty %}
       <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px">No assets found.</td></tr>
@@ -117,5 +134,96 @@
     </tbody>
   </table>
 </div>
+<!-- ==================== ASSIGN MODAL ==================== -->
+<div id="assignModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:white; border-radius:16px; width:90%; max-width:480px; padding:28px; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h3 style="margin:0; font-size:20px; color:var(--ink);">Assign Asset</h3>
+      <button onclick="closeAssignModal()" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999;">&times;</button>
+    </div>
+
+    <p style="margin:0 0 16px; color:var(--muted); font-size:14px;">
+      Asset: <strong id="modalAssetName"></strong>
+    </p>
+
+    <form id="assignForm" method="post">
+      {% csrf_token %}
+      <input type="hidden" name="asset_id" id="modalAssetId">
+
+      <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px;">Assign to Employee</label>
+      <select name="employee_id" id="employeeSelect" required
+              style="width:100%; padding:12px 14px; border:1px solid #ddd; border-radius:10px; font-size:15px; margin-bottom:24px;">
+        <option value="">-- Select Employee --</option>
+        {% for emp in employees %}
+          <option value="{{ emp.id }}">{{ emp.user.get_full_name }} ({{ emp.employee_id }})</option>
+        {% endfor %}
+      </select>
+
+      <div style="display:flex; gap:12px; justify-content:flex-end;">
+        <button type="button" onclick="closeAssignModal()" class="btn" style="background:#f1f1f1; color:#333;">Cancel</button>
+        <button type="submit" class="btn" style="background:#FF6B00; color:white;">Assign Now</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- SweetAlert2 CDN (if not already included in base.html) -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+  // ========== ASSIGN MODAL ==========
+  function openAssignModal(assetId, assetName) {
+    document.getElementById('modalAssetId').value = assetId;
+    document.getElementById('modalAssetName').textContent = assetName;
+    document.getElementById('assignForm').action = `/assets/${assetId}/assign/`;   // ← change this URL if needed
+    document.getElementById('assignModal').style.display = 'flex';
+  }
+
+  function closeAssignModal() {
+    document.getElementById('assignModal').style.display = 'none';
+  }
+
+  // Close modal when clicking outside
+  document.getElementById('assignModal').addEventListener('click', function(e) {
+    if (e.target === this) closeAssignModal();
+  });
+
+  // ========== SWEET ALERT - RETURN ==========
+  function confirmReturn(assetId, assetName) {
+    Swal.fire({
+      title: 'Return Asset?',
+      html: `Are you sure you want to return <b>${assetName}</b>?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#FF6B00',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Yes, Return it',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        window.location.href = `/assets/${assetId}/return/`;   // ← change URL if needed
+      }
+    });
+  }
+
+  // ========== SWEET ALERT - DELETE ==========
+  function confirmDelete(assetId, assetName) {
+    Swal.fire({
+      title: 'Delete Asset?',
+      html: `You are about to permanently delete <b>${assetName}</b>.<br>This action cannot be undone!`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Yes, Delete it',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        window.location.href = `/assets/${assetId}/delete/`;   // ← change URL if needed
+      }
+    });
+  }
+</script>
 
 {% endblock %}
