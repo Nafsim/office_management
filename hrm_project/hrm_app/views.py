@@ -16,7 +16,7 @@ from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
 
 from django.utils import timezone
 
-from django.db.models import Count, Sum, Q
+from django.db.models import Count, Sum, Q, Max
 
 from django.core.exceptions import PermissionDenied
 
@@ -46,7 +46,7 @@ from .models import (
 
     Notice, Document, DocumentRequest, SalaryStructure, Payslip, PettyCashLedger,
 
-    Asset, Project, Task, TaskStatus, OnboardingRecord, SecureFile,
+    Asset, Project, Task, TaskStatus, TaskStep, OnboardingRecord, SecureFile,
     EmailTemplate, Holiday, NotificationRule, Role,
 
 )
@@ -2817,12 +2817,15 @@ def task_list(request):
             # Card view will use ONLY tasks from current project
             board_tasks = tasks.filter(
                 project=current_project
-            ).select_related('status', 'assignee__user', 'project')
+            ).select_related('status', 'assignee__user', 'project').prefetch_related('steps')
             
-            print(f"DEBUG: current_project = {current_project}")
-            print(f"DEBUG: board_statuses count = {board_statuses.count()}")
-            print(f"DEBUG: board_tasks count = {board_tasks.count()}")
-            print(f"DEBUG: board_tasks = {list(board_tasks.values_list('title', 'status_id'))}")
+            print(f"\n========== CARD VIEW DEBUG ==========")
+            print(f"current_project = {current_project} (id={current_project.id if current_project else None})")
+            print(f"board_statuses count = {board_statuses.count()}")
+            print(f"board_tasks count = {board_tasks.count()}")
+            for task in board_tasks:
+                print(f"  Task: id={task.pk}, title='{task.title}', status_id={task.status_id}, status_name='{task.status.name}'")
+            print(f"=====================================\n")
 
         else:
             board_statuses = TaskStatus.objects.none()
@@ -3421,6 +3424,13 @@ def task_detail(request, pk):
 
 # ─── TASK PROGRESS ────────────────────────────────────────────────────────────
 
+def _recalculate_task_step_progress(task):
+    """Each completed task step counts as 20% progress, capped at 100%."""
+    completed_steps = task.steps.filter(completed=True).count()
+    task.progress = min(100, completed_steps * 20)
+    return task.progress
+
+
 @login_required
 @require_POST
 def task_update_progress(request, pk):
@@ -3520,6 +3530,231 @@ def task_update_progress(request, pk):
             'status_id': task.status.pk,
         }
     )
+
+
+# ─── TASK STEPS (Dynamic) ───────────────────────────────────────────────────────
+
+@login_required
+def task_step_list(request, task_id):
+    """Get all steps for a task"""
+    print(f"\n========== TASK STEP LIST DEBUG ==========")
+    print(f"task_id = {task_id}")
+    print(f"User = {request.user}")
+    print(f"========================================\n")
+    
+    if not has_permission(request.user, "tasks", "view"):
+        print("Permission denied for tasks view")
+        return JsonResponse(
+            {'ok': False, 'error': 'Permission denied.'},
+            status=403
+        )
+    
+    task = get_object_or_404(Task.objects.select_related('project'), pk=task_id)
+    print(f"Task found: {task.title}")
+    
+    if request.user.role == Role.EMPLOYEE and task.assignee != _emp(request):
+        print("Employee permission denied - not assigned to this task")
+        return JsonResponse(
+            {'ok': False, 'error': 'Permission denied.'},
+            status=403
+        )
+    
+    steps = task.steps.all().order_by('order', 'id')
+    print(f"Steps count = {steps.count()}")
+    steps_data = [
+        {
+            'id': step.id,
+            'title': step.title,
+            'completed': step.completed,
+            'order': step.order
+        }
+        for step in steps
+    ]
+    
+    print(f"Returning steps data: {steps_data}")
+    return JsonResponse({
+        'ok': True,
+        'steps': steps_data
+    })
+
+
+@login_required
+@require_POST
+def task_step_add(request, task_id):
+    """Add a new step to a task"""
+    print(f"\n========== TASK STEP ADD DEBUG ==========")
+    print(f"task_id = {task_id}")
+    print(f"POST data = {dict(request.POST)}")
+    print(f"User = {request.user}")
+    print(f"User role = {request.user.role}")
+    print(f"========================================\n")
+    
+    if not has_permission(request.user, "tasks", "edit"):
+        print("Permission denied for tasks edit")
+        return JsonResponse(
+            {'ok': False, 'error': 'Permission denied.'},
+            status=403
+        )
+    
+    task = get_object_or_404(Task.objects.select_related('project'), pk=task_id)
+    print(f"Task found: {task.title}")
+    
+    if request.user.role == Role.EMPLOYEE and task.assignee != _emp(request):
+        print("Employee permission denied - not assigned to this task")
+        return JsonResponse(
+            {'ok': False, 'error': 'Permission denied.'},
+            status=403
+        )
+    
+    title = request.POST.get('title', '').strip()
+    print(f"Step title = '{title}'")
+    if not title:
+        print("Title is empty")
+        return JsonResponse(
+            {'ok': False, 'error': 'Title is required.'},
+            status=400
+        )
+    
+    # Get the highest order for this task
+    max_order = task.steps.aggregate(Max('order'))['order__max'] or 0 
+    step = TaskStep.objects.create(
+        task=task,
+        title=title,
+        order=max_order + 1
+    )
+    
+    # Update task progress based on completed steps.
+    # One completed step = 20% progress.
+    task.progress = _recalculate_task_step_progress(task)
+    task.save(update_fields=['progress'])
+
+    return JsonResponse({
+        'ok': True,
+        'step_id': step.id,
+        'title': step.title,
+        'completed': step.completed,
+        'order': step.order,
+        'progress': task.progress
+    })
+
+
+@login_required
+@require_POST
+def task_step_toggle(request, step_id):
+    """Toggle step completion status"""
+    if not has_permission(request.user, "tasks", "edit"):
+        return JsonResponse(
+            {'ok': False, 'error': 'Permission denied.'},
+            status=403
+        )
+    
+    step = get_object_or_404(TaskStep.objects.select_related('task'), pk=step_id)
+    task = step.task
+    
+    if request.user.role == Role.EMPLOYEE and task.assignee != _emp(request):
+        return JsonResponse(
+            {'ok': False, 'error': 'Permission denied.'},
+            status=403
+        )
+    
+    step.completed = not step.completed
+    step.save(update_fields=['completed'])
+    
+    # Update task progress based on completed steps.
+    # One completed step = 20% progress.
+    task.progress = _recalculate_task_step_progress(task)
+
+    # Auto-update status based on progress
+    if task.progress == 0:
+        status_name = 'To Do'
+    elif task.progress < 100:
+        status_name = 'In Progress'
+    else:
+        status_name = 'Completed'
+    
+    status_obj = TaskStatus.objects.filter(
+        project=task.project,
+        name=status_name,
+        active=True
+    ).first()
+    
+    if status_obj:
+        task.status = status_obj
+    
+    task.save(update_fields=['progress', 'status'])
+    
+    return JsonResponse({
+        'ok': True,
+        'completed': step.completed,
+        'progress': task.progress,
+        'status': task.status.name if task.status else '',
+        'status_id': task.status.id if task.status else None
+    })
+
+
+@login_required
+@require_POST
+def task_step_delete(request, step_id):
+    """Delete a step from a task"""
+    if not has_permission(request.user, "tasks", "edit"):
+        return JsonResponse(
+            {'ok': False, 'error': 'Permission denied.'},
+            status=403
+        )
+    
+    step = get_object_or_404(TaskStep.objects.select_related('task'), pk=step_id)
+    task = step.task
+    
+    if request.user.role == Role.EMPLOYEE and task.assignee != _emp(request):
+        return JsonResponse(
+            {'ok': False, 'error': 'Permission denied.'},
+            status=403
+        )
+    
+    step.delete()
+
+    # Update task progress based on completed steps.
+    # One completed step = 20% progress.
+    task.progress = _recalculate_task_step_progress(task)
+    task.save(update_fields=['progress'])
+
+    return JsonResponse({
+        'ok': True,
+        'progress': task.progress
+    })
+
+
+@login_required
+@require_POST
+def task_step_reorder(request, task_id):
+    """Reorder steps for a task"""
+    if not has_permission(request.user, "tasks", "edit"):
+        return JsonResponse(
+            {'ok': False, 'error': 'Permission denied.'},
+            status=403
+        )
+    
+    task = get_object_or_404(Task.objects.select_related('project'), pk=task_id)
+    
+    if request.user.role == Role.EMPLOYEE and task.assignee != _emp(request):
+        return JsonResponse(
+            {'ok': False, 'error': 'Permission denied.'},
+            status=403
+        )
+    
+    try:
+        step_order = request.POST.get('order', '')
+        if step_order:
+            step_ids = [int(sid) for sid in step_order.split(',')]
+            for idx, step_id in enumerate(step_ids):
+                TaskStep.objects.filter(pk=step_id, task=task).update(order=idx)
+    except (ValueError, TypeError):
+        return JsonResponse(
+            {'ok': False, 'error': 'Invalid order format.'},
+            status=400
+        )
+    
+    return JsonResponse({'ok': True})
 
 
 # ─── STATUS / COLUMN COLOR ───────────────────────────────────────────────────
@@ -4580,21 +4815,37 @@ def petty_cash_add(request):
 # ─── ASSETS ───────────────────────────────────────────────────────────────────
 
 @login_required
-
 def asset_list(request):
     if not has_permission(request.user, "assets", "view"):
         messages.error(request, "You don't have permission to access Assets.")
         return redirect("dashboard")
 
     if request.user.role == Role.EMPLOYEE:
-
-        assets = Asset.objects.filter(assigned_to=_emp(request))
-
+        assets = Asset.objects.filter(assigned_to=_emp(request)).select_related('assigned_to__user')
     else:
-
         assets = Asset.objects.select_related('assigned_to__user').all()
 
-    return render(request, 'hrm/assets.html', _ctx(request, assets=assets))
+    q = (request.GET.get('q') or '').strip()
+    if q:
+        assets = assets.filter(
+            Q(asset_id__icontains=q) |
+            Q(name__icontains=q) |
+            Q(asset_type__icontains=q) |
+            Q(assigned_to__user__first_name__icontains=q) |
+            Q(assigned_to__user__last_name__icontains=q)
+        )
+
+    total_assets = Asset.objects.count()
+    in_use_assets = Asset.objects.filter(status='In Use').count()
+    available_assets = Asset.objects.filter(status='Available').count()
+    overdue_assets = Asset.objects.filter(status='Overdue').count()
+
+    ctx = _ctx(request, assets=assets, q=q,
+               total_assets=total_assets,
+               in_use_assets=in_use_assets,
+               available_assets=available_assets,
+               overdue_assets=overdue_assets)
+    return render(request, 'hrm/assets.html', ctx)
 
 
 @login_required
@@ -4659,33 +4910,64 @@ def asset_create(request):
 
 
 @manager_or_admin
-
 def asset_edit(request, pk):
-
     if not has_permission(request.user, "assets", "edit"):
         messages.error(request, "You don't have permission to edit assets.")
         return redirect("asset_list")
 
     asset = get_object_or_404(Asset, pk=pk)
+    form = AssetForm(request.POST or None, instance=asset)
 
-    form  = AssetForm(request.POST or None, instance=asset)
+    if request.GET.get('mode') == 'assign' and not request.POST:
+        form.initial['status'] = 'In Use'
 
     if form.is_valid():
-
         form.save()
-
         messages.success(request, 'Asset updated.')
-
         return redirect('asset_list')
 
     return render(request, 'hrm/form.html', _ctx(request, form=form, title='Edit Asset', back='asset_list'))
 
 
+@manager_or_admin
+def asset_assign(request, pk):
+    if not has_permission(request.user, "assets", "edit"):
+        messages.error(request, "You don't have permission to assign assets.")
+        return redirect("asset_list")
 
+    asset = get_object_or_404(Asset, pk=pk)
+
+    if request.method == 'POST':
+        employee_id = request.POST.get('assigned_to') or getattr(request.user.employee, 'id', None)
+        assigned_to = get_object_or_404(Employee, pk=employee_id) if employee_id else None
+        asset.assigned_to = assigned_to
+        asset.assigned_on = date.today()
+        asset.status = 'In Use'
+        asset.save(update_fields=['assigned_to', 'assigned_on', 'status'])
+        messages.success(request, f'Asset {asset.asset_id} assigned successfully.')
+        return redirect('asset_list')
+
+    form = AssetForm(instance=asset)
+    form.initial['status'] = 'In Use'
+    return render(request, 'hrm/form.html', _ctx(request, form=form, title='Assign Asset', back='asset_list'))
+
+
+@manager_or_admin
+def asset_return(request, pk):
+    if not has_permission(request.user, "assets", "edit"):
+        messages.error(request, "You don't have permission to return assets.")
+        return redirect("asset_list")
+
+    asset = get_object_or_404(Asset, pk=pk)
+    asset.assigned_to = None
+    asset.assigned_on = None
+    asset.status = 'Available'
+    asset.save(update_fields=['assigned_to', 'assigned_on', 'status'])
+    messages.success(request, f'Asset {asset.asset_id} has been returned and marked available.')
+    return redirect('asset_list')
 
 
 @admin_required
-
 def asset_delete(request, pk):
     if not has_permission(request.user, "assets", "delete"):
         messages.error(request, "You don't have permission to delete assets.")

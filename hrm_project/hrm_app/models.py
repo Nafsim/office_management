@@ -636,7 +636,7 @@ class Asset(models.Model):
         ('Accessory', 'Accessory'), ('Furniture', 'Furniture'), ('Other', 'Other'),
     ]
     STATUS_CHOICES = [
-        ('Available', 'Available'), ('In Use', 'In Use'),
+        ('Available', 'Available'), ('In Use', 'In Use'), ('Overdue', 'Overdue'),
         ('Maintenance', 'Maintenance'), ('Retired', 'Retired'),
     ]
     asset_id     = models.CharField(max_length=30, unique=True)
@@ -798,6 +798,44 @@ class Task(models.Model):
     def __str__(self):
         status_name = self.status.name if self.status else "No Status"
         return f"{self.title} [{status_name}]"
+
+
+class TaskStep(models.Model):
+    """
+    Dynamic steps for a task.
+    Users can add as many steps as needed and mark them as complete.
+    Progress is calculated based on completed steps.
+    """
+    task = models.ForeignKey(
+        Task,
+        on_delete=models.CASCADE,
+        related_name="steps"
+    )
+    
+    title = models.CharField(
+        max_length=200,
+        help_text="Step description"
+    )
+    
+    completed = models.BooleanField(
+        default=False,
+        help_text="Whether this step is completed"
+    )
+    
+    order = models.PositiveIntegerField(
+        default=0,
+        help_text="Order of the step"
+    )
+    
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+    
+    class Meta:
+        ordering = ["order", "id"]
+    
+    def __str__(self):
+        return f"{self.task.title} - {self.title}"
 # ─────────────────────────────────────────────
 #  ONBOARDING / NDA
 # ─────────────────────────────────────────────

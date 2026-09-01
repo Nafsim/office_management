@@ -3,7 +3,20 @@ from datetime import date
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import Attendance, Department, Designation, Employee, Notice, Shift, User, UserPermission
+from .models import (
+    Attendance,
+    Department,
+    Designation,
+    Employee,
+    Notice,
+    Project,
+    Shift,
+    Task,
+    TaskStatus,
+    TaskStep,
+    User,
+    UserPermission,
+)
 
 
 class AttendanceViewTests(TestCase):
@@ -158,3 +171,49 @@ class ExportFormatTests(TestCase):
             'application/vnd.openxmlformats-officedocument.presentationml.presentation'
         )
         self.assertIn('.pptx', response['Content-Disposition'])
+
+
+class TaskStepProgressTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='task-admin',
+            password='secret123',
+            role='super_admin',
+        )
+        self.department = Department.objects.create(name='Projects')
+        self.designation = Designation.objects.create(title='Manager', department=self.department)
+        self.shift = Shift.objects.create(name='Office', start_time='09:00:00', end_time='18:00:00')
+        self.employee = Employee.objects.create(
+            user=self.user,
+            emp_id='EMP-200',
+            department=self.department,
+            designation=self.designation,
+            shift=self.shift,
+            status='Active',
+        )
+        self.project = Project.objects.create(name='Website', manager=self.employee)
+        self.status = TaskStatus.objects.create(project=self.project, name='To Do', color='#6B7280', order=0, active=True)
+        self.task = Task.objects.create(
+            title='Landing page',
+            project=self.project,
+            assignee=self.employee,
+            due_date='2026-09-15',
+            priority='High',
+            status=self.status,
+            progress=0,
+        )
+
+    def test_single_task_step_counts_as_20_percent(self):
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse('task_step_add', args=[self.task.pk]),
+            {'title': 'Create design draft'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['progress'], 20)
+
+        list_response = self.client.get(reverse('task_step_list', args=[self.task.pk]))
+        self.assertEqual(list_response.status_code, 200)
+        self.assertEqual(list_response.json()['steps'][0]['title'], 'Create design draft')

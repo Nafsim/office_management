@@ -42,11 +42,11 @@
 <div class="grid cols-4" style="margin-bottom:22px">
   <div class="stat">
     <div class="ic tint-i"><svg class="ico" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/></svg></div>
-    <h3>{{ total_assets|default:0 }}</h3><p>Total Assets</p>
+    <h3>{{ total_assets|default:0 }}</h3><p>Total Asset</p>
   </div>
   <div class="stat">
     <div class="ic tint-g"><svg class="ico" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/></svg></div>
-    <h3>{{ assigned_assets|default:0 }}</h3><p>Assigned</p>
+    <h3>{{ in_use_assets|default:0 }}</h3><p>In Use</p>
   </div>
   <div class="stat">
     <div class="ic tint-a"><svg class="ico" viewBox="0 0 24 24"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z"/></svg></div>
@@ -54,26 +54,20 @@
   </div>
   <div class="stat">
     <div class="ic tint-r"><svg class="ico" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg></div>
-    <h3>{{ maintenance_assets|default:0 }}</h3><p>Maintenance</p>
+    <h3>{{ overdue_assets|default:0 }}</h3><p>Overdue Return</p>
   </div>
 </div>
 
-<!-- Filter -->
+<!-- Search -->
 <form method="get" class="toolbar">
   <input class="input" name="q" value="{{ q }}" placeholder="Search assets..." style="flex:1;max-width:300px">
-  <select class="input" name="status" style="max-width:150px">
-    <option value="">All Status</option>
-    <option value="Available" {% if status == 'Available' %}selected{% endif %}>Available</option>
-    <option value="In Use" {% if status == 'In Use' %}selected{% endif %}>Assigned</option>
-    <option value="Maintenance" {% if status == 'Maintenance' %}selected{% endif %}>Maintenance</option>
-    <option value="Retired" {% if status == 'Retired' %}selected{% endif %}>Retired</option>
-  </select>
-  <button type="submit" class="btn">Filter</button>
-  {% if q or status %}<a href="{% url 'asset_list' %}" class="btn ghost">Clear</a>{% endif %}
+  <button type="submit" class="btn">Search</button>
+  {% if q %}<a href="{% url 'asset_list' %}" class="btn ghost">Clear</a>{% endif %}
 </form>
 
 <!-- Assets Table -->
 <div class="card">
+  <h3 style="margin:0 0 16px;">Asset Register</h3>
   <table>
     <thead>
       <tr>
@@ -81,8 +75,6 @@
         <th>Name</th>
         <th>Type</th>
         <th>Assigned To</th>
-        <th>Purchase Date</th>
-        <th>Cost</th>
         <th>Status</th>
         <th>Action</th>
       </tr>
@@ -103,20 +95,24 @@
           <span class="sub">—</span>
           {% endif %}
         </td>
-        <td>{{ asset.purchase_date|date:"d M Y" }}</td>
-        <td>৳{{ asset.purchase_cost|default:0 }}</td>
         <td>
-          <span class="tag t-{% if asset.status == 'Available' %}green{% elif asset.status == 'In Use' %}blue{% elif asset.status == 'Maintenance' %}amber{% else %}red{% endif %}">{{ asset.status }}</span>
+          <span class="tag t-{% if asset.status == 'Available' %}green{% elif asset.status == 'In Use' %}blue{% elif asset.status == 'Overdue' %}red{% elif asset.status == 'Maintenance' %}amber{% else %}gray{% endif %}">{{ asset.status }}</span>
         </td>
         <td>
+          <a href="{% url 'asset_edit' asset.pk %}" class="btn ghost sm">View</a>
           <a href="{% url 'asset_edit' asset.pk %}" class="btn ghost sm">Edit</a>
-          {% if user.role == 'super_admin' %}
-          <a href="{% url 'asset_delete' asset.pk %}" class="btn ghost sm red" onclick="return confirm('Delete this asset?')">Delete</a>
+          {% if asset.status == 'Available' %}
+            <a href="{% url 'asset_assign' asset.pk %}" class="btn ghost sm">Assign</a>
+            {% if user.role == 'super_admin' or user.role == 'manager' %}
+              <a href="{% url 'asset_delete' asset.pk %}" class="btn ghost sm red" onclick="return confirm('Delete this asset?')">Delete</a>
+            {% endif %}
+          {% elif asset.status == 'In Use' or asset.status == 'Overdue' %}
+            <a href="{% url 'asset_return' asset.pk %}" class="btn ghost sm" onclick="return confirm('Return this asset?')">Return</a>
           {% endif %}
         </td>
       </tr>
       {% empty %}
-      <tr><td colspan="8" style="text-align:center;color:var(--muted);padding:30px">No assets found.</td></tr>
+      <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px">No assets found.</td></tr>
       {% endfor %}
     </tbody>
   </table>

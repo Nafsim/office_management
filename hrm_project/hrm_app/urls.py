@@ -316,6 +316,44 @@ path(
     path('tasks/<int:pk>/color/',          views.task_update_color,          name='task_update_color'),
     path('tasks/<int:pk>/progress/',       views.task_update_progress,      name='task_update_progress'),
     path('tasks/column-color/',            views.task_update_column_color,   name='task_update_column_color'),
+
+
+  # ─── TASK STEPS (Dynamic) ──────────────────────────────────────────────
+path(
+    'task-steps/<int:task_id>/list/',
+    views.task_step_list,
+    name='task_step_list'
+),
+
+path(
+    'task-steps/<int:task_id>/add/',
+    views.task_step_add,
+    name='task_step_add'
+),
+
+path(
+    'task-steps/<int:step_id>/toggle/',
+    views.task_step_toggle,
+    name='task_step_toggle'
+),
+
+path(
+    'task-steps/<int:step_id>/delete/',
+    views.task_step_delete,
+    name='task_step_delete'
+),
+
+path(
+    'task-steps/<int:task_id>/reorder/',
+    views.task_step_reorder,
+    name='task_step_reorder'
+),
+
+
+
+
+
+
     # Documents
 
 
@@ -477,6 +515,8 @@ path(
 
 
     path('assets/<int:pk>/edit/',  views.asset_edit,   name='asset_edit'),
+    path('assets/<int:pk>/assign/', views.asset_assign, name='asset_assign'),
+    path('assets/<int:pk>/return/', views.asset_return, name='asset_return'),
 
 
 

@@ -58,28 +58,18 @@
       </div>
       <p style="margin:0 0 16px;">Progress — <span id="modalProgress">0</span>%</p>
 
-      <!-- 5-step checklist -->
-      <div style="display:flex; flex-direction:column; gap:8px;">
-        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-          <input type="checkbox" class="progress-step" data-step="1" onchange="setProgressStep(1)">
-          <span>Step 1 — Started (20%)</span>
-        </label>
-        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-          <input type="checkbox" class="progress-step" data-step="2" onchange="setProgressStep(2)">
-          <span>Step 2 — Planning done (40%)</span>
-        </label>
-        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-          <input type="checkbox" class="progress-step" data-step="3" onchange="setProgressStep(3)">
-          <span>Step 3 — In development (60%)</span>
-        </label>
-        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-          <input type="checkbox" class="progress-step" data-step="4" onchange="setProgressStep(4)">
-          <span>Step 4 — Review (80%)</span>
-        </label>
-        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-          <input type="checkbox" class="progress-step" data-step="5" onchange="setProgressStep(5)">
-          <span>Step 5 — Completed (100%)</span>
-        </label>
+      <!-- Dynamic Steps -->
+      <h4 style="margin:18px 0 8px;">Task Steps</h4>
+      <div id="taskStepsContainer" style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+        <p style="color:#999;">Loading steps...</p>
+      </div>
+      
+      <!-- Add Step Input -->
+      <div style="display:flex; gap:8px; margin-bottom:16px;">
+        <input type="text" id="newStepInput" placeholder="Add new step..." 
+               style="flex:1; padding:8px; border:1px solid #E5E7EB; border-radius:6px;" 
+               onkeypress="if(event.key === 'Enter') addTaskStep()">
+        <button onclick="addTaskStep()" class="btn" style="background:#F59E0B; color:white; padding:8px 16px;">+ Add</button>
       </div>
     </div>
 
@@ -141,15 +131,16 @@
   <div>
 
     <!-- COLUMN HEADER -->
+    {% with status_color=status.color|default:'#FF6B00' %}
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:8px;">
       <div style="display:flex; align-items:center; gap:8px;">
-        <span style="background:{{ status.color }}; color:white; padding:6px 14px; border-radius:999px; font-weight:600;">
+        <span style="background:{{ status_color }}; color:white; padding:6px 14px; border-radius:999px; font-weight:600;">
           {{ status.name }}
         </span>
 
         <input
           type="color"
-          value="{{ status.color }}"
+          value="{{ status_color }}"
           title="Change column color"
           onchange="updateColumnColor('{{ status.id }}', this.value)"
           style="width:28px; height:28px; border:none; cursor:pointer; background:transparent;"
@@ -196,15 +187,7 @@
             {{ task.progress|default:0 }},
             '{% url "task_edit" task.pk %}'
           )"
-          style="
-            background:{{ status.color }}18;
-            border:1px solid #E5E7EB;
-            border-left:4px solid {{ status.color }};
-            border-radius:8px;
-            padding:10px;
-            margin-bottom:8px;
-            cursor:pointer;
-          "
+          style="background:{{ status_color }}18; border:1px solid #E5E7EB; border-left:4px solid {{ status_color }}; border-radius:8px; padding:10px; margin-bottom:8px; cursor:pointer;"
         >
           <span style="background:#EF4444; color:white; padding:3px 10px; border-radius:999px; font-size:13px;">
             {{ task.priority }}
@@ -216,14 +199,14 @@
           {% if task.progress > 0 %}
           <div style="margin-top:12px;">
             <div style="height:6px; background:#E5E7EB; border-radius:999px;">
-              <div style="width:{{ task.progress }}%; height:6px; background:{{ status.color }}; border-radius:999px;"></div>
+              <div style="width:{{ task.progress }}%; height:6px; background:{{ status_color }}; border-radius:999px;"></div>
             </div>
           </div>
           {% endif %}
 
           <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center;">
             <div style="
-              background:{{ status.color }};
+              background:{{ status_color }};
               color:white;
               width:32px;
               height:32px;
@@ -250,6 +233,7 @@
       {% empty %}
         <p style="text-align:center; color:#999;">No Task</p>
       {% endfor %}
+      {% endwith %}
 
       <!-- ADD TASK BUTTON -->
       <div style="text-align:center; margin-top:12px;">
@@ -367,7 +351,6 @@ async function drop(e, newStatusName) {
 function openTaskModal(id, title, priority, project, assignee, date, progress, editUrl) {
   window.selectedTaskId = id;
   window.currentProgress = progress || 0;
-
   document.getElementById('taskModal').style.display = 'flex';
   document.getElementById('modalTitle').textContent = title;
   document.getElementById('modalPriority').textContent = priority + ' Priority';
@@ -377,11 +360,95 @@ function openTaskModal(id, title, priority, project, assignee, date, progress, e
   document.getElementById('modalProgress').textContent = window.currentProgress;
   document.getElementById('modalProgressBar').style.width = window.currentProgress + '%';
   document.getElementById('modalEditLink').href = editUrl;
+  loadTaskSteps(id);
+}
 
-  const steps = Math.floor(window.currentProgress / 20);
-  document.querySelectorAll('.progress-step').forEach(cb => {
-    cb.checked = parseInt(cb.dataset.step) <= steps;
-  });
+async function loadTaskSteps(taskId) {
+  const container = document.getElementById('taskStepsContainer');
+  container.innerHTML = '<p style="color:#999;">Loading steps...</p>';
+
+  try {
+    const res = await fetch(`/task-steps/${taskId}/list/`);
+    const data = await res.json();
+    
+    if (!data.ok) {
+      container.innerHTML = '<p style="color:#999;">Error loading steps</p>';
+      return;
+    }
+
+    if (data.steps.length === 0) {
+      container.innerHTML = '<p style="color:#999;">No steps yet. Add your first step above.</p>';
+      return;
+    }
+
+    container.innerHTML = '';
+    data.steps.forEach(step => {
+      const label = document.createElement('label');
+      label.style.cssText = 'display:flex; align-items:center; gap:10px; cursor:pointer;';
+      label.innerHTML = `
+        <input type="checkbox" 
+               ${step.completed ? 'checked' : ''} 
+               onchange="toggleStep(${step.id})">
+        <span>${step.title}</span>
+        <button onclick="deleteStep(${step.id})" style="margin-left:auto; border:none; background:none; color:#EF4444; cursor:pointer;">🗑</button>
+      `;
+      container.appendChild(label);
+    });
+  } catch (err) {
+    console.error('Error loading steps:', err);
+    container.innerHTML = '<p style="color:#999;">Error loading steps</p>';
+  }
+}
+
+function refreshTaskProgress(progress) {
+  window.currentProgress = progress;
+  document.getElementById('modalProgress').textContent = progress;
+  document.getElementById('modalProgressBar').style.width = progress + '%';
+}
+
+async function toggleStep(stepId) {
+  try {
+    const res = await fetch(`/task-steps/${stepId}/toggle/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': getCsrfToken() }
+    });
+    const data = await res.json();
+    if (!data.ok) { alert(data.error || 'Could not update step'); return; }
+    refreshTaskProgress(data.progress);
+    loadTaskSteps(window.selectedTaskId);
+  } catch (err) { console.error(err); alert('Network error'); }
+}
+
+async function deleteStep(stepId) {
+  if (!confirm('Delete this step?')) return;
+  try {
+    const res = await fetch(`/task-steps/${stepId}/delete/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': getCsrfToken() }
+    });
+    const data = await res.json();
+    if (!data.ok) { alert(data.error || 'Could not delete step'); return; }
+    refreshTaskProgress(data.progress);
+    loadTaskSteps(window.selectedTaskId);
+  } catch (err) { console.error(err); alert('Network error'); }
+}
+
+async function addTaskStep() {
+  const input = document.getElementById('newStepInput');
+  const title = input.value.trim();
+  if (!title || !window.selectedTaskId) { alert('Please enter a step title'); return; }
+  try {
+    const res = await fetch(`/task-steps/${window.selectedTaskId}/add/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': getCsrfToken() },
+      body: new URLSearchParams({ title: title })
+    });
+    const data = await res.json();
+    if (!data.ok) { alert(data.error || 'Could not add step'); return; }
+    input.value = '';
+    refreshTaskProgress(data.progress);
+    loadTaskSteps(window.selectedTaskId);
+  } catch (err) { console.error(err); alert('Network error'); }
 }
 
 async function setProgressStep(clickedStep) {
