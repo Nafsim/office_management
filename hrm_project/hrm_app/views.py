@@ -2782,22 +2782,29 @@ def task_list(request):
             except (TypeError, ValueError):
                 current_project_id = None
 
-        # If project is selected from URL
+        # Use the selected project if it exists.
         if current_project_id:
             current_project = projects.filter(
                 pk=current_project_id
             ).first()
 
-        # Otherwise use project of existing tasks
+        # Otherwise prefer a project that has active task statuses, so a newly
+        # created status still appears in the card view even before any task is
+        # assigned to that project.
         else:
             current_project = projects.filter(
-                pk__in=tasks.values_list(
-                    'project_id',
-                    flat=True
-                )
-            ).order_by('id').first()
+                task_statuses__active=True
+            ).distinct().order_by('id').first()
 
-            # If no task/project match, use first project
+            if not current_project:
+                current_project = projects.filter(
+                    pk__in=tasks.values_list(
+                        'project_id',
+                        flat=True
+                    )
+                ).order_by('id').first()
+
+            # If no project matches either check, use the first project.
             if not current_project:
                 current_project = projects.first()
 

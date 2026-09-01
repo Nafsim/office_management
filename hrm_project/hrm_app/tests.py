@@ -217,3 +217,32 @@ class TaskStepProgressTests(TestCase):
         list_response = self.client.get(reverse('task_step_list', args=[self.task.pk]))
         self.assertEqual(list_response.status_code, 200)
         self.assertEqual(list_response.json()['steps'][0]['title'], 'Create design draft')
+
+
+class TaskBoardStatusTests(TestCase):
+    def test_statuses_for_project_with_no_tasks_still_render_in_card_view(self):
+        user = User.objects.create_user(
+            username='board-admin',
+            password='secret123',
+            role='super_admin',
+        )
+        department = Department.objects.create(name='Board Ops')
+        designation = Designation.objects.create(title='Lead', department=department)
+        shift = Shift.objects.create(name='Shift A', start_time='09:00:00', end_time='18:00:00')
+        employee = Employee.objects.create(
+            user=user,
+            emp_id='EMP-300',
+            department=department,
+            designation=designation,
+            shift=shift,
+            status='Active',
+        )
+        project = Project.objects.create(name='New Board Project', manager=employee)
+        TaskStatus.objects.create(project=project, name='Custom Stage', color='#123456', order=0, active=True)
+
+        self.client.force_login(user)
+        response = self.client.get(reverse('task_list'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Custom Stage', [status.name for status in response.context['board_statuses']])
+        self.assertEqual(response.context['current_project'], project)
