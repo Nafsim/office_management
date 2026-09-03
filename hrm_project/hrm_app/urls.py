@@ -376,108 +376,23 @@ path('tasks/<int:pk>/attachments/', views.task_get_attachments, name='task_get_a
 
 
 
+   # change "your_app" to your actual app name (example: hrm)
+
+
 
     # ─────────────────────────────────────────────
+    # SALARY / PAYROLL
+    # ─────────────────────────────────────────────
+    path('salary/', views.salary_list, name='salary_list'),
+    path('salary/export/', views.salary_export, name='salary_export'),
 
-# SALARY
+    # Dynamic endpoints
+    path('salary/breakdown-data/', views.employee_breakdown_data, name='employee_breakdown_data'),
+    path('salary/save-adjustment/', views.save_adjustment, name='save_adjustment'),
+    path('salary/payslip/download/<int:employee_id>/', views.download_payslip, name='download_payslip'),
 
-# ─────────────────────────────────────────────
+    
 
-
-
-path(
-
-    'salary/',
-
-    views.salary_list,
-
-    name='salary_list'
-
-),
-
-
-
-path(
-
-    'salary/export/',
-
-    views.salary_export,
-
-    name='salary_export'
-
-),
-
-
-
-path(
-
-    'salary/structure/',
-
-    views.salary_structure_create,
-
-    name='salary_structure_create'
-
-),
-
-
-
-path(
-
-    'salary/run/',
-
-    views.run_payroll,
-
-    name='run_payroll'
-
-),
-
-
-
-path(
-
-    'salary/adjustments/',
-
-    views.salary_adjustments,
-
-    name='salary_adjustments'
-
-),
-
-
-
-path(
-
-    'salary/breakdown/',
-
-    views.employee_breakdown,
-
-    name='employee_breakdown'
-
-),
-
-
-
-path(
-
-    'salary/history/',
-
-    views.salary_history,
-
-    name='salary_history'
-
-),
-
-
-
-path(
-
-    'salary/reports/',
-
-    views.salary_reports,
-
-    name='salary_reports'
-
-),
 
     # Petty Cash
 

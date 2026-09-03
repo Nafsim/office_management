@@ -566,9 +566,11 @@ class PayrollAdjustment(models.Model):
 
     TYPE_CHOICES = (
         ('Bonus', 'Bonus'),
-        ('Deduction', 'Deduction'),
-        ('Advance', 'Advance'),
         ('Incentive', 'Incentive'),
+        ('Advance', 'Advance'),
+        ('Deduction', 'Deduction'),
+        ('Increase', 'Salary Increase'),
+        ('Decrease', 'Salary Decrease'),
     )
 
     employee = models.ForeignKey(

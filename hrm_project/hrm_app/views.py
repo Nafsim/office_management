@@ -4508,99 +4508,220 @@ def document_generate(request, pk):
     )
 
 # ─── SALARY / PAYROLL ─────────────────────────────────────────────────────────
+
 @login_required
 def salary_list(request):
+    from collections import defaultdict
+    from decimal import Decimal
+    from datetime import date
+
     if not has_permission(request.user, "payroll", "view"):
         messages.error(request, "You don't have permission to access Payroll.")
         return redirect("dashboard")
 
-
     emp = _emp(request)
 
     if request.user.role == Role.EMPLOYEE:
-
         payslips = (
             Payslip.objects
             .filter(employee=emp)
-            .select_related(
-                'employee__user',
-                'structure'
-            )
+            .select_related('employee__user', 'structure')
         )
-
     else:
-
         payslips = (
             Payslip.objects
-            .select_related(
-                'employee__user',
-                'structure'
-            )
+            .select_related('employee__user', 'structure')
             .all()
         )
 
+    employees = Employee.objects.select_related('user').filter(status='Active')
 
-    employees = Employee.objects.select_related(
-        'user'
-    ).filter(status='Active')
-
-
+    # Calculate totals
     gross_payroll = Decimal("0")
     total_bonus = Decimal("0")
     total_deductions = Decimal("0")
     net_disbursed = Decimal("0")
 
-
     for ps in payslips:
-
-        gross_payroll += ps.structure.gross
-
-        total_bonus += ps.bonus
-
-        total_deductions += (
-            ps.structure.tax_deduction +
-            ps.structure.pf_deduction +
-            ps.deduction
-        )
-
-        net_disbursed += ps.net_pay
-
+        if ps.structure:
+            gross_payroll += ps.structure.gross
+            total_deductions += (
+                ps.structure.tax_deduction +
+                ps.structure.pf_deduction +
+                (ps.deduction or 0)
+            )
+        total_bonus += ps.bonus or 0
+        net_disbursed += ps.net_pay or 0
 
     adjustments = PayrollAdjustment.objects.select_related(
-        'employee__user',
-        'created_by'
-    )[:10]
+        'employee__user', 'created_by'
+    )[:15]
 
+    # ===== Dynamic History =====
+    history_data = defaultdict(lambda: {
+        'gross': Decimal('0'),
+        'net': Decimal('0'),
+        'status': 'Paid',
+        'count': 0
+    })
+
+    for ps in payslips:
+        key = f"{ps.month:02d}/{ps.year}"
+        if ps.structure:
+            history_data[key]['gross'] += ps.structure.gross
+        history_data[key]['net'] += ps.net_pay or 0
+        history_data[key]['count'] += 1
+        history_data[key]['status'] = ps.status
+
+    # Sort newest first
+    history_data = dict(sorted(
+        history_data.items(),
+        key=lambda x: (int(x[0].split('/')[1]), int(x[0].split('/')[0])),
+        reverse=True
+    ))
+
+    current_month = date.today().strftime("%B %Y")
 
     return render(
-
         request,
-
         "hrm/salary_list.html",
-
         _ctx(
-
             request,
-
             payslips=payslips,
-
             employees=employees,
-
             adjustments=adjustments,
-
             gross_payroll=gross_payroll,
-
             total_bonus=total_bonus,
-
             total_deductions=total_deductions,
-
             net_disbursed=net_disbursed,
-
+            history_data=history_data,
+            current_month=current_month,
         )
-
     )
 
 
+# ===== AJAX: Employee Breakdown Data =====
+@login_required
+def employee_breakdown_data(request):
+    if not has_permission(request.user, "payroll", "view"):
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+
+    employee_id = request.GET.get('employee_id')
+    if not employee_id:
+        return JsonResponse({'error': 'No employee selected'}, status=400)
+
+    employee = Employee.objects.select_related('user').filter(id=employee_id).first()
+    if not employee:
+        return JsonResponse({'error': 'Employee not found'}, status=404)
+
+    structure = SalaryStructure.objects.filter(
+        employee=employee, is_active=True
+    ).first()
+
+    latest_payslip = Payslip.objects.filter(
+        employee=employee
+    ).order_by('-year', '-month').first()
+
+    data = {
+        'name': employee.user.get_full_name() or employee.user.username,
+        'designation': getattr(employee, 'designation', '') or 'Employee',
+        'basic': float(structure.basic) if structure else 0,
+        'house_rent': float(structure.house_rent) if structure else 0,
+        'medical': float(structure.medical) if structure else 0,
+        'transport': float(structure.transport) if structure else 0,
+        'other_allowance': float(structure.other_allowance) if structure else 0,
+        'bonus': float(latest_payslip.bonus) if latest_payslip and latest_payslip.bonus else 0,
+        'tax': float(structure.tax_deduction) if structure else 0,
+        'pf': float(structure.pf_deduction) if structure else 0,
+        'other_deduction': float(latest_payslip.deduction) if latest_payslip and latest_payslip.deduction else 0,
+    }
+
+    data['gross'] = (
+        data['basic'] + data['house_rent'] + data['medical'] +
+        data['transport'] + data['other_allowance'] + data['bonus']
+    )
+    data['net'] = data['gross'] - data['tax'] - data['pf'] - data['other_deduction']
+
+    return JsonResponse(data)
+
+
+# ===== AJAX: Save Adjustment =====
+@login_required
+@require_POST
+def save_adjustment(request):
+    if not has_permission(request.user, "payroll", "create"):
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+        employee_id = data.get('employee_id')
+        adj_type = data.get('type')          # deduct / adjust / advance / bonus
+        amount = Decimal(str(data.get('amount', 0)))
+        reason = data.get('reason', '')
+        month = data.get('month', '')
+
+        employee = Employee.objects.filter(id=employee_id).first()
+        if not employee:
+            return JsonResponse({'error': 'Employee not found'}, status=404)
+
+        # Correct type mapping
+        if adj_type == 'deduct':
+           model_type = 'Deduction'
+        elif adj_type == 'increase':
+           model_type = 'Increase'
+        elif adj_type == 'decrease':
+           model_type = 'Decrease'
+        elif adj_type == 'advance':
+           model_type = 'Advance'
+        elif adj_type == 'bonus':
+           model_type = 'Bonus'
+        else:
+           model_type = 'Bonus'
+
+        PayrollAdjustment.objects.create(
+            employee=employee,
+            adjustment_type=model_type,
+            amount=amount,
+            reason=reason or f"{model_type} for {month}",
+            created_by=request.user
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': f'{model_type} applied successfully'
+        })
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+# ===== Download Payslip (simple version) =====
+@login_required
+def download_payslip(request, employee_id):
+    if not has_permission(request.user, "payroll", "view"):
+        messages.error(request, "Permission denied")
+        return redirect("salary_list")
+
+    employee = Employee.objects.select_related('user').filter(id=employee_id).first()
+    if not employee:
+        messages.error(request, "Employee not found")
+        return redirect("salary_list")
+
+    # For now return a simple text file (you can later generate real PDF)
+    content = f"""
+PAYSLIP
+=======
+Employee : {employee.user.get_full_name() or employee.user.username}
+Date     : {date.today().strftime('%d %B %Y')}
+
+This is a placeholder payslip.
+Replace this view with real PDF generation later.
+"""
+    response = HttpResponse(content, content_type='text/plain')
+    response['Content-Disposition'] = f'attachment; filename="Payslip_{employee.user.username}.txt"'
+    return response
+
+
+# Keep your existing salary_export as is
 @login_required
 def salary_export(request):
     if not has_permission(request.user, "payroll", "view"):
@@ -4608,34 +4729,30 @@ def salary_export(request):
         return redirect("salary_list")
 
     emp = _emp(request)
+    report_type = request.GET.get('report', '')
+    month_filter = request.GET.get('month', '')
 
     if request.user.role == Role.EMPLOYEE:
-        payslips = (
-            Payslip.objects
-            .filter(employee=emp)
-            .select_related('employee__user', 'structure')
-        )
+        payslips = Payslip.objects.filter(employee=emp).select_related('employee__user', 'structure')
         adjustments = PayrollAdjustment.objects.filter(employee=emp).select_related('employee__user', 'created_by')
     else:
-        payslips = (
-            Payslip.objects
-            .select_related('employee__user', 'structure')
-            .all()
-        )
+        payslips = Payslip.objects.select_related('employee__user', 'structure').all()
         adjustments = PayrollAdjustment.objects.select_related('employee__user', 'created_by').all()
 
+    # Basic export (default)
     payslip_rows = [
         [
             ps.employee.user.get_full_name() or ps.employee.user.username,
             f'{ps.month:02d}/{ps.year}',
             ps.status,
-            ps.structure.gross,
-            ps.bonus,
-            ps.structure.tax_deduction + ps.structure.pf_deduction + ps.deduction,
-            ps.net_pay,
+            ps.structure.gross if ps.structure else 0,
+            ps.bonus or 0,
+            (ps.structure.tax_deduction + ps.structure.pf_deduction + (ps.deduction or 0)) if ps.structure else 0,
+            ps.net_pay or 0,
         ]
         for ps in payslips
     ]
+
     adjustment_rows = [
         [
             adj.employee.user.get_full_name() or adj.employee.user.username,
@@ -4654,136 +4771,6 @@ def salary_export(request):
     ]
 
     return _export_tabular_response('Salary Export', sections, 'Salary_Report', request.GET.get('format'))
-@login_required
-def salary_adjustments(request):
-    if not has_permission(request.user, "payroll", "view"):
-        messages.error(request, "You don't have permission to view adjustments.")
-        return redirect("salary_list")
-
-
-    adjustments = PayrollAdjustment.objects.select_related(
-        'employee__user',
-        'created_by'
-    )
-
-    return render(
-        request,
-        'hrm/salary_adjustments.html',
-        _ctx(
-            request,
-            adjustments=adjustments
-        )
-    )
-
-
-@login_required
-def employee_breakdown(request):
-    if not has_permission(request.user, "payroll", "view"):
-        messages.error(request, "You don't have permission to view salary breakdown.")
-        return redirect("salary_list")
-
-    employees = Employee.objects.select_related(
-        'user'
-    ).filter(status='Active')
-
-    selected_employee = None
-    structure = None
-    latest_payslip = None
-
-    employee_id = request.GET.get("employee")
-
-    if employee_id:
-
-        selected_employee = Employee.objects.filter(
-            id=employee_id
-        ).first()
-
-        if selected_employee:
-
-            structure = SalaryStructure.objects.filter(
-                employee=selected_employee,
-                is_active=True
-            ).first()
-
-            latest_payslip = Payslip.objects.filter(
-                employee=selected_employee
-            ).order_by(
-                "-year",
-                "-month"
-            ).first()
-
-    return render(
-        request,
-        "hrm/employee_breakdown.html",
-        _ctx(
-            request,
-            employees=employees,
-            selected_employee=selected_employee,
-            structure=structure,
-            latest_payslip=latest_payslip,
-        )
-    )
-
-
-@login_required
-def salary_history(request):
-    if not has_permission(request.user, "payroll", "view"):
-        messages.error(request, "You don't have permission to view salary history.")
-        return redirect("salary_list")
-
-
-    payslips = Payslip.objects.select_related(
-        "employee__user",
-        "structure"
-    )
-
-    return render(
-        request,
-        "hrm/salary_history.html",
-        _ctx(
-            request,
-            payslips=payslips,
-        )
-    )
-
-
-@login_required
-def salary_reports(request):
-    if not has_permission(request.user, "payroll", "view"):
-        messages.error(request, "You don't have permission to view salary reports.")
-        return redirect("salary_list")
-
-    return render(
-        request,
-        "hrm/salary_reports.html",
-        _ctx(request)
-    )
-
-
-@admin_required
-def salary_structure_create(request):
-    if not has_permission(request.user, "payroll", "create"):
-        messages.error(request, "You don't have permission to create salary structure.")
-        return redirect("salary_list")
-
-    return render(
-        request,
-        "hrm/salary_structure.html",
-        _ctx(request)
-    )
-
-
-@admin_required
-def run_payroll(request):
-    if not has_permission(request.user, "payroll", "create"):
-        messages.error(request, "You don't have permission to run payroll.")
-        return redirect("salary_list")
-
-    return render(
-        request,
-        "hrm/run_payroll.html",
-        _ctx(request)
-    )
 # ─── PETTY CASH ───────────────────────────────────────────────────────────────
 
 @admin_required
