@@ -17,6 +17,7 @@ from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
 from django.utils import timezone
 
 from django.db.models import Count, Sum, Q, Max
+from django.db import transaction
 
 from django.core.exceptions import PermissionDenied
 
@@ -418,11 +419,18 @@ def dashboard(request):
     emp = _emp(request)
     today = date.today()
 
-    emp_count = Employee.objects.count()
-    present = Attendance.objects.filter(date=today, status__in=['Present', 'Late']).count()
-    pending_lv = LeaveRequest.objects.filter(from_date__lte=today, to_date__gte=today, status='Approved').count()
-    late_today = Attendance.objects.filter(date=today, status='Late').count()
-    total_employees = Employee.objects.count()
+    active_employees = Employee.objects.filter(status='Active')
+    emp_count = active_employees.count()
+    present = Attendance.objects.filter(
+        employee__status='Active', date=today, status__in=['Present', 'Late']
+    ).count()
+    on_leave_today = LeaveRequest.objects.filter(
+        employee__status='Active', from_date__lte=today, to_date__gte=today, status='Approved'
+    ).values('employee_id').distinct().count()
+    late_today = Attendance.objects.filter(
+        employee__status='Active', date=today, status='Late'
+    ).count()
+    total_employees = emp_count
     # ==================== TREND CALCULATIONS ====================
     from dateutil.relativedelta import relativedelta   # make sure this import is at the top
 
@@ -465,14 +473,25 @@ def dashboard(request):
         from_date__lte=last_week, to_date__gte=last_week, status='Approved'
     ).count()
 
-    leave_change = pending_lv - leave_last_week
+    leave_change = on_leave_today - leave_last_week
     leave_trend = f"+{leave_change}" if leave_change >= 0 else str(leave_change)
     leave_trend_dir = "up" if leave_change >= 0 else "down"
 
-    # 4. Payroll Trend (you can replace with real Salary calculation later)
-    # Temporary static for now – replace when you have Salary model
-    payroll_trend = "+4%"
-    payroll_trend_dir = "up"
+    payroll_total = Payslip.objects.filter(
+        year=today.year, month=today.month, employee__status='Active'
+    ).aggregate(total=Sum('net_pay'))['total'] or Decimal('0')
+    previous_payroll_total = Payslip.objects.filter(
+        year=last_month_start.year, month=last_month_start.month, employee__status='Active'
+    ).aggregate(total=Sum('net_pay'))['total'] or Decimal('0')
+    payroll_change = round(((payroll_total - previous_payroll_total) / previous_payroll_total) * 100) if previous_payroll_total else 0
+    payroll_trend = f"{payroll_change:+d}%"
+    payroll_trend_dir = "up" if payroll_change >= 0 else "down"
+    if payroll_total >= 100000:
+        payroll_display = f"{payroll_total / Decimal('100000'):.1f}L"
+    elif payroll_total >= 1000:
+        payroll_display = f"{payroll_total / Decimal('1000'):.1f}K"
+    else:
+        payroll_display = f"{payroll_total:.0f}"
     recent_notices = Notice.objects.all()[:5]
     recent_tasks = Task.objects.filter(Q(assignee=emp) | Q(project__manager=emp)).order_by('-created_at')[:5] if emp else Task.objects.all()[:5]
 
@@ -616,7 +635,7 @@ def dashboard(request):
 
             emp_count=emp_count,
             present=present,
-            pending_lv=pending_lv,
+            pending_lv=on_leave_today,
             late_today=late_today,
 
             recent_notices=recent_notices,
@@ -658,6 +677,8 @@ def dashboard(request):
 
             payroll_trend=payroll_trend,
             payroll_trend_dir=payroll_trend_dir,
+            payroll=payroll_display,
+            payroll_month=today.strftime('%B %Y'),
         )
     )
 
@@ -4509,6 +4530,53 @@ def document_generate(request, pk):
 
 # ─── SALARY / PAYROLL ─────────────────────────────────────────────────────────
 
+def _payroll_employees(request, department_id=None):
+    employees = Employee.objects.select_related('user', 'department', 'designation').filter(status='Active')
+    if request.user.role == Role.EMPLOYEE:
+        employees = employees.filter(pk=getattr(_emp(request), 'pk', None))
+    if department_id and department_id != 'all':
+        employees = employees.filter(department_id=department_id)
+    return employees
+
+
+def _payroll_values(employee, year, month):
+    period_end = date(year, month, calendar.monthrange(year, month)[1])
+    structure = SalaryStructure.objects.filter(
+        employee=employee, is_active=True, effective_from__lte=period_end
+    ).order_by('-effective_from').first()
+    if not structure:
+        if not employee.salary:
+            return None
+        structure = SalaryStructure.objects.create(
+            employee=employee,
+            basic=employee.salary,
+            effective_from=employee.join_date,
+            is_active=True,
+        )
+
+    adjustments = PayrollAdjustment.objects.filter(
+        employee=employee, created_at__year=year, created_at__month=month
+    )
+    bonus = adjustments.filter(adjustment_type__in=['Bonus', 'Incentive', 'Increase']).aggregate(
+        total=Sum('amount')
+    )['total'] or Decimal('0')
+    deduction = adjustments.filter(adjustment_type__in=['Deduction', 'Advance', 'Decrease']).aggregate(
+        total=Sum('amount')
+    )['total'] or Decimal('0')
+    gross = structure.gross + bonus
+    total_deductions = structure.tax_deduction + structure.pf_deduction + deduction
+    return {'structure': structure, 'bonus': bonus, 'deduction': deduction, 'net_pay': gross - total_deductions}
+
+
+def _parse_payroll_period(value):
+    try:
+        year, month = (int(part) for part in value.split('-'))
+        if month not in range(1, 13):
+            raise ValueError
+        return year, month
+    except (AttributeError, TypeError, ValueError):
+        return date.today().year, date.today().month
+
 @login_required
 def salary_list(request):
     from collections import defaultdict
@@ -4520,6 +4588,10 @@ def salary_list(request):
         return redirect("dashboard")
 
     emp = _emp(request)
+    selected_period = request.GET.get('month')
+    period_year, period_month = _parse_payroll_period(
+        selected_period.replace('/', '-') if selected_period else None
+    ) if selected_period else (None, None)
 
     if request.user.role == Role.EMPLOYEE:
         payslips = (
@@ -4533,8 +4605,17 @@ def salary_list(request):
             .select_related('employee__user', 'structure')
             .all()
         )
+    if period_year:
+        payslips = payslips.filter(year=period_year, month=period_month)
 
-    employees = Employee.objects.select_related('user').filter(status='Active')
+    employees = _payroll_employees(request)
+    departments = Department.objects.order_by('name')
+    periods = set(Payslip.objects.values_list('year', 'month'))
+    periods.add((date.today().year, date.today().month))
+    month_options = [
+        {'value': f'{year:04d}-{month:02d}', 'label': date(year, month, 1).strftime('%B %Y')}
+        for year, month in sorted(periods, reverse=True)
+    ]
 
     # Calculate totals
     gross_payroll = Decimal("0")
@@ -4580,7 +4661,7 @@ def salary_list(request):
         reverse=True
     ))
 
-    current_month = date.today().strftime("%B %Y")
+    current_month = date(period_year, period_month, 1).strftime("%B %Y") if period_year else date.today().strftime("%B %Y")
 
     return render(
         request,
@@ -4596,8 +4677,39 @@ def salary_list(request):
             net_disbursed=net_disbursed,
             history_data=history_data,
             current_month=current_month,
+            departments=departments,
+            month_options=month_options,
         )
     )
+
+
+@login_required
+@require_POST
+def process_payroll(request):
+    if not has_permission(request.user, "payroll", "create"):
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+
+    year, month = _parse_payroll_period(request.POST.get('month'))
+    department_id = request.POST.get('department', 'all')
+    pay_date = request.POST.get('pay_date') or None
+    processed = 0
+    with transaction.atomic():
+        for employee in _payroll_employees(request, department_id):
+            values = _payroll_values(employee, year, month)
+            if not values:
+                continue
+            Payslip.objects.update_or_create(
+                employee=employee, month=month, year=year,
+                defaults={
+                    'structure': values['structure'], 'bonus': values['bonus'],
+                    'deduction': values['deduction'], 'net_pay': values['net_pay'],
+                    'status': 'Processed', 'processed_by': request.user,
+                    'processed_at': timezone.now(),
+                    'paid_at': date.fromisoformat(pay_date) if pay_date else None,
+                },
+            )
+            processed += 1
+    return JsonResponse({'success': True, 'processed': processed, 'period': f'{month:02d}/{year}'})
 
 
 # ===== AJAX: Employee Breakdown Data =====
@@ -4616,23 +4728,35 @@ def employee_breakdown_data(request):
 
     structure = SalaryStructure.objects.filter(
         employee=employee, is_active=True
-    ).first()
+    ).order_by('-effective_from').first()
 
     latest_payslip = Payslip.objects.filter(
         employee=employee
     ).order_by('-year', '-month').first()
 
+    if structure:
+        basic = structure.basic
+        house_rent = structure.house_rent
+        medical = structure.medical
+        transport = structure.transport
+        other_allowance = structure.other_allowance
+        tax = structure.tax_deduction
+        pf = structure.pf_deduction
+    else:
+        basic = employee.salary or Decimal('0')
+        house_rent = medical = transport = other_allowance = tax = pf = Decimal('0')
+
     data = {
         'name': employee.user.get_full_name() or employee.user.username,
-        'designation': getattr(employee, 'designation', '') or 'Employee',
-        'basic': float(structure.basic) if structure else 0,
-        'house_rent': float(structure.house_rent) if structure else 0,
-        'medical': float(structure.medical) if structure else 0,
-        'transport': float(structure.transport) if structure else 0,
-        'other_allowance': float(structure.other_allowance) if structure else 0,
+        'designation': employee.designation.title if employee.designation else 'Employee',
+        'basic': float(basic),
+        'house_rent': float(house_rent),
+        'medical': float(medical),
+        'transport': float(transport),
+        'other_allowance': float(other_allowance),
         'bonus': float(latest_payslip.bonus) if latest_payslip and latest_payslip.bonus else 0,
-        'tax': float(structure.tax_deduction) if structure else 0,
-        'pf': float(structure.pf_deduction) if structure else 0,
+        'tax': float(tax),
+        'pf': float(pf),
         'other_deduction': float(latest_payslip.deduction) if latest_payslip and latest_payslip.deduction else 0,
     }
 
@@ -4706,19 +4830,18 @@ def download_payslip(request, employee_id):
         messages.error(request, "Employee not found")
         return redirect("salary_list")
 
-    # For now return a simple text file (you can later generate real PDF)
-    content = f"""
-PAYSLIP
-=======
-Employee : {employee.user.get_full_name() or employee.user.username}
-Date     : {date.today().strftime('%d %B %Y')}
-
-This is a placeholder payslip.
-Replace this view with real PDF generation later.
-"""
-    response = HttpResponse(content, content_type='text/plain')
-    response['Content-Disposition'] = f'attachment; filename="Payslip_{employee.user.username}.txt"'
-    return response
+    payslip = Payslip.objects.filter(employee=employee).select_related('structure').order_by('-year', '-month').first()
+    if not payslip:
+        messages.error(request, "No payslip has been processed for this employee.")
+        return redirect("salary_list")
+    structure = payslip.structure
+    sections = [('Payslip', ['Employee', 'Period', 'Status', 'Basic', 'Allowances', 'Bonus', 'Deductions', 'Net Pay'], [[
+        employee.user.get_full_name() or employee.user.username,
+        f'{payslip.month:02d}/{payslip.year}', payslip.status, structure.basic,
+        structure.gross - structure.basic, payslip.bonus,
+        structure.tax_deduction + structure.pf_deduction + payslip.deduction, payslip.net_pay,
+    ]])]
+    return _export_pdf_response('Employee Payslip', sections, f'Payslip_{employee.user.username}')
 
 
 # Keep your existing salary_export as is
@@ -4731,6 +4854,7 @@ def salary_export(request):
     emp = _emp(request)
     report_type = request.GET.get('report', '')
     month_filter = request.GET.get('month', '')
+    department_id = request.GET.get('department')
 
     if request.user.role == Role.EMPLOYEE:
         payslips = Payslip.objects.filter(employee=emp).select_related('employee__user', 'structure')
@@ -4738,6 +4862,13 @@ def salary_export(request):
     else:
         payslips = Payslip.objects.select_related('employee__user', 'structure').all()
         adjustments = PayrollAdjustment.objects.select_related('employee__user', 'created_by').all()
+
+    if month_filter:
+        year, month = _parse_payroll_period(month_filter.replace('/', '-'))
+        payslips = payslips.filter(year=year, month=month)
+    if department_id and department_id != 'all':
+        payslips = payslips.filter(employee__department_id=department_id)
+        adjustments = adjustments.filter(employee__department_id=department_id)
 
     # Basic export (default)
     payslip_rows = [
@@ -4765,10 +4896,25 @@ def salary_export(request):
         for adj in adjustments
     ]
 
-    sections = [
-        ('Payslips', ['Employee', 'Period', 'Status', 'Gross', 'Bonus', 'Total Deductions', 'Net Pay'], payslip_rows),
-        ('Adjustments', ['Employee', 'Type', 'Amount', 'Reason', 'Created By', 'Created At'], adjustment_rows),
-    ]
+    if report_type == 'department':
+        rows = []
+        for department in Department.objects.order_by('name'):
+            department_payslips = payslips.filter(employee__department=department)
+            rows.append([department.name, department_payslips.count(), sum((ps.net_pay or 0) for ps in department_payslips)])
+        sections = [('Department Cost', ['Department', 'Employees', 'Net Cost'], rows)]
+    elif report_type == 'tax':
+        sections = [('Tax Deduction', ['Employee', 'Period', 'Tax'], [[row[0], row[1], ps.structure.tax_deduction if ps.structure else 0] for row, ps in zip(payslip_rows, payslips)])]
+    elif report_type == 'pf':
+        sections = [('Provident Fund', ['Employee', 'Period', 'PF'], [[row[0], row[1], ps.structure.pf_deduction if ps.structure else 0] for row, ps in zip(payslip_rows, payslips)])]
+    elif report_type == 'bonus':
+        sections = [('Bonus & Incentive', ['Employee', 'Period', 'Bonus'], [[row[0], row[1], row[4]] for row in payslip_rows if row[4]])]
+    elif report_type == 'bank':
+        sections = [('Bank Salary Letter', ['Employee', 'Period', 'Net Pay'], [[row[0], row[1], row[6]] for row in payslip_rows])]
+    else:
+        sections = [
+            ('Payslips', ['Employee', 'Period', 'Status', 'Gross', 'Bonus', 'Total Deductions', 'Net Pay'], payslip_rows),
+            ('Adjustments', ['Employee', 'Type', 'Amount', 'Reason', 'Created By', 'Created At'], adjustment_rows),
+        ]
 
     return _export_tabular_response('Salary Export', sections, 'Salary_Report', request.GET.get('format'))
 # ─── PETTY CASH ───────────────────────────────────────────────────────────────

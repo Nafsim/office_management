@@ -54,26 +54,26 @@ Use the role switcher at the top of the sidebar to see how Super Admin, Manager 
   <div class="stat">
     <span class="trend {{ employees_trend_dir|default:'up' }}">{{ employees_trend|default:"+12" }} {% if employees_trend_dir|default:'up' == 'up' %}↑{% else %}↓{% endif %}</span>
     <svg class="ic" style="background:#FEF3C7;color:#D97706" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-    <h3 id="total-emp">{{ total_employees }}</h3>
+    <h3 id="total-emp">{{ total_employees|default:0 }}</h3>
     <p>Total Employees</p>
   </div>
   <div class="stat">
     <span class="trend {{ present_trend_dir|default:'up' }}">{{ present_trend|default:"93%" }} {% if present_trend_dir|default:'up' == 'up' %}↑{% else %}↓{% endif %}</span>
     <svg class="ic" style="background:#DCFCE7;color:#16A34A" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/></svg>
-    <h3 id="present">{{ present  }}</h3>
+    <h3 id="present">{{ present|default:0 }}</h3>
     <p>Present Today</p>
   </div>
   <div class="stat">
     <span class="trend {{ leave_trend_dir|default:'down' }}">{{ leave_trend|default:"-3" }} {% if leave_trend_dir|default:'down' == 'up' %}↑{% else %}↓{% endif %}</span>
     <svg class="ic" style="background:#FEE2E2;color:#DC2626" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/></svg>
-    <h3 id="onleave">{{ pending_lv }}</h3>
+    <h3 id="onleave">{{ pending_lv|default:0 }}</h3>
     <p>On Leave</p>
   </div>
   <div class="stat">
-    <span class="trend {{ payroll_trend_dir|default:'up' }}">{{ payroll_trend|default:"+4%" }} {% if payroll_trend_dir|default:'up' == 'up' %}↑{% else %}↓{% endif %}</span>
+    <span class="trend {{ payroll_trend_dir|default:'up' }}">{{ payroll_trend|default:"+0%" }} {% if payroll_trend_dir|default:'up' == 'up' %}↑{% else %}↓{% endif %}</span>
     <svg class="ic" style="background:#DBEAFE;color:#2563EB" viewBox="0 0 24 24"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1.05"/></svg>
-    <h3>৳{{ payroll|default:'18.4L' }}</h3>
-    <p>May Payroll</p>
+    <h3>৳{{ payroll|default:'0' }}</h3>
+    <p>{{ payroll_month|default:'Current Month' }} Payroll</p>
   </div>
 </div>
 

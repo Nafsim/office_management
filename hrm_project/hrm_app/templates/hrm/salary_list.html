@@ -447,7 +447,7 @@
                 <span class="tag t-gray">Draft</span>
               {% endif %}
             </td>
-            <td><a href="#" class="btn ghost sm" style="font-size:12px;">PDF</a></td>
+            <td><a href="{% url 'download_payslip' ps.employee.id %}" class="btn ghost sm" style="font-size:12px;">PDF</a></td>
           </tr>
           {% empty %}
           <tr><td colspan="8" style="text-align:center; color:var(--muted); padding:36px;">No payroll data available.</td></tr>
@@ -467,10 +467,9 @@
       <div class="form-group">
         <label>Payroll Month</label>
         <select class="form-control" id="payroll-month">
-          <option value="2026-06">June 2026</option>
-          <option value="2026-05">May 2026</option>
-          <option value="2026-04">April 2026</option>
-          <option value="2026-03">March 2026</option>
+          {% for option in month_options %}
+          <option value="{{ option.value }}">{{ option.label }}</option>
+          {% endfor %}
         </select>
       </div>
 
@@ -478,10 +477,9 @@
         <label>Department</label>
         <select class="form-control" id="payroll-dept">
           <option value="all">All Departments</option>
-          <option value="hr">Human Resources</option>
-          <option value="finance">Finance</option>
-          <option value="it">IT & Engineering</option>
-          <option value="sales">Sales & Marketing</option>
+          {% for department in departments %}
+          <option value="{{ department.id }}">{{ department.name }}</option>
+          {% endfor %}
         </select>
       </div>
 
@@ -703,7 +701,8 @@
             </td>
           </tr>
           {% empty %}
-          <!-- Fallback static for demo if no history_data -->
+          <tr><td colspan="5" style="text-align:center; color:var(--muted); padding:36px;">No payroll history available.</td></tr>
+          {% if False %}
           <tr>
             <td><b>May 2026</b></td>
             <td>৳{{ gross_payroll|floatformat:0 }}</td>
@@ -734,6 +733,7 @@
               </button>
             </td>
           </tr>
+          {% endif %}
           {% endfor %}
         </tbody>
       </table>
@@ -895,10 +895,7 @@
     <div class="form-group">
       <label>Effective Month</label>
       <select class="form-control" id="modal-month">
-        <option>January</option><option>February</option><option>March</option>
-        <option>April</option><option>May</option><option selected>June</option>
-        <option>July</option><option>August</option><option>September</option>
-        <option>October</option><option>November</option><option>December</option>
+        {% for option in month_options %}<option value="{{ option.value }}">{{ option.label }}</option>{% endfor %}
       </select>
     </div>
 
@@ -927,6 +924,8 @@
   document.querySelectorAll('.payroll-tab').forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
   });
+  const initialTab = new URLSearchParams(window.location.search).get('tab');
+  if (initialTab) switchTab(initialTab);
 
   // ===== Modal =====
 let currentModalType = '';
@@ -1022,11 +1021,17 @@ function submitAdjustment() {
   const dept  = document.getElementById('payroll-dept').value;
   const date  = document.getElementById('pay-date').value;
 
-  if (confirm(`Process payroll for ${month}?\nDepartment: ${dept}\nPay Date: ${date}`)) {
-    // For now just show success. Later we can make a real backend endpoint.
-    alert('Payroll processed successfully for ' + month);
-    // Optional: location.reload();
-  }
+  if (!confirm(`Process payroll for ${month}?\nDepartment: ${dept}\nPay Date: ${date}`)) return;
+  const body = new URLSearchParams({month, department: dept, pay_date: date});
+  fetch('{% url "process_payroll" %}', {
+    method: 'POST',
+    headers: {'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/x-www-form-urlencoded'},
+    body
+  }).then(r => r.json()).then(data => {
+    if (!data.success) throw new Error(data.error || 'Payroll processing failed');
+    alert(`${data.processed} payslip(s) processed for ${data.period}.`);
+    location.reload();
+  }).catch(error => alert(error.message));
 }
 
   // ===== Employee Breakdown (Real AJAX) =====
@@ -1086,16 +1091,16 @@ function submitAdjustment() {
 
   // ===== History & Reports helpers =====
   function viewHistory(month) {
-    alert('View details for: ' + month);
+    window.location = `/salary/?month=${encodeURIComponent(month)}&tab=overview`;
   }
   function downloadHistoryExcel(month) {
-    window.location = `/salary/export/?month=${month}&format=excel`;
+    window.location = `/salary/export/?month=${encodeURIComponent(month)}&format=xlsx`;
   }
   function generateReport(type) {
-    alert('Generating report: ' + type);
+    window.location = `/salary/export/?report=${encodeURIComponent(type)}&format=pdf`;
   }
   function downloadReportExcel(type) {
-    window.location = `/salary/export/?report=${type}&format=excel`;
+    window.location = `/salary/export/?report=${encodeURIComponent(type)}&format=xlsx`;
   }
 
   // ===== CSRF Helper =====

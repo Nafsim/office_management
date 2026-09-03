@@ -385,6 +385,7 @@ path('tasks/<int:pk>/attachments/', views.task_get_attachments, name='task_get_a
     # ─────────────────────────────────────────────
     path('salary/', views.salary_list, name='salary_list'),
     path('salary/export/', views.salary_export, name='salary_export'),
+    path('salary/process/', views.process_payroll, name='process_payroll'),
 
     # Dynamic endpoints
     path('salary/breakdown-data/', views.employee_breakdown_data, name='employee_breakdown_data'),
