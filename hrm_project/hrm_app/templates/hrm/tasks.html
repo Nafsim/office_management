@@ -3,6 +3,22 @@
 {% block title %}Task Management — Luminous HRM{% endblock %}
 
 {% block content %}
+<style>
+  .task-modal-shell{background:#fff;width:min(900px,94vw);max-height:92vh;overflow-y:auto;border-radius:18px;padding:28px 30px;box-shadow:0 24px 70px rgba(15,23,42,.22)}
+  .task-attachments{margin:14px 0;padding:12px;background:linear-gradient(135deg,#fffaf7,#f8fafc);border:1px solid #f1ddd2;border-radius:12px}
+  .task-attachments-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+  .task-attachments-title{font-size:14px;font-weight:700;color:#263246}
+  .task-attachments-hint{font-size:11px;color:#8a94a6}
+  .task-attachment-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(150px,.6fr);gap:10px}
+  .task-attachment-box{min-width:0;padding:9px;background:#fff;border:1px solid #e7eaf0;border-radius:9px}
+  .task-attachment-label{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:12px;font-weight:600;color:#64748b}
+  .task-icon-button{width:30px;height:30px;display:inline-grid;place-items:center;border:1px solid #ffb48e;border-radius:7px;background:#fff3eb;color:#d95722;cursor:pointer}
+  .task-icon-button:hover{background:#ff6b00;color:#fff}
+  .task-icon-button svg{width:15px;height:15px}
+  #taskImagePreview{min-height:110px!important;margin-bottom:6px!important;background:#fbfcfe!important;border:1px dashed #d8dee8!important}
+  #taskDocumentPreview{min-height:28px;display:flex;align-items:center}
+  @media(max-width:650px){.task-modal-shell{padding:20px 16px}.task-attachment-grid{grid-template-columns:1fr}.task-attachments-hint{display:none}}
+</style>
 <div data-view-mode="{% if view_mode == 'table' %}table{% else %}card{% endif %}">
 
 <!-- ================= TOP HEADER ================= -->
@@ -36,16 +52,16 @@
   <span style="opacity:.95;">Click any card or table row to open progress. Change column color with the picker next to the header.</span>
 </div>
 
-<!-- ================= DETAIL + PROGRESS MODAL (COMPACT) ================= -->
+<!-- ================= DETAIL + PROGRESS MODAL ================= -->
 <div id="taskModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.45); align-items:center; justify-content:center; z-index:9999;">
-  <div style="background:white; width:420px; max-width:95vw; max-height:90vh; overflow-y:auto; border-radius:14px; padding:18px 20px;">
+  <div class="task-modal-shell">
     
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-      <h2 id="modalTitle" style="margin:0; font-size:18px; font-weight:700;"></h2>
+      <h2 id="modalTitle" style="margin:0; font-size:26px; font-weight:700;"></h2>
       <button onclick="closeTaskModal()" style="border:none; background:none; font-size:24px; cursor:pointer; color:#666; line-height:1;">×</button>
     </div>
 
-    <div style="font-size:13px; color:#555; line-height:1.5;">
+    <div style="font-size:14px; color:#555; line-height:1.5;">
       <p style="margin:4px 0;"><strong id="modalPriority"></strong></p>
       <p id="modalProject" style="margin:2px 0; color:#777;"></p>
       
@@ -72,33 +88,39 @@
       </div>
 
       <!-- Attachments -->
-      <div style="margin:14px 0; padding:12px; background:#F9FAFB; border-radius:8px; font-size:13px;">
-        <div style="font-weight:600; margin-bottom:8px;">Attachments</div>
+      <div class="task-attachments">
+        <div class="task-attachments-header">
+          <span class="task-attachments-title">Attachments</span>
+        </div>
+        <div class="task-attachment-grid">
 
         <!-- Image -->
-        <div style="margin-bottom:10px;">
-          <div style="font-size:12px; color:#666; margin-bottom:4px;">Picture</div>
-          <div id="taskImagePreview" style="margin-bottom:6px;">
+        <div class="task-attachment-box">
+          <div class="task-attachment-label">
+            <span>Picture</span>
+            <button type="button" class="task-icon-button" title="Upload picture" aria-label="Upload picture" onclick="document.getElementById('taskImageInput').click()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>
+            </button>
+          </div>
+          <div id="taskImagePreview" style="margin-bottom:10px; min-height:110px; display:flex; align-items:center; justify-content:center; background:white; border:1px dashed #D1D5DB; border-radius:10px; overflow:hidden;">
             <span style="color:#999; font-size:12px;">No image</span>
           </div>
           <input type="file" id="taskImageInput" accept="image/*" style="display:none;" onchange="uploadTaskImage()">
-          <button type="button" onclick="document.getElementById('taskImageInput').click()"
-                  style="background:#FF6B00; color:white; border:none; padding:4px 10px; border-radius:5px; font-size:12px; cursor:pointer;">
-            Upload Picture
-          </button>
         </div>
 
         <!-- Document -->
-        <div>
-          <div style="font-size:12px; color:#666; margin-bottom:4px;">Document</div>
+        <div class="task-attachment-box">
+          <div class="task-attachment-label">
+            <span>Document</span>
+            <button type="button" class="task-icon-button" title="Upload document" aria-label="Upload document" onclick="document.getElementById('taskDocumentInput').click()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8m-8 4h6"/></svg>
+            </button>
+          </div>
           <div id="taskDocumentPreview" style="margin-bottom:6px;">
             <span style="color:#999; font-size:12px;">No document</span>
           </div>
           <input type="file" id="taskDocumentInput" style="display:none;" onchange="uploadTaskDocument()">
-          <button type="button" onclick="document.getElementById('taskDocumentInput').click()"
-                  style="background:#FF6B00; color:white; border:none; padding:4px 10px; border-radius:5px; font-size:12px; cursor:pointer;">
-            Upload Document
-          </button>
+        </div>
         </div>
       </div>
 
@@ -147,7 +169,7 @@
     </thead>
     <tbody>
       {% for task in tasks %}
-      <tr style="border-top:1px solid #E5E7EB; cursor:pointer;" onclick="openTaskModal({{ task.pk }}, '{{ task.title|escapejs }}', '{{ task.priority|escapejs }}', '{{ task.project.name|escapejs }}', '{{ task.assignee.user.get_full_name|default:task.assignee.user.username|escapejs }}', '{{ task.due_date|default:""|escapejs }}', {{ task.progress|default:0 }}, '{% url "task_edit" task.pk %}')">
+      <tr style="border-top:1px solid #E5E7EB; cursor:pointer;" onclick="openTaskModal({{ task.pk }}, '{{ task.title|escapejs }}', '{{ task.priority|escapejs }}', '{{ task.project.name|escapejs }}', '{{ task.assignee.user.get_full_name|default:task.assignee.user.username|escapejs }}', '{{ task.due_date|default:'-'|escapejs }}', {{ task.progress|default:0 }}, '{% url "task_edit" task.pk %}')">
         <td style="padding:12px 16px;">{{ task.title }}</td>
         <td style="padding:12px 16px;">{{ task.project.name }}</td>
         <td style="padding:12px 16px;">{{ task.assignee.user.get_full_name|default:task.assignee.user.username }}</td>
@@ -174,7 +196,8 @@
 
 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
 
-  {% for status in board_statuses %}
+  {% for column in board_columns %}
+  {% with status=column.status %}
 
   <div>
 
@@ -216,8 +239,7 @@
       style="background:white; border:2px solid #E5E7EB; border-radius:12px; padding:8px; min-height:350px;"
     >
 
-      {% for task in board_tasks %}
-        {% if task.status_id == status.id %}
+      {% for task in column.tasks %}
 
 
         <!-- TASK CARD -->
@@ -231,7 +253,7 @@
             '{{ task.priority|escapejs }}',
             '{{ task.project.name|escapejs }}',
             '{{ task.assignee.user.get_full_name|default:task.assignee.user.username|escapejs }}',
-            '{{ task.due_date|default:"" }}',
+            '{{ task.due_date|default:'-' }}',
             {{ task.progress|default:0 }},
             '{% url "task_edit" task.pk %}'
           )"
@@ -274,7 +296,6 @@
           </div>
         </div>
 
-        {% endif %}
       {% empty %}
         <p style="text-align:center; color:#999;">No Task</p>
       {% endfor %}
@@ -294,6 +315,7 @@
 
     </div>
   </div>
+  {% endwith %}
 
   {% empty %}
   <div style="grid-column:1/-1; text-align:center; padding:50px; color:#999;">
@@ -362,8 +384,34 @@ function getCsrfToken() {
   return c ? decodeURIComponent(c.split('=')[1]) : '';
 }
 
+async function updateColumnColor(statusId, color) {
+  try {
+    const res = await fetch('{% url "task_update_column_color" %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': getCsrfToken(),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: new URLSearchParams({ status_id: statusId, color })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      alert(data.error || 'Could not update column color.');
+      return;
+    }
+    location.reload();
+  } catch (error) {
+    console.error('Error updating column color:', error);
+    alert('Network error while updating column color.');
+  }
+}
+
 function allowDrop(e) { e.preventDefault(); }
-function drag(e) { e.dataTransfer.setData("taskId", e.target.getAttribute("data-task-id")); }
+function drag(e) {
+  const card = e.currentTarget || e.target.closest('[data-task-id]');
+  if (card) e.dataTransfer.setData("taskId", card.getAttribute("data-task-id"));
+}
 
 async function drop(e, newStatusName) {
   e.preventDefault();
@@ -623,8 +671,10 @@ async function loadTaskAttachments(taskId) {
     if (data.ok) {
       if (data.image_url) {
         document.getElementById('taskImagePreview').innerHTML = `
-          <img src="${data.image_url}" style="max-width:100%; max-height:140px; border-radius:6px; border:1px solid #E5E7EB;">
+          <img src="${data.image_url}" alt="Task attachment" style="display:block; width:100%; max-height:300px; object-fit:contain; border-radius:8px;">
         `;
+      } else {
+        document.getElementById('taskImagePreview').innerHTML = '<span style="color:#999; font-size:12px;">No image uploaded</span>';
       }
       if (data.document_url) {
         document.getElementById('taskDocumentPreview').innerHTML = `
@@ -658,8 +708,9 @@ async function uploadTaskImage() {
 
     if (data.ok && data.image_url) {
       document.getElementById('taskImagePreview').innerHTML = `
-        <img src="${data.image_url}" style="max-width:100%; max-height:140px; border-radius:6px; border:1px solid #E5E7EB;">
+        <img src="${data.image_url}?v=${Date.now()}" alt="Task attachment" style="display:block; width:100%; max-height:300px; object-fit:contain; border-radius:8px;">
       `;
+      input.value = '';
     } else {
       alert(data.error || 'Upload failed');
     }
@@ -667,6 +718,26 @@ async function uploadTaskImage() {
     alert('Network error while uploading image');
   }
 }
+
+document.addEventListener('paste', function(event) {
+  if (!window.selectedTaskId || document.getElementById('taskModal').style.display !== 'flex') return;
+
+  const items = event.clipboardData ? event.clipboardData.items : [];
+  for (const item of items) {
+    if (item.type && item.type.startsWith('image/')) {
+      const file = item.getAsFile();
+      if (file) {
+        const input = document.getElementById('taskImageInput');
+        const transfer = new DataTransfer();
+        transfer.items.add(file);
+        input.files = transfer.files;
+        uploadTaskImage();
+      }
+      event.preventDefault();
+      break;
+    }
+  }
+});
 
 async function deleteTask(taskId, taskTitle) {
   const result = await Swal.fire({

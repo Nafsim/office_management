@@ -2846,6 +2846,13 @@ def task_list(request):
             board_tasks = tasks.filter(
                 project=current_project
             ).select_related('status', 'assignee__user', 'project').prefetch_related('steps')
+            board_columns = [
+                {
+                    'status': status,
+                    'tasks': [task for task in board_tasks if task.status_id == status.id],
+                }
+                for status in board_statuses
+            ]
             
             print(f"\n========== CARD VIEW DEBUG ==========")
             print(f"current_project = {current_project} (id={current_project.id if current_project else None})")
@@ -2858,11 +2865,13 @@ def task_list(request):
         else:
             board_statuses = TaskStatus.objects.none()
             board_tasks = tasks.none()
+            board_columns = []
 
     else:
         current_project = None
         board_statuses = TaskStatus.objects.none()
         board_tasks = tasks.none()
+        board_columns = []
 
     # ------------------------------------------------------------------
     # View mode
@@ -2889,6 +2898,7 @@ def task_list(request):
 
         statuses=statuses,
         board_statuses=board_statuses,
+        board_columns=board_columns,
 
         current_project=current_project,
 
@@ -4609,6 +4619,15 @@ def salary_list(request):
         payslips = payslips.filter(year=period_year, month=period_month)
 
     employees = _payroll_employees(request)
+    setup_employees = Employee.objects.select_related('user', 'department', 'designation').all()
+    if request.user.role == Role.EMPLOYEE:
+        setup_employees = setup_employees.filter(pk=getattr(emp, 'pk', None))
+    salary_structures = SalaryStructure.objects.filter(
+        is_active=True
+    ).select_related('employee').order_by('-effective_from')
+    latest_structures = {}
+    for structure in salary_structures:
+        latest_structures.setdefault(structure.employee_id, structure)
     departments = Department.objects.order_by('name')
     periods = set(Payslip.objects.values_list('year', 'month'))
     periods.add((date.today().year, date.today().month))
@@ -4661,7 +4680,7 @@ def salary_list(request):
         reverse=True
     ))
 
-    current_month = date(period_year, period_month, 1).strftime("%B %Y") if period_year else date.today().strftime("%B %Y")
+    current_month = date(period_year, period_month, 1).strftime("%B %Y") if period_year else "All Months"
 
     return render(
         request,
@@ -4670,6 +4689,8 @@ def salary_list(request):
             request,
             payslips=payslips,
             employees=employees,
+            setup_employees=setup_employees,
+            latest_structures=latest_structures,
             adjustments=adjustments,
             gross_payroll=gross_payroll,
             total_bonus=total_bonus,
@@ -4681,6 +4702,86 @@ def salary_list(request):
             month_options=month_options,
         )
     )
+
+
+@login_required
+@require_POST
+def salary_setup_create(request):
+    if not has_permission(request.user, "payroll", "create"):
+        messages.error(request, "You don't have permission to create salary structures.")
+        return redirect("salary_list")
+    employee = get_object_or_404(Employee, pk=request.POST.get('employee'))
+    try:
+        effective_from = date.fromisoformat(request.POST.get('effective_from', ''))
+        values = {
+            'basic': Decimal(request.POST.get('basic', '0')),
+            'house_rent': Decimal(request.POST.get('house_rent', '0') or 0),
+            'medical': Decimal(request.POST.get('medical', '0') or 0),
+            'transport': Decimal(request.POST.get('transport', '0') or 0),
+            'other_allowance': Decimal(request.POST.get('other_allowance', '0') or 0),
+            'tax_deduction': Decimal(request.POST.get('tax_deduction', '0') or 0),
+            'pf_deduction': Decimal(request.POST.get('pf_deduction', '0') or 0),
+        }
+        if values['basic'] < 0 or any(value < 0 for key, value in values.items() if key != 'basic'):
+            raise ValueError('Salary amounts cannot be negative.')
+    except (TypeError, ValueError, ArithmeticError):
+        messages.error(request, "Enter valid salary amounts and an effective date.")
+        return redirect(f"{reverse('salary_list')}?tab=setup&setup=salary")
+
+    with transaction.atomic():
+        SalaryStructure.objects.filter(employee=employee, is_active=True).update(is_active=False)
+        SalaryStructure.objects.create(employee=employee, effective_from=effective_from, is_active=True, **values)
+        employee.salary = values['basic']
+        employee.save(update_fields=['salary'])
+    messages.success(request, "Salary structure saved successfully.")
+    return redirect(f"{reverse('salary_list')}?tab=setup&setup=salary")
+
+
+@login_required
+@require_POST
+def salary_increment(request):
+    if not has_permission(request.user, "payroll", "create"):
+        messages.error(request, "You don't have permission to apply an increment.")
+        return redirect("salary_list")
+    employee = get_object_or_404(Employee, pk=request.POST.get('employee'))
+    try:
+        amount = Decimal(request.POST.get('amount', '0'))
+        effective_from = date.fromisoformat(request.POST.get('effective_from', ''))
+        if amount <= 0:
+            raise ValueError
+    except (TypeError, ValueError, ArithmeticError):
+        messages.error(request, "Enter a valid positive increment and effective date.")
+        return redirect(f"{reverse('salary_list')}?tab=setup&setup=increment")
+
+    with transaction.atomic():
+        old_salary = employee.salary or Decimal('0')
+        current_structure = SalaryStructure.objects.filter(
+            employee=employee, is_active=True
+        ).order_by('-effective_from').first()
+        employee.salary = old_salary + amount
+        employee.save(update_fields=['salary'])
+        SalaryStructure.objects.filter(employee=employee, is_active=True).update(is_active=False)
+        SalaryStructure.objects.create(
+            employee=employee,
+            basic=employee.salary,
+            house_rent=current_structure.house_rent if current_structure else Decimal('0'),
+            medical=current_structure.medical if current_structure else Decimal('0'),
+            transport=current_structure.transport if current_structure else Decimal('0'),
+            other_allowance=current_structure.other_allowance if current_structure else Decimal('0'),
+            tax_deduction=current_structure.tax_deduction if current_structure else Decimal('0'),
+            pf_deduction=current_structure.pf_deduction if current_structure else Decimal('0'),
+            effective_from=effective_from,
+            is_active=True,
+        )
+        PayrollAdjustment.objects.create(
+            employee=employee,
+            adjustment_type='Increase',
+            amount=amount,
+            reason=request.POST.get('reason') or 'Salary increment',
+            created_by=request.user,
+        )
+    messages.success(request, f"Salary increment applied to {employee.user.get_full_name() or employee.user.username}.")
+    return redirect(f"{reverse('salary_list')}?tab=setup&setup=increment")
 
 
 @login_required
@@ -4725,14 +4826,24 @@ def employee_breakdown_data(request):
     employee = Employee.objects.select_related('user').filter(id=employee_id).first()
     if not employee:
         return JsonResponse({'error': 'Employee not found'}, status=404)
-
-    structure = SalaryStructure.objects.filter(
-        employee=employee, is_active=True
-    ).order_by('-effective_from').first()
+    if request.user.role == Role.EMPLOYEE and employee != _emp(request):
+        return JsonResponse({'error': 'You can only view your own breakdown'}, status=403)
 
     latest_payslip = Payslip.objects.filter(
         employee=employee
     ).order_by('-year', '-month').first()
+    breakdown_year = latest_payslip.year if latest_payslip else timezone.now().year
+    breakdown_month = latest_payslip.month if latest_payslip else timezone.now().month
+    period_end = date(
+        breakdown_year, breakdown_month,
+        calendar.monthrange(breakdown_year, breakdown_month)[1]
+    )
+    structure = SalaryStructure.objects.filter(
+        employee=employee, is_active=True, effective_from__lte=period_end
+    ).order_by('-effective_from').first()
+    adjustments = employee.payroll_adjustments.filter(
+        created_at__year=breakdown_year, created_at__month=breakdown_month
+    )
 
     if structure:
         basic = structure.basic
@@ -4746,25 +4857,69 @@ def employee_breakdown_data(request):
         basic = employee.salary or Decimal('0')
         house_rent = medical = transport = other_allowance = tax = pf = Decimal('0')
 
+    component_adjustments = {
+        'house_rent': Decimal('0'),
+        'medical': Decimal('0'),
+        'transport': Decimal('0'),
+        'other_allowance': Decimal('0'),
+    }
+    component_deductions = Decimal('0')
+    adjustment_bonus = Decimal('0')
+    other_adjustment_deduction = Decimal('0')
+    pf_adjustment = Decimal('0')
+    tax_adjustment = Decimal('0')
+    for adjustment in adjustments:
+        reason = (adjustment.reason or '').lower()
+        if 'provident' in reason or 'p.f' in reason or 'pf' in reason:
+            pf_adjustment += adjustment.amount
+            continue
+        elif 'income tax' in reason or 'tax' in reason:
+            tax_adjustment += adjustment.amount
+            continue
+        elif 'loan' in reason or 'advance' in reason:
+            other_adjustment_deduction += adjustment.amount
+            continue
+        elif 'house' in reason or 'rent' in reason:
+            component = 'house_rent'
+        elif 'medical' in reason:
+            component = 'medical'
+        elif 'transport' in reason or 'conveyance' in reason:
+            component = 'transport'
+        elif 'allowance' in reason or 'other' in reason or 'salary' in reason or 'increment' in reason:
+            component = 'other_allowance'
+        else:
+            component = None
+
+        is_deduction = adjustment.adjustment_type in ['Deduction', 'Advance', 'Decrease']
+        is_positive = adjustment.adjustment_type in ['Bonus', 'Incentive', 'Increase', 'Adjustment']
+        if component:
+            component_adjustments[component] += adjustment.amount
+            if is_deduction:
+                component_deductions += adjustment.amount
+        elif is_positive:
+            adjustment_bonus += adjustment.amount
+        elif is_deduction:
+            other_adjustment_deduction += adjustment.amount
+
     data = {
         'name': employee.user.get_full_name() or employee.user.username,
         'designation': employee.designation.title if employee.designation else 'Employee',
         'basic': float(basic),
-        'house_rent': float(house_rent),
-        'medical': float(medical),
-        'transport': float(transport),
-        'other_allowance': float(other_allowance),
-        'bonus': float(latest_payslip.bonus) if latest_payslip and latest_payslip.bonus else 0,
-        'tax': float(tax),
-        'pf': float(pf),
-        'other_deduction': float(latest_payslip.deduction) if latest_payslip and latest_payslip.deduction else 0,
+        'house_rent': float(house_rent + component_adjustments['house_rent']),
+        'medical': float(medical + component_adjustments['medical']),
+        'transport': float(transport + component_adjustments['transport']),
+        'other_allowance': float(other_allowance + component_adjustments['other_allowance']),
+        'bonus': float(adjustment_bonus if adjustments.exists() else (latest_payslip.bonus if latest_payslip else 0)),
+        'tax': float(tax + tax_adjustment),
+        'pf': float(pf + pf_adjustment),
+        'other_deduction': float(other_adjustment_deduction if adjustments.exists() else (latest_payslip.deduction if latest_payslip else 0)),
     }
 
     data['gross'] = (
         data['basic'] + data['house_rent'] + data['medical'] +
         data['transport'] + data['other_allowance'] + data['bonus']
     )
-    data['net'] = data['gross'] - data['tax'] - data['pf'] - data['other_deduction']
+    data['net'] = data['gross'] - data['tax'] - data['pf'] - data['other_deduction'] - float(component_deductions)
 
     return JsonResponse(data)
 
