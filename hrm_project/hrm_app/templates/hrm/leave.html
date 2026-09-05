@@ -5,393 +5,259 @@
 {% block content %}
 
 <!-- Top Header -->
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:12px;">
   <div>
-    <h1 style="font-size:28px; font-weight:700; color:var(--ink); margin:0;">Leave Management</h1>
-    <div style="font-size:14px; color:var(--muted); margin-top:4px;">Home · Time & Attendance · Leave</div>
+    <h1 style="font-size:26px; font-weight:700; color:var(--ink); margin:0;">Leave Management</h1>
+    <div style="font-size:13px; color:var(--muted); margin-top:3px;">Home · Time & Attendance · Leave</div>
   </div>
 
   <div style="display:flex; gap:10px; align-items:center;">
-    <button onclick="history.back()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand); display:flex; align-items:center; gap:6px;">
-      <svg class="ico" style="width:16px;height:16px;" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    <button onclick="history.back()" class="btn" style="background:white; color:#374151; border:1px solid #E5E7EB; display:flex; align-items:center; gap:6px; border-radius:8px; padding:7px 14px;">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+      </svg>
       Back
     </button>
     
-    <button id="exportLeaveBtn" type="button" data-export-url="{% url 'leave_export' %}" class="btn" style="background:#FF6B00; color:white; border:none; display:flex; align-items:center; gap:6px; cursor:pointer;">
+    <button id="exportLeaveBtn" type="button" data-export-url="{% url 'leave_export' %}" class="btn" style="background:white; color:#374151; border:1px solid #E5E7EB; display:flex; align-items:center; gap:6px; cursor:pointer; border-radius:8px; padding:7px 14px;">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
       </svg>
       Export
     </button>
     
-<button 
-onclick="openLeaveModal()"
-class="btn"
-style="
-background:#FF6B00;
-color:white;
-border:none;
-">
-Apply for Leave
-</button>
+    <button onclick="openLeaveModal()" class="btn"
+      style="background:#FF6B00; color:white; border:none; display:flex; align-items:center; gap:6px; border-radius:8px; padding:7px 16px;">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/>
+      </svg>
+      Apply for Leave
+    </button>
   </div>
 </div>
 
 <!-- Orange Banner -->
-<div style="background:linear-gradient(90deg, #FF6B00, #FF8C3A); color:white; border-radius:12px; padding:16px 20px; margin-bottom:28px; display:flex; align-items:center; gap:16px;">
-  <div style="background:rgba(255,255,255,0.25); width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 01-9 9m9-9a9 9 0 00-9-9" />
+<div style="background:linear-gradient(90deg, #FF6B00, #FF8C3A); color:white; border-radius:12px; padding:14px 18px; margin-bottom:20px; display:flex; align-items:center; gap:14px;">
+  <div style="background:rgba(255,255,255,0.25); width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
     </svg>
   </div>
   <div>
-    <strong style="font-size:16px;">Leaves, balances & approvals</strong><br>
-    <span style="opacity:0.95;">Apply for leave, track balances, and run the approval chain. Managers approve their team; HR/Admin approve everyone.</span>
+    <strong style="font-size:15px;">Leaves, balances & approvals</strong><br>
+    <span style="opacity:0.95; font-size:13px;">Apply for leave, track balances, and run the approval chain. Managers approve their team; HR/Admin approve everyone.</span>
   </div>
 </div>
 
-<!-- Stats -->
-<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:16px; margin-bottom:28px;">
-  <div class="card pad" style="text-align:center; border:2px solid #3B82F6;">
-<div style="font-size:42px; font-weight:700; color:var(--ink);">
-{{ on_leave_today }}
-</div>
-    <div style="color:var(--muted);">On Leave Today</div>
+<!-- Stats Cards -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:14px; margin-bottom:20px;">
+
+  <!-- On Leave Today -->
+  <div style="background:white; border-radius:14px; padding:16px 18px; box-shadow:0 1px 3px rgba(0,0,0,0.05); border:1px solid #F3F4F6;">
+    <div style="width:38px; height:38px; border-radius:10px; background:#FEF3C7; display:flex; align-items:center; justify-content:center; margin-bottom:12px;">
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#D97706" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      </svg>
+    </div>
+    <div style="font-size:28px; font-weight:700; color:#111827; line-height:1;">{{ on_leave_today }}</div>
+    <div style="font-size:13px; color:#6B7280; margin-top:5px;">On Leave Today</div>
   </div>
-  <div class="card pad" style="text-align:center; border:2px solid #FF9F4D;">
-     <div style="font-size:42px; font-weight:700; color:var(--ink);">
-{{ pending_count }}
-</div>
-    <div style="color:var(--muted);">Pending</div>
+
+  <!-- Pending -->
+  <div style="background:white; border-radius:14px; padding:16px 18px; box-shadow:0 1px 3px rgba(0,0,0,0.05); border:1px solid #F3F4F6;">
+    <div style="width:38px; height:38px; border-radius:10px; background:#FFEDD5; display:flex; align-items:center; justify-content:center; margin-bottom:12px;">
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#EA580C" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    </div>
+    <div style="font-size:28px; font-weight:700; color:#111827; line-height:1;">{{ pending_count }}</div>
+    <div style="font-size:13px; color:#6B7280; margin-top:5px;">Pending</div>
   </div>
-  <div class="card pad" style="text-align:center; border:2px solid #22C55E;">
-<div style="font-size:42px; font-weight:700; color:var(--ink);">
-{{ approved_month }}
-</div>
-    <div style="color:var(--muted);">Approved (Month)</div>
+
+  <!-- Approved (Month) -->
+  <div style="background:white; border-radius:14px; padding:16px 18px; box-shadow:0 1px 3px rgba(0,0,0,0.05); border:1px solid #F3F4F6;">
+    <div style="width:38px; height:38px; border-radius:10px; background:#D1FAE5; display:flex; align-items:center; justify-content:center; margin-bottom:12px;">
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#059669" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+    <div style="font-size:28px; font-weight:700; color:#111827; line-height:1;">{{ approved_month }}</div>
+    <div style="font-size:13px; color:#6B7280; margin-top:5px;">Approved (Month)</div>
   </div>
-  <div class="card pad" style="text-align:center; border:2px solid #FF9F4D;">
-    <div style="font-size:42px; font-weight:700; color:var(--ink);">
-{{ upcoming }}
+
+  <!-- Upcoming -->
+  <div style="background:white; border-radius:14px; padding:16px 18px; box-shadow:0 1px 3px rgba(0,0,0,0.05); border:1px solid #F3F4F6;">
+    <div style="width:38px; height:38px; border-radius:10px; background:#DBEAFE; display:flex; align-items:center; justify-content:center; margin-bottom:12px;">
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#2563EB" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    </div>
+    <div style="font-size:28px; font-weight:700; color:#111827; line-height:1;">{{ upcoming }}</div>
+    <div style="font-size:13px; color:#6B7280; margin-top:5px;">Upcoming</div>
+  </div>
+
 </div>
-    <div style="color:var(--muted);">Upcoming</div>
+
+<!-- Leave Applications Table -->
+<div style="background:white; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,0.05); border:1px solid #F3F4F6; overflow:hidden;">
+  <div style="padding:14px 20px; border-bottom:1px solid #F3F4F6; display:flex; justify-content:space-between; align-items:center;">
+    <strong style="font-size:15px; color:#111827;">Leave Applications</strong>
+    <!-- Optional Calendar View button (keep if you have the URL, otherwise remove) -->
+    <!-- <button class="btn" style="background:white; border:1px solid #E5E7EB; border-radius:8px; padding:6px 12px; font-size:13px; display:flex; align-items:center; gap:6px;">
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+      </svg>
+      Calendar View
+    </button> -->
+  </div>
+  
+  <div style="overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="background:#FAFAFA;">
+          <th style="padding:10px 16px; text-align:left; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Employee</th>
+          <th style="padding:10px 16px; text-align:left; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Type</th>
+          <th style="padding:10px 16px; text-align:left; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">From</th>
+          <th style="padding:10px 16px; text-align:left; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">To</th>
+          <th style="padding:10px 16px; text-align:left; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Days</th>
+          <th style="padding:10px 16px; text-align:left; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Reason</th>
+          <th style="padding:10px 16px; text-align:left; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Status</th>
+          <th style="padding:10px 16px; text-align:left; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for lv in leaves %}
+        <tr style="border-top:1px solid #F3F4F6;">
+          <td style="padding:12px 16px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:34px; height:34px; border-radius:50%; background:#8B5CF6; color:white; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:12px; flex-shrink:0;">
+                {{ lv.employee.user.get_full_name|slice:":2"|upper }}
+              </div>
+              <span style="font-weight:600; color:#111827; font-size:14px;">{{ lv.employee.user.get_full_name }}</span>
+            </div>
+          </td>
+          <td style="padding:12px 16px;">
+            <span style="display:inline-block; padding:3px 10px; border-radius:9999px; font-size:12px; font-weight:500; background:#DBEAFE; color:#1D4ED8;">
+              {{ lv.leave_type }}
+            </span>
+          </td>
+          <td style="padding:12px 16px; color:#374151; font-size:13px;">{{ lv.from_date|date:"Y-m-d" }}</td>
+          <td style="padding:12px 16px; color:#374151; font-size:13px;">{{ lv.to_date|date:"Y-m-d" }}</td>
+          <td style="padding:12px 16px; color:#374151; font-size:13px;">{{ lv.days }}</td>
+          <td style="padding:12px 16px; color:#374151; font-size:13px;">{{ lv.reason|truncatechars:40 }}</td>
+          <td style="padding:12px 16px;">
+            {% if lv.status == 'Approved' %}
+              <span style="display:inline-block; padding:3px 10px; border-radius:9999px; font-size:12px; font-weight:500; background:#D1FAE5; color:#059669;">Approved</span>
+            {% elif lv.status == 'Rejected' %}
+              <span style="display:inline-block; padding:3px 10px; border-radius:9999px; font-size:12px; font-weight:500; background:#FEE2E2; color:#DC2626;">Rejected</span>
+            {% elif lv.status == 'Pending' %}
+              <span style="display:inline-block; padding:3px 10px; border-radius:9999px; font-size:12px; font-weight:500; background:#FEF3C7; color:#D97706;">Pending</span>
+            {% else %}
+              <span style="display:inline-block; padding:3px 10px; border-radius:9999px; font-size:12px; font-weight:500; background:#F3F4F6; color:#6B7280;">{{ lv.status }}</span>
+            {% endif %}
+          </td>
+          <td style="padding:12px 16px;">
+            {% if user.role == 'super_admin' or user.role == 'manager' %}
+              <div style="display:flex; gap:8px; align-items:center;">
+                <a href="{% url 'leave_action' lv.pk 'approve' %}" title="Approve"
+                   style="width:30px; height:30px; border-radius:8px; background:#10B981; color:white; display:flex; align-items:center; justify-content:center; text-decoration:none;">
+                  <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                  </svg>
+                </a>
+                <a href="{% url 'leave_action' lv.pk 'reject' %}" title="Reject"
+                   style="width:30px; height:30px; border-radius:8px; background:#EF4444; color:white; display:flex; align-items:center; justify-content:center; text-decoration:none;">
+                  <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </a>
+              </div>
+            {% else %}
+              <span style="color:#9CA3AF;">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" style="text-align:center; padding:40px 16px; color:#9CA3AF; font-size:14px;">No leave requests found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </div>
 
-<!-- Leave Applications -->
-<div class="card">
-  <div style="padding:18px 20px; border-bottom:1px solid var(--line);">
-    <strong>Leave Applications</strong>
-  </div>
-  <table>
-    <thead>
-      <tr>
-        <th>Employee</th>
-        <th>Type</th>
-        <th>From</th>
-        <th>To</th>
-        <th>Days</th>
-        <th>Reason</th>
-        <th>Status</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-    {% for lv in leaves %}
-    <tr>
-      <td>
-        <div class="flex">
-          <div class="avatar-sm" style="background:linear-gradient(135deg,#FF6B00,#FF9F4D); color:white;">
-            {{ lv.employee.user.get_full_name|slice:":1"|upper }}
-          </div>
-          <div><b>{{ lv.employee.user.get_full_name }}</b></div>
-        </div>
-      </td>
-      <td>{{ lv.leave_type }}</td>
-      <td>{{ lv.from_date|date:"d M Y" }}</td>
-      <td>{{ lv.to_date|date:"d M Y" }}</td>
-      <td>{{ lv.days }}</td>
-      <td>{{ lv.reason|truncatechars:40 }}</td>
-      <td>
-        <span class="tag t-{% if lv.status == 'Approved' %}green{% elif lv.status == 'Rejected' %}red{% elif lv.status == 'Pending' %}amber{% else %}gray{% endif %}">
-          {{ lv.status }}
-        </span>
-      </td>
-      <td>
-        {% if user.role == 'super_admin' or user.role == 'manager' %}
-          <button type="button" class="btn ghost sm" data-title="{{ lv.title|default:'-'|escapejs }}" data-reason="{{ lv.reason|default:'-'|escapejs }}" data-attachment="{% if lv.attachment %}Available{% else %}None{% endif %}" onclick="showLeaveDetails(this)">View</button>
-          <a href="{% url 'leave_action' lv.pk 'approve' %}" class="btn green sm">Approve</a>
-          <a href="{% url 'leave_action' lv.pk 'reject' %}" class="btn red sm">Reject</a>
-        {% else %}
-          <span class="sub">—</span>
-        {% endif %}
-      </td>
-    </tr>
-    {% empty %}
-    <tr>
-      <td colspan="8" style="text-align:center; padding:40px; color:var(--muted);">No leave requests found.</td>
-    </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-</div>
-<!-- Leave Apply Modal -->
-
+<!-- Leave Apply Modal (unchanged logic) -->
 <div id="leaveModal"
-style="
-display:none;
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,0.45);
-align-items:center;
-justify-content:center;
-z-index:9999;
-padding:24px 16px;
-box-sizing:border-box;
-overflow-y:auto;
-">
+  style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.45); align-items:center; justify-content:center; z-index:9999; padding:24px 16px; box-sizing:border-box; overflow-y:auto;">
 
+  <div class="card" style="width:520px; max-width:90%; max-height:calc(100vh - 48px); background:white; border-radius:16px; overflow-y:auto; box-sizing:border-box;">
 
-<div class="card"
-style="
-width:520px;
-max-width:90%;
-max-height:calc(100vh - 48px);
-background:white;
-border-radius:16px;
-overflow-y:auto;
-box-sizing:border-box;
-">
+    <div style="padding:18px 22px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+      <h2 style="margin:0; font-size:18px;">Apply for Leave</h2>
+      <button type="button" onclick="closeLeaveModal()" aria-label="Close leave request form"
+        style="width:36px; height:36px; border:none; background:none; font-size:26px; cursor:pointer; line-height:1; border-radius:999px; display:grid; place-items:center;">×</button>
+    </div>
 
+    <form method="POST" action="{% url 'leave_apply' %}" enctype="multipart/form-data" style="padding:25px;">
+      {% csrf_token %}
 
-<!-- Header -->
+      <label style="display:block; font-weight:600; font-size:14px; color:#334155; margin-bottom:8px;">Title</label>
+      <input type="text" name="title" class="form-control" required placeholder="Short title for leave request">
 
-<div style="
-padding:18px 22px;
-border-bottom:1px solid #eee;
-display:flex;
-justify-content:space-between;
-align-items:center;
-">
+      <label style="display:block; font-weight:600; font-size:14px; color:#334155; margin-bottom:8px; margin-top:14px;">Apply on behalf of</label>
+      <select name="employee" class="form-control" required>
+        {% for emp in employees %}
+        <option value="{{ emp.id }}">
+          {% if emp.user.get_full_name %}{{ emp.user.get_full_name }}{% else %}{{ emp.user.username }}{% endif %}
+        </option>
+        {% endfor %}
+      </select>
 
-<h2 style="margin:0;">
-Apply for Leave
-</h2>
+      <label style="display:block; font-weight:600; font-size:14px; color:#334155; margin-bottom:8px; margin-top:14px;">Leave Type</label>
+      <select name="leave_type" class="form-control">
+        {% for lt in leave_types %}
+        <option value="{{ lt.id }}">{{ lt.name }}</option>
+        {% endfor %}
+      </select>
 
+      <label style="display:block; font-weight:600; font-size:14px; color:#334155; margin-bottom:8px; margin-top:14px;">From</label>
+      <input type="date" name="from_date" class="form-control">
 
-<button 
-type="button"
-onclick="closeLeaveModal()"
-aria-label="Close leave request form"
-style="
-width:36px;
-height:36px;
-border:none;
-background:none;
-font-size:26px;
-cursor:pointer;
-line-height:1;
-border-radius:999px;
-display:grid;
-place-items:center;
-">
-×
-</button>
+      <label style="display:block; font-weight:600; font-size:14px; color:#334155; margin-bottom:8px; margin-top:14px;">To</label>
+      <input type="date" name="to_date" class="form-control">
 
+      <label style="display:block; font-weight:600; font-size:14px; color:#334155; margin-bottom:8px; margin-top:14px;">Half day?</label>
+      <select name="half_day" class="form-control">
+        <option value="no">No — full day(s)</option>
+        <option value="yes">Yes — half day</option>
+      </select>
 
+      <label style="display:block; font-weight:600; font-size:14px; color:#334155; margin-bottom:8px; margin-top:14px;">Reason</label>
+      <textarea name="reason" class="form-control" placeholder="Briefly describe the reason"></textarea>
+
+      <label style="display:block; font-weight:600; font-size:14px; color:#334155; margin-bottom:8px; margin-top:14px;">Attachment</label>
+      <input type="file" name="attachment" class="form-control" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx">
+
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+        <button type="button" onclick="closeLeaveModal()" class="btn ghost">Cancel</button>
+        <button type="submit" class="btn" style="background:#FF6B00; color:white;">Submit Request</button>
+      </div>
+    </form>
+  </div>
 </div>
-
-<form method="POST" action="{% url 'leave_apply' %}" enctype="multipart/form-data" style="padding:25px;">
-
-{% csrf_token %}
-
-
-<label style="
-display:block;
-font-weight:600;
-font-size:14px;
-color:#334155;
-margin-bottom:8px;
-margin-left:0;
-">
-Title
-</label>
-
-<input
-type="text"
-name="title"
-class="form-control"
-required
-placeholder="Short title for leave request">
-
-<label style="
-display:block;
-font-weight:600;
-font-size:14px;
-color:#334155;
-margin-bottom:8px;
-margin-left:0;
-">
-Apply on behalf of
-</label>
-
-<select name="employee" class="form-control" required>
-
-{% for emp in employees %}
-
-<option value="{{ emp.id }}">
-{% if emp.user.get_full_name %}
-{{ emp.user.get_full_name }}
-{% else %}
-{{ emp.user.username }}
-{% endif %}
-</option>
-
-{% endfor %}
-
-</select>
-
-
-<br>
-
-
-<label>Leave Type</label>
-
-<select name="leave_type" class="form-control">
-{% for lt in leave_types %}
-<option value="{{lt.id}}">
-{{lt.name}}
-</option>
-{% endfor %}
-</select>
-
-
-
-<label style="margin-top:15px;">
-From
-</label>
-
-<input 
-type="date"
-name="from_date"
-class="form-control">
-
-
-
-<label style="margin-top:15px;">
-To
-</label>
-
-<input 
-type="date"
-name="to_date"
-class="form-control">
-<label style="margin-top:15px;">
-Half day?
-</label>
-
-
-<select name="half_day" class="form-control">
-
-<option value="no">
-No — full day(s)
-</option>
-
-
-<option value="yes">
-Yes — half day
-</option>
-
-
-</select>
-
-
-<label style="margin-top:15px;">
-Reason
-</label>
-
-<textarea
-name="reason"
-class="form-control"
-placeholder="Briefly describe the reason">
-</textarea>
-
-
-<label style="margin-top:15px; display:block; font-weight:600; font-size:14px; color:#334155;">
-Attachment
-</label>
-
-<input type="file" name="attachment" class="form-control" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx">
-
-
-
-<div style="
-display:flex;
-justify-content:flex-end;
-gap:10px;
-margin-top:20px;
-">
-
-
-<button 
-type="button"
-onclick="closeLeaveModal()"
-class="btn ghost">
-Cancel
-</button>
-
-
-<button 
-type="submit"
-class="btn"
-style="
-background:#FF6B00;
-color:white;
-">
-Submit Request
-</button>
-
-
-</div>
-
-
-</form>
-
-
-</div>
-
-</div>
-
-
-
 
 <script>
-
-function showLeaveDetails(button) {
-  alert('Title: ' + (button.getAttribute('data-title') || '-') + '\nReason: ' + (button.getAttribute('data-reason') || '-') + '\nAttachment: ' + (button.getAttribute('data-attachment') || 'None'));
-}
-
 function openLeaveModal(){
-
-document.getElementById("leaveModal").style.display="flex";
-
+  document.getElementById("leaveModal").style.display = "flex";
 }
-
-
 function closeLeaveModal(){
-
-document.getElementById("leaveModal").style.display="none";
-
+  document.getElementById("leaveModal").style.display = "none";
 }
-
 document.getElementById("leaveModal").addEventListener("click", function(event) {
   if (event.target === this) {
     closeLeaveModal();
   }
 });
-
 </script>
 {% endblock %}

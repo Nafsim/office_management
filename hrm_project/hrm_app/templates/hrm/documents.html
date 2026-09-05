@@ -5,231 +5,296 @@
 {% block content %}
 
 <!-- Top Header -->
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:12px;">
   <div>
-    <h1 style="font-size:28px; font-weight:700; color:var(--ink); margin:0;">Document Management</h1>
-    <div style="font-size:14px; color:var(--muted); margin-top:4px;">Home · Work · Documents</div>
+    <h1 style="font-size:26px; font-weight:700; color:var(--ink); margin:0;">Document Management</h1>
+    <div style="font-size:13px; color:var(--muted); margin-top:3px;">Home · Work · Documents</div>
   </div>
 
   <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-    <button onclick="history.back()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">← Back</button>
-
-    <button id="exportDocsBtn" type="button" data-export-url="{% url 'document_export' %}" class="btn"
-            style="background:#FF6B00; color:white; border:none; display:flex; align-items:center; gap:6px; cursor:pointer;">
-      Export
+    <button onclick="history.back()" class="btn" style="background:white; color:#374151; border:1px solid #E5E7EB; display:flex; align-items:center; gap:6px; border-radius:8px; padding:7px 14px;">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+      </svg>
+      Back
     </button>
 
     {% if user.role == 'super_admin' or user.role == 'manager' or user.role == 'admin' %}
-      <a href="{% url 'document_upload' %}" class="btn" style="background:#FF6B00; color:white;">Upload Document</a>
+      <a href="{% url 'document_upload' %}" class="btn" style="background:white; color:#374151; border:1px solid #E5E7EB; display:flex; align-items:center; gap:6px; border-radius:8px; padding:7px 14px; text-decoration:none;">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+        </svg>
+        Upload
+      </a>
     {% endif %}
 
     {% if user.role == 'manager' or user.role == 'employee' or user.role == 'super_admin' %}
-      <a href="{% url 'document_request_create' %}" class="btn" style="background:#FF6B00; color:white;">Request Document</a>
+      <a href="{% url 'document_request_create' %}" class="btn" style="background:#FF6B00; color:white; border:none; display:flex; align-items:center; gap:6px; border-radius:8px; padding:7px 16px; text-decoration:none;">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/>
+        </svg>
+        Request Document
+      </a>
     {% endif %}
   </div>
 </div>
 
 <!-- Orange Banner -->
-<div style="background:linear-gradient(90deg, #FF6B00, #FF8C3A); color:white; border-radius:12px; padding:16px 20px; margin-bottom:28px;">
-  <strong style="font-size:16px;">One home for every file</strong><br>
-  <span style="opacity:0.95;">Company policies, employee documents, requests and generated letters — all in one place.</span>
+<div style="background:linear-gradient(90deg, #FF6B00, #FF8C3A); color:white; border-radius:12px; padding:14px 18px; margin-bottom:20px; display:flex; align-items:center; gap:14px;">
+  <div style="background:rgba(255,255,255,0.25); width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+    </svg>
+  </div>
+  <div>
+    <strong style="font-size:15px;">One home for every file</strong><br>
+    <span style="opacity:0.95; font-size:13px;">Company policies, NDA & contract templates, employee documents and generated letters — all categorised and searchable.</span>
+  </div>
 </div>
 
-<!-- Menu tabs (grey by default, orange when active) -->
-<div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+<!-- Menu tabs (like image 2 – horizontal text + orange underline) -->
+<div style="display:flex; gap:0; margin-bottom:20px; border-bottom:1px solid #E5E7EB; overflow-x:auto;">
   {% with f=document_type_filter|default:'all' %}
   {% if user.role == 'super_admin' or 'documents' in allowed_menus %}
   <a href="{% url 'document_list' %}?document_type=all"
-     class="btn"
-     style="{% if f == 'all' %}background:#FF6B00;color:white;border:none;{% else %}background:#E5E7EB;color:#374151;border:none;{% endif %}">
+     style="padding:10px 18px; font-size:14px; font-weight:500; text-decoration:none; white-space:nowrap;
+            {% if f == 'all' %}color:#FF6B00; border-bottom:2px solid #FF6B00;{% else %}color:#6B7280; border-bottom:2px solid transparent;{% endif %}">
     All Documents
   </a>
   {% endif %}
   {% if user.role == 'super_admin' or 'documents_request' in allowed_menus %}
   <a href="{% url 'document_list' %}?document_type=request"
-     class="btn"
-     style="{% if f == 'request' %}background:#FF6B00;color:white;border:none;{% else %}background:#E5E7EB;color:#374151;border:none;{% endif %}">
+     style="padding:10px 18px; font-size:14px; font-weight:500; text-decoration:none; white-space:nowrap;
+            {% if f == 'request' %}color:#FF6B00; border-bottom:2px solid #FF6B00;{% else %}color:#6B7280; border-bottom:2px solid transparent;{% endif %}">
     Request Documents
   </a>
   {% endif %}
   {% if user.role == 'super_admin' or 'documents_generate' in allowed_menus %}
   <a href="{% url 'document_list' %}?document_type=generated"
-     class="btn"
-     style="{% if f == 'generated' %}background:#FF6B00;color:white;border:none;{% else %}background:#E5E7EB;color:#374151;border:none;{% endif %}">
+     style="padding:10px 18px; font-size:14px; font-weight:500; text-decoration:none; white-space:nowrap;
+            {% if f == 'generated' %}color:#FF6B00; border-bottom:2px solid #FF6B00;{% else %}color:#6B7280; border-bottom:2px solid transparent;{% endif %}">
     Generated Documents
   </a>
   {% endif %}
   {% if user.role == 'super_admin' or 'documents_employee' in allowed_menus %}
   <a href="{% url 'document_list' %}?document_type=employee"
-     class="btn"
-     style="{% if f == 'employee' %}background:#FF6B00;color:white;border:none;{% else %}background:#E5E7EB;color:#374151;border:none;{% endif %}">
+     style="padding:10px 18px; font-size:14px; font-weight:500; text-decoration:none; white-space:nowrap;
+            {% if f == 'employee' %}color:#FF6B00; border-bottom:2px solid #FF6B00;{% else %}color:#6B7280; border-bottom:2px solid transparent;{% endif %}">
     Employee Documents
   </a>
   {% endif %}
   {% if user.role == 'super_admin' or 'documents_office' in allowed_menus %}
   <a href="{% url 'document_list' %}?document_type=office"
-     class="btn"
-     style="{% if f == 'office' %}background:#FF6B00;color:white;border:none;{% else %}background:#E5E7EB;color:#374151;border:none;{% endif %}">
+     style="padding:10px 18px; font-size:14px; font-weight:500; text-decoration:none; white-space:nowrap;
+            {% if f == 'office' %}color:#FF6B00; border-bottom:2px solid #FF6B00;{% else %}color:#6B7280; border-bottom:2px solid transparent;{% endif %}">
     Office Documents
   </a>
   {% endif %}
   {% endwith %}
 </div>
 
-<!-- Stats -->
-<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:16px; margin-bottom:28px;">
-  <div class="card pad" style="text-align:center; border:2px solid #FF9F4D;">
-    <div style="font-size:42px; font-weight:700; color:var(--ink);">{{ category_count }}</div>
-    <div style="color:var(--muted);">Categories</div>
+<!-- Stats Cards -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:14px; margin-bottom:20px;">
+
+  <!-- Categories -->
+  <div style="background:white; border-radius:14px; padding:16px 18px; box-shadow:0 1px 3px rgba(0,0,0,0.05); border:1px solid #F3F4F6;">
+    <div style="width:38px; height:38px; border-radius:10px; background:#FFEDD5; display:flex; align-items:center; justify-content:center; margin-bottom:12px;">
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#EA580C" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+    </div>
+    <div style="font-size:28px; font-weight:700; color:#111827; line-height:1;">{{ category_count }}</div>
+    <div style="font-size:13px; color:#6B7280; margin-top:5px;">Categories</div>
   </div>
-  <div class="card pad" style="text-align:center; border:2px solid #FF9F4D;">
-    <div style="font-size:42px; font-weight:700; color:var(--ink);">{{ total_documents }}</div>
-    <div style="color:var(--muted);">Total Documents</div>
+
+  <!-- Total Documents -->
+  <div style="background:white; border-radius:14px; padding:16px 18px; box-shadow:0 1px 3px rgba(0,0,0,0.05); border:1px solid #F3F4F6;">
+    <div style="width:38px; height:38px; border-radius:10px; background:#DBEAFE; display:flex; align-items:center; justify-content:center; margin-bottom:12px;">
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#2563EB" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+      </svg>
+    </div>
+    <div style="font-size:28px; font-weight:700; color:#111827; line-height:1;">{{ total_documents }}</div>
+    <div style="font-size:13px; color:#6B7280; margin-top:5px;">Total Documents</div>
   </div>
-  <div class="card pad" style="text-align:center; border:2px solid #FF9F4D;">
-    <div style="font-size:42px; font-weight:700; color:var(--ink);">{{ pending_requests }}</div>
-    <div style="color:var(--muted);">Pending Requests</div>
+
+  <!-- Pending Requests -->
+  <div style="background:white; border-radius:14px; padding:16px 18px; box-shadow:0 1px 3px rgba(0,0,0,0.05); border:1px solid #F3F4F6;">
+    <div style="width:38px; height:38px; border-radius:10px; background:#FEF3C7; display:flex; align-items:center; justify-content:center; margin-bottom:12px;">
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#D97706" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+      </svg>
+    </div>
+    <div style="font-size:28px; font-weight:700; color:#111827; line-height:1;">{{ pending_requests }}</div>
+    <div style="font-size:13px; color:#6B7280; margin-top:5px;">Pending Requests</div>
   </div>
-  <div class="card pad" style="text-align:center; border:2px solid #22C55E;">
-    <div style="font-size:42px; font-weight:700; color:var(--ink);">{{ generated_documents }}</div>
-    <div style="color:var(--muted);">Generated</div>
+
+  <!-- Generated -->
+  <div style="background:white; border-radius:14px; padding:16px 18px; box-shadow:0 1px 3px rgba(0,0,0,0.05); border:1px solid #F3F4F6;">
+    <div style="width:38px; height:38px; border-radius:10px; background:#D1FAE5; display:flex; align-items:center; justify-content:center; margin-bottom:12px;">
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#059669" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+      </svg>
+    </div>
+    <div style="font-size:28px; font-weight:700; color:#111827; line-height:1;">{{ generated_documents }}</div>
+    <div style="font-size:13px; color:#6B7280; margin-top:5px;">Generated</div>
   </div>
+
 </div>
 
 {% if document_type_filter == 'request' %}
 
 <!-- ================= REQUEST DOCUMENTS TABLE ================= -->
-<div class="card">
-  <div style="padding:18px 20px; border-bottom:1px solid var(--line);">
-    <strong>Document Requests</strong>
+<div style="background:white; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,0.05); border:1px solid #F3F4F6; overflow:hidden;">
+  <div style="padding:14px 20px; border-bottom:1px solid #F3F4F6;">
+    <strong style="font-size:15px; color:#111827;">Document Requests</strong>
   </div>
-  <table>
-    <thead>
-      <tr>
-        <th>Requester</th>
-        <th>Employee</th>
-        <th>Document Type</th>
-        <th>Reason</th>
-        <th>Status</th>
-        <th>Requested At</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for req in requests %}
-      <tr>
-        <td>{{ req.requester.get_full_name|default:"—" }}</td>
-        <td>{{ req.employee.user.get_full_name|default:"—" }}</td>
-        <td>
-          {% if req.document_type == 'Other' %}
-            {{ req.custom_type|default:"—" }}
-          {% else %}
-            {{ req.document_type }}
-          {% endif %}
-        </td>
-        <td>{{ req.reason|truncatewords:10 }}</td>
-        <td>
-          {% if req.status == 'Pending' %}
-            <span class="tag" style="background:#FEF3C7; color:#D97706;">{{ req.status }}</span>
-          {% elif req.status == 'Approved' %}
-            <span class="tag" style="background:#D1FAE5; color:#10B981;">{{ req.status }}</span>
-          {% elif req.status == 'Rejected' %}
-            <span class="tag" style="background:#FEE2E2; color:#EF4444;">{{ req.status }}</span>
-          {% elif req.status == 'Completed' %}
-            <span class="tag" style="background:#DBEAFE; color:#3B82F6;">{{ req.status }}</span>
-          {% else %}
-            <span class="tag">{{ req.status }}</span>
-          {% endif %}
-        </td>
-        <td>{{ req.requested_at|date:"Y-m-d" }}</td>
-                <td>
-          {% if req.status == 'Pending' %}
-            {% if user.role == 'super_admin' or user.role == 'manager' or user.role == 'admin' %}
-              <a href="{% url 'document_request_approve' req.pk %}"
-                 class="btn ghost sm"
-                 style="background:#10B981; color:white;">
-                Approve
-              </a>
+  <div style="overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="background:#FAFAFA;">
+          <th style="padding:10px 16px; text-align:left; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Requester</th>
+          <th style="padding:10px 16px; text-align:left; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Employee</th>
+          <th style="padding:10px 16px; text-align:left; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Document Type</th>
+          <th style="padding:10px 16px; text-align:left; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Reason</th>
+          <th style="padding:10px 16px; text-align:left; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Status</th>
+          <th style="padding:10px 16px; text-align:left; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Requested At</th>
+          <th style="padding:10px 16px; text-align:left; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in requests %}
+        <tr style="border-top:1px solid #F3F4F6;">
+          <td style="padding:12px 16px; color:#374151; font-size:13px;">{{ req.requester.get_full_name|default:"—" }}</td>
+          <td style="padding:12px 16px; color:#374151; font-size:13px;">{{ req.employee.user.get_full_name|default:"—" }}</td>
+          <td style="padding:12px 16px; color:#374151; font-size:13px;">
+            {% if req.document_type == 'Other' %}
+              {{ req.custom_type|default:"—" }}
+            {% else %}
+              {{ req.document_type }}
             {% endif %}
-          {% endif %}
-
-          {% if req.status == 'Approved' %}
-            {% if user.role == 'super_admin' or user.role == 'manager' or user.role == 'admin' %}
-              <a href="{% url 'document_generate' req.pk %}"
-                 class="btn ghost sm"
-                 style="background:#FF6B00; color:white;">
-                Generate
-              </a>
+          </td>
+          <td style="padding:12px 16px; color:#374151; font-size:13px;">{{ req.reason|truncatewords:10 }}</td>
+          <td style="padding:12px 16px;">
+            {% if req.status == 'Pending' %}
+              <span style="display:inline-block; padding:3px 10px; border-radius:9999px; font-size:12px; font-weight:500; background:#FEF3C7; color:#D97706;">{{ req.status }}</span>
+            {% elif req.status == 'Approved' %}
+              <span style="display:inline-block; padding:3px 10px; border-radius:9999px; font-size:12px; font-weight:500; background:#D1FAE5; color:#059669;">{{ req.status }}</span>
+            {% elif req.status == 'Rejected' %}
+              <span style="display:inline-block; padding:3px 10px; border-radius:9999px; font-size:12px; font-weight:500; background:#FEE2E2; color:#DC2626;">{{ req.status }}</span>
+            {% elif req.status == 'Completed' %}
+              <span style="display:inline-block; padding:3px 10px; border-radius:9999px; font-size:12px; font-weight:500; background:#DBEAFE; color:#2563EB;">{{ req.status }}</span>
+            {% else %}
+              <span style="display:inline-block; padding:3px 10px; border-radius:9999px; font-size:12px; font-weight:500; background:#F3F4F6; color:#6B7280;">{{ req.status }}</span>
             {% endif %}
-          {% endif %}
+          </td>
+          <td style="padding:12px 16px; color:#374151; font-size:13px;">{{ req.requested_at|date:"Y-m-d" }}</td>
+          <td style="padding:12px 16px;">
+            {% if req.status == 'Pending' %}
+              {% if user.role == 'super_admin' or user.role == 'manager' or user.role == 'admin' %}
+                <a href="{% url 'document_request_approve' req.pk %}"
+                   class="btn ghost sm"
+                   style="background:#10B981; color:white;">
+                  Approve
+                </a>
+              {% endif %}
+            {% endif %}
 
-          {% if req.generated_document %}
-            <a href="{% url 'document_download' req.generated_document.pk %}" class="btn ghost sm">Download</a>
-          {% endif %}
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="7" style="text-align:center; padding:40px; color:var(--muted);">No document requests found.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+            {% if req.status == 'Approved' %}
+              {% if user.role == 'super_admin' or user.role == 'manager' or user.role == 'admin' %}
+                <a href="{% url 'document_generate' req.pk %}"
+                   class="btn ghost sm"
+                   style="background:#FF6B00; color:white;">
+                  Generate
+                </a>
+              {% endif %}
+            {% endif %}
+
+            {% if req.generated_document %}
+              <a href="{% url 'document_download' req.generated_document.pk %}" class="btn ghost sm">Download</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" style="text-align:center; padding:40px 16px; color:#9CA3AF; font-size:14px;">No document requests found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 
 {% else %}
 
 <!-- ================= DOCUMENTS TABLE (All / Generated / Employee / Office) ================= -->
-<div class="card">
-  <div style="padding:18px 20px; border-bottom:1px solid var(--line);">
-    <strong>
+<div style="background:white; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,0.05); border:1px solid #F3F4F6; overflow:hidden;">
+  <div style="padding:14px 20px; border-bottom:1px solid #F3F4F6; display:flex; justify-content:space-between; align-items:center;">
+    <strong style="font-size:15px; color:#111827;">
       {% if document_type_filter == 'generated' %}Generated Documents
       {% elif document_type_filter == 'employee' %}Employee Documents
       {% elif document_type_filter == 'office' %}Office Documents
       {% else %}All Documents{% endif %}
     </strong>
   </div>
-  <table>
-    <thead>
-      <tr>
-        <th>Document Name</th>
-        <th>Category</th>
-        <th>Size</th>
-        <th>Owner</th>
-        <th>Date</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for doc in docs %}
-      <tr>
-        <td><b>{{ doc.name }}</b></td>
-        <td><span class="tag t-gray">{{ doc.category|default:"General" }}</span></td>
-        <td>{{ doc.size_display|default:"—" }}</td>
-        <td>{{ doc.owner.get_full_name|default:"—" }}</td>
-        <td>{{ doc.uploaded_at|date:"Y-m-d" }}</td>
-        <td>
-          <a href="{% url 'document_download' doc.pk %}" class="btn ghost sm">Download</a>
+  <div style="overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="background:#FAFAFA;">
+          <th style="padding:10px 16px; text-align:left; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Document</th>
+          <th style="padding:10px 16px; text-align:left; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Category</th>
+          <th style="padding:10px 16px; text-align:left; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Size</th>
+          <th style="padding:10px 16px; text-align:left; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Owner</th>
+          <th style="padding:10px 16px; text-align:left; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Date</th>
+          <th style="padding:10px 16px; text-align:left; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for doc in docs %}
+        <tr style="border-top:1px solid #F3F4F6;">
+          <td style="padding:12px 16px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:32px; height:32px; border-radius:8px; background:#FFEDD5; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#EA580C" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+              </div>
+              <span style="font-weight:600; color:#111827; font-size:14px;">{{ doc.name }}</span>
+            </div>
+          </td>
+          <td style="padding:12px 16px;">
+            <span style="display:inline-block; padding:3px 10px; border-radius:9999px; font-size:12px; font-weight:500; background:#DBEAFE; color:#1D4ED8;">
+              {{ doc.category|default:"General" }}
+            </span>
+          </td>
+          <td style="padding:12px 16px; color:#374151; font-size:13px;">{{ doc.size_display|default:"—" }}</td>
+          <td style="padding:12px 16px; color:#374151; font-size:13px;">{{ doc.owner.get_full_name|default:"—" }}</td>
+          <td style="padding:12px 16px; color:#374151; font-size:13px;">{{ doc.uploaded_at|date:"Y-m-d" }}</td>
+          <td style="padding:12px 16px;">
+            <!-- ACTION BUTTONS KEPT EXACTLY AS ORIGINAL -->
+            <a href="{% url 'document_download' doc.pk %}" class="btn ghost sm">Download</a>
 
-          {% if user.role == 'super_admin' or user.role == 'admin' %}
-  <a href="{% url 'document_delete' doc.pk %}"
-     class="btn ghost sm red delete-doc-btn"
-     data-name="{{ doc.name }}">
-    Delete
-  </a>
-{% endif %}
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="6" style="text-align:center; padding:40px; color:var(--muted);">No documents found.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+            {% if user.role == 'super_admin' or user.role == 'admin' %}
+              <a href="{% url 'document_delete' doc.pk %}"
+                 class="btn ghost sm red delete-doc-btn"
+                 data-name="{{ doc.name }}">
+                Delete
+              </a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" style="text-align:center; padding:40px 16px; color:#9CA3AF; font-size:14px;">No documents found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 
 {% endif %}
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('.delete-doc-btn').forEach(function (btn) {

@@ -12,348 +12,222 @@
   </div>
 
   <div style="display:flex; gap:10px; align-items:center;">
-    <button onclick="history.back()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand); display:flex; align-items:center; gap:6px;">
-      <svg class="ico" style="width:16px;height:16px;" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    <button onclick="history.back()" class="btn" style="background:white; color:#374151; border:1px solid #E5E7EB; display:flex; align-items:center; gap:6px; border-radius:8px; padding:8px 14px;">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+      </svg>
       Back
     </button>
     
-    <button id="exportLateBtn" type="button" data-export-url="{% url 'late_export' %}" class="btn" style="background:#FF6B00; color:white; border:none; display:flex; align-items:center; gap:6px; cursor:pointer;">
+    <button id="exportLateBtn" type="button" data-export-url="{% url 'late_export' %}" class="btn" style="background:white; color:#374151; border:1px solid #E5E7EB; display:flex; align-items:center; gap:6px; cursor:pointer; border-radius:8px; padding:8px 14px;">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
       </svg>
       Export
     </button>
     
-<button 
-onclick="openLateModal()"
-class="btn"
-style="background:#FF6B00;color:white;display:flex;align-items:center;gap:6px;">
-    
-<svg class="ico" style="width:16px;height:16px;" viewBox="0 0 24 24">
-<path d="M12 5v14M5 12h14"/>
-</svg>
-
-Apply for Late
-
-</button>
+    <button 
+      onclick="openLateModal()"
+      class="btn"
+      style="background:#FF6B00; color:white; display:flex; align-items:center; gap:6px; border:none; border-radius:8px; padding:8px 16px;">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/>
+      </svg>
+      Apply for Late
+    </button>
   </div>
 </div>
 
 <!-- Orange Banner -->
 <div style="background:linear-gradient(90deg, #FF6B00, #FF8C3A); color:white; border-radius:12px; padding:16px 20px; margin-bottom:28px; display:flex; align-items:center; gap:16px;">
-  <div style="background:rgba(255,255,255,0.25); width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.25">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 01-9 9m9-9a9 9 0 00-9-9" />
+  <div style="background:rgba(255,255,255,0.25); width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
   </div>
   <div>
     <strong style="font-size:16px;">Handle late arrivals fairly</strong><br>
-    <span style="opacity:0.95;">Employees apply for late with a reason. Managers/HR approve, reject or grant allowances. Late reports feed payroll deductions.</span>
+    <span style="opacity:0.95; font-size:14px;">Employees apply for late with a reason. Managers/HR approve, reject or grant allowances. Late reports feed payroll deductions.</span>
   </div>
 </div>
 
-<!-- Stats -->
-<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:16px; margin-bottom:28px;">
+<!-- Stats Cards -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:16px; margin-bottom:28px;">
 
   <!-- Late This Month -->
-  <div class="card pad" style="text-align:center; border:2px solid #FF9F4D;">
-    <div style="font-size:42px; font-weight:700; color:var(--ink);">
-      {{ late_this_month }}
+  <div style="background:white; border-radius:16px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.06); border:1px solid #F3F4F6;">
+    <div style="width:40px; height:40px; border-radius:12px; background:#FEF3C7; display:flex; align-items:center; justify-content:center; margin-bottom:16px;">
+      <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#D97706" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
     </div>
-    <div style="color:var(--muted);">
-      Late This Month
-    </div>
+    <div style="font-size:32px; font-weight:700; color:#111827; line-height:1;">{{ late_this_month }}</div>
+    <div style="font-size:14px; color:#6B7280; margin-top:6px;">Late This Month</div>
   </div>
-
 
   <!-- Pending Review -->
-  <div class="card pad" style="text-align:center; border:2px solid #FF9F4D;">
-    <div style="font-size:42px; font-weight:700; color:var(--ink);">
-      {{ pending_review }}
+  <div style="background:white; border-radius:16px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.06); border:1px solid #F3F4F6;">
+    <div style="width:40px; height:40px; border-radius:12px; background:#FFEDD5; display:flex; align-items:center; justify-content:center; margin-bottom:16px;">
+      <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#EA580C" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
     </div>
-    <div style="color:var(--muted);">
-      Pending Review
-    </div>
+    <div style="font-size:32px; font-weight:700; color:#111827; line-height:1;">{{ pending_review }}</div>
+    <div style="font-size:14px; color:#6B7280; margin-top:6px;">Pending Review</div>
   </div>
-
 
   <!-- Approved -->
-  <div class="card pad" style="text-align:center; border:2px solid #22C55E;">
-    <div style="font-size:42px; font-weight:700; color:var(--ink);">
-      {{ approved }}
+  <div style="background:white; border-radius:16px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.06); border:1px solid #F3F4F6;">
+    <div style="width:40px; height:40px; border-radius:12px; background:#D1FAE5; display:flex; align-items:center; justify-content:center; margin-bottom:16px;">
+      <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#059669" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
     </div>
-    <div style="color:var(--muted);">
-      Approved
-    </div>
+    <div style="font-size:32px; font-weight:700; color:#111827; line-height:1;">{{ approved }}</div>
+    <div style="font-size:14px; color:#6B7280; margin-top:6px;">Approved</div>
   </div>
-
 
   <!-- Rejected -->
-  <div class="card pad" style="text-align:center; border:2px solid #EF4444;">
-    <div style="font-size:42px; font-weight:700; color:var(--ink);">
-      {{ rejected }}
+  <div style="background:white; border-radius:16px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.06); border:1px solid #F3F4F6;">
+    <div style="width:40px; height:40px; border-radius:12px; background:#FEE2E2; display:flex; align-items:center; justify-content:center; margin-bottom:16px;">
+      <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#DC2626" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
     </div>
-    <div style="color:var(--muted);">
-      Rejected
-    </div>
+    <div style="font-size:32px; font-weight:700; color:#111827; line-height:1;">{{ rejected }}</div>
+    <div style="font-size:14px; color:#6B7280; margin-top:6px;">Rejected</div>
   </div>
-
 
 </div>
 
 <!-- Late Requests Table -->
-<div class="card">
-  <div style="padding:18px 20px; border-bottom:1px solid var(--line);">
-    <strong>Late Requests</strong>
+<div style="background:white; border-radius:16px; box-shadow:0 1px 3px rgba(0,0,0,0.06); border:1px solid #F3F4F6; overflow:hidden;">
+  <div style="padding:18px 24px; border-bottom:1px solid #F3F4F6;">
+    <strong style="font-size:16px; color:#111827;">Late Requests</strong>
   </div>
-  <table>
-    <thead>
-      <tr>
-        <th>Employee</th>
-        <th>Date</th>
-        <th>Arrival</th>
-        <th>Late By</th>
-        <th>Reason</th>
-        <th>Status</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for record in late_records %}
-      <tr>
-        <td>
-          <div class="flex">
-            <div class="avatar-sm" style="background:linear-gradient(135deg,#FF6B00,#FF9F4D); color:white;">
-              {{ record.employee.user.get_full_name|slice:":1"|upper }}
+  
+  <div style="overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="background:#FAFAFA;">
+          <th style="padding:12px 20px; text-align:left; font-size:12px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Employee</th>
+          <th style="padding:12px 20px; text-align:left; font-size:12px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Date</th>
+          <th style="padding:12px 20px; text-align:left; font-size:12px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Arrival</th>
+          <th style="padding:12px 20px; text-align:left; font-size:12px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Late By</th>
+          <th style="padding:12px 20px; text-align:left; font-size:12px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Reason</th>
+          <th style="padding:12px 20px; text-align:left; font-size:12px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Status</th>
+          <th style="padding:12px 20px; text-align:left; font-size:12px; font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:0.04em;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for record in late_records %}
+        <tr style="border-top:1px solid #F3F4F6;">
+          <td style="padding:14px 20px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="width:36px; height:36px; border-radius:50%; background:#3B82F6; color:white; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:13px; flex-shrink:0;">
+                {{ record.employee.user.get_full_name|slice:":2"|upper }}
+              </div>
+              <span style="font-weight:600; color:#111827;">{{ record.employee.user.get_full_name }}</span>
             </div>
-            <div>
-              <b>{{ record.employee.user.get_full_name }}</b>
-            </div>
-          </div>
-        </td>
-        <td>{{ record.date|date:"Y-m-d" }}</td>
-        <td>{{ record.check_in|time:"h:i A"|default:"—" }}</td>
-        <td><span class="tag t-red">{{ record.late_minutes }} min</span></td>
-        <td>{{ record.note|default:"—" }}</td>
-        <td>
-          {% if record.late_entry and record.late_entry.reviewed_by %}
-            {% if record.late_entry.excused %}
-              <span class="tag t-green">Approved</span>
+          </td>
+          <td style="padding:14px 20px; color:#374151; font-size:14px;">{{ record.date|date:"Y-m-d" }}</td>
+          <td style="padding:14px 20px; color:#374151; font-size:14px;">{{ record.check_in|time:"h:i A"|default:"—" }}</td>
+          <td style="padding:14px 20px; color:#374151; font-size:14px;">{{ record.late_minutes }} min</td>
+          <td style="padding:14px 20px; color:#374151; font-size:14px;">{{ record.note|default:"—" }}</td>
+          <td style="padding:14px 20px;">
+            {% if record.late_entry and record.late_entry.reviewed_by %}
+              {% if record.late_entry.excused %}
+                <span style="display:inline-block; padding:4px 12px; border-radius:9999px; font-size:12px; font-weight:500; background:#D1FAE5; color:#059669;">Approved</span>
+              {% else %}
+                <span style="display:inline-block; padding:4px 12px; border-radius:9999px; font-size:12px; font-weight:500; background:#FEE2E2; color:#DC2626;">Rejected</span>
+              {% endif %}
+            {% elif record.status == 'Approved' %}
+              <span style="display:inline-block; padding:4px 12px; border-radius:9999px; font-size:12px; font-weight:500; background:#D1FAE5; color:#059669;">Approved</span>
             {% else %}
-              <span class="tag t-red">Rejected</span>
+              <span style="display:inline-block; padding:4px 12px; border-radius:9999px; font-size:12px; font-weight:500; background:#FEF3C7; color:#D97706;">Pending</span>
             {% endif %}
-          {% elif record.status == 'Approved' %}
-            <span class="tag t-green">Approved</span>
-          {% else %}
-            <span class="tag t-amber">Pending</span>
-          {% endif %}
-        </td>
-        <td>
-          {% if user.role == 'super_admin' or user.role == 'manager' %}
-            <button type="button" class="btn ghost sm" data-reason="{{ record.note|default:'No reason provided'|escapejs }}" onclick="showLateReason(this)">View</button>
-            <a href="{% url 'late_action' record.pk 'approve' %}" class="btn green sm">Approve</a>
-            <a href="{% url 'late_action' record.pk 'reject' %}" class="btn red sm">Reject</a>
-          {% else %}
-            <span class="sub">—</span>
-          {% endif %}
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="7" style="text-align:center; padding:40px; color:var(--muted);">No late requests found.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+          </td>
+          <td style="padding:14px 20px;">
+            {% if user.role == 'super_admin' or user.role == 'manager' %}
+              <div style="display:flex; gap:8px; align-items:center;">
+                <a href="{% url 'late_action' record.pk 'approve' %}" title="Approve"
+                   style="width:32px; height:32px; border-radius:8px; background:#10B981; color:white; display:flex; align-items:center; justify-content:center; text-decoration:none;">
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                  </svg>
+                </a>
+                <a href="{% url 'late_action' record.pk 'reject' %}" title="Reject"
+                   style="width:32px; height:32px; border-radius:8px; background:#EF4444; color:white; display:flex; align-items:center; justify-content:center; text-decoration:none;">
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </a>
+              </div>
+            {% else %}
+              <span style="color:#9CA3AF;">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" style="text-align:center; padding:48px 20px; color:#9CA3AF; font-size:14px;">No late requests found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <!-- Apply Late Modal -->
-
 <div id="lateModal"
-style="
-display:none;
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,.45);
-align-items:center;
-justify-content:center;
-z-index:999;
-">
+  style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.45); align-items:center; justify-content:center; z-index:999;">
 
+  <div style="width:420px; max-width:95%; padding:24px; border-radius:16px; background:white; box-shadow:0 20px 40px rgba(0,0,0,0.15);">
 
-<div class="card"
-style="
-width:420px;
-padding:24px;
-border-radius:16px;
-background:white;
-">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h2 style="margin:0; font-size:18px; font-weight:700; color:#111827;">Apply for Late</h2>
+      <button onclick="closeLateModal()" style="border:none; background:none; font-size:22px; cursor:pointer; color:#6B7280; line-height:1;">×</button>
+    </div>
 
+    <form method="POST" action="{% url 'apply_late' %}">
+      {% csrf_token %}
 
-<div style="
-display:flex;
-justify-content:space-between;
-align-items:center;
-margin-bottom:20px;
-">
+      <label style="display:block; font-size:13px; font-weight:500; color:#374151; margin-bottom:6px;">Title</label>
+      <input type="text" name="title" required placeholder="Short title for this late request"
+        style="width:100%; padding:10px 12px; margin-bottom:16px; border:1px solid #E5E7EB; border-radius:8px; font-size:14px; box-sizing:border-box;">
 
-<h2 style="margin:0;">
-Apply for Late
-</h2>
+      <label style="display:block; font-size:13px; font-weight:500; color:#374151; margin-bottom:6px;">Date</label>
+      <input type="date" name="date" required
+        style="width:100%; padding:10px 12px; margin-bottom:16px; border:1px solid #E5E7EB; border-radius:8px; font-size:14px; box-sizing:border-box;">
 
+      <label style="display:block; font-size:13px; font-weight:500; color:#374151; margin-bottom:6px;">Expected Arrival</label>
+      <input type="time" name="arrival" required
+        style="width:100%; padding:10px 12px; margin-bottom:16px; border:1px solid #E5E7EB; border-radius:8px; font-size:14px; box-sizing:border-box;">
 
-<button onclick="closeLateModal()"
-style="
-border:none;
-background:none;
-font-size:22px;
-cursor:pointer;">
-×
-</button>
+      <label style="display:block; font-size:13px; font-weight:500; color:#374151; margin-bottom:6px;">Reason</label>
+      <textarea name="reason" rows="4" required
+        style="width:100%; padding:10px 12px; margin-bottom:20px; border:1px solid #E5E7EB; border-radius:8px; font-size:14px; box-sizing:border-box; resize:vertical;"></textarea>
 
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" onclick="closeLateModal()"
+          style="padding:8px 16px; background:white; color:#374151; border:1px solid #E5E7EB; border-radius:8px; font-size:14px; cursor:pointer;">
+          Cancel
+        </button>
+        <button type="submit"
+          style="padding:8px 18px; background:#FF6B00; color:white; border:none; border-radius:8px; font-size:14px; cursor:pointer;">
+          Submit
+        </button>
+      </div>
+    </form>
+  </div>
 </div>
 
-
-
-<form method="POST"
-action="{% url 'apply_late' %}">
-
-{% csrf_token %}
-
-
-<label>Title</label>
-
-<input 
-type="text"
-name="title"
-required
-placeholder="Short title for this late request"
-style="
-width:100%;
-padding:10px;
-margin:8px 0 15px;
-border:1px solid var(--line);
-border-radius:8px;
-">
-
-
-<label>Date</label>
-
-<input 
-type="date"
-name="date"
-required
-style="
-width:100%;
-padding:10px;
-margin:8px 0 15px;
-border:1px solid var(--line);
-border-radius:8px;
-">
-
-
-
-<label>Expected Arrival</label>
-
-<input 
-type="time"
-name="arrival"
-required
-style="
-width:100%;
-padding:10px;
-margin:8px 0 15px;
-border:1px solid var(--line);
-border-radius:8px;
-">
-
-
-
-<label>Reason</label>
-
-<textarea
-name="reason"
-rows="4"
-required
-style="
-width:100%;
-padding:10px;
-margin:8px 0 20px;
-border:1px solid var(--line);
-border-radius:8px;
-"
-></textarea>
-
-
-
-<div style="
-display:flex;
-justify-content:flex-end;
-gap:10px;
-">
-
-
-<button type="button"
-onclick="closeLateModal()"
-class="btn"
-style="
-background:white;
-color:#555;
-border:1px solid #ddd;
-">
-
-Cancel
-
-</button>
-
-
-
-<button type="submit"
-class="btn"
-style="
-background:#FF6B00;
-color:white;
-">
-
-Submit
-
-</button>
-
-
-</div>
-
-
-</form>
-
-
-</div>
-
-</div>
 <script>
-
-function showLateReason(button) {
-  alert(button.getAttribute('data-reason') || 'No reason provided');
-}
-
 function openLateModal(){
-
-document.getElementById(
-"lateModal"
-).style.display="flex";
-
+  document.getElementById("lateModal").style.display = "flex";
 }
-
-
 function closeLateModal(){
-
-document.getElementById(
-"lateModal"
-).style.display="none";
-
+  document.getElementById("lateModal").style.display = "none";
 }
-
 </script>
 {% endblock %}

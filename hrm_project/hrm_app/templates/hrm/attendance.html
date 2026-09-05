@@ -49,12 +49,38 @@
     display: block;
   }
 
+  /* Updated metric cards to match image */
   .metric-card {
-    background: white; border: 1px solid var(--line);
-    border-radius: 16px; padding: 20px; box-shadow: 0 10px 30px rgba(15,23,42,0.05);
+    background: white;
+    border: 1px solid #f0f0f0;
+    border-radius: 16px;
+    padding: 22px 20px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
   }
-  .metric-value { font-size: 36px; font-weight: 800; margin: 0; }
-  .metric-label { color: var(--muted); font-size: 13.5px; margin-top: 6px; }
+  .metric-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .metric-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1;
+    margin: 0;
+  }
+  .metric-label {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 2px;
+  }
 
   .section-card {
     background: white; border: 1px solid var(--line);
@@ -83,7 +109,7 @@
   <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;">
     <div>
       <h1 style="font-size:28px; font-weight:800; color:var(--ink); margin:0;">Attendance Management</h1>
-      <div style="font-size:14px; color:var(--muted); margin-top:4px;">Home / Time & Attendance / Attendance</div>
+      <div style="font-size:14px; color:var(--muted); margin-top:4px;">Home · Time & Attendance · Attendance</div>
     </div>
 
     <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
@@ -128,36 +154,36 @@
     };
   </script>
   {% endif %}
-</div>
 
+  <!-- Updated Banner (matches image) -->
   <div class="section-card" style="background:linear-gradient(90deg,#FF6B00,#FF8C3A); color:white; border:none;">
     <div style="padding:18px 20px; display:flex; align-items:center; gap:16px;">
-      <div style="background:rgba(255,255,255,0.18); width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-        <svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <div style="background:rgba(255,255,255,0.25); width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+        <svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <path d="M16 2v4M8 2v4M3 10h18"/>
+        </svg>
       </div>
       <div>
-        <strong style="font-size:16px;">Today, Manual Entry, and Reports</strong><br>
-        <span style="opacity:0.95;">Use these options without leaving this page.</span>
+        <strong style="font-size:16px;">Track presence in real time</strong><br>
+        <span style="opacity:0.95;">See who is in, add manual attendance, sync biometric punch logs from devices, and pull date-range reports.</span>
       </div>
     </div>
   </div>
 
   <div class="attendance-tabs">
     <a href="{% url 'attendance_list' %}?tab=today" class="{% if active_tab == 'today' %}active{% endif %}" style="display:flex; align-items:center; gap:8px;">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>
       Today
     </a>
     <a href="{% url 'attendance_list' %}?tab=manual" class="{% if active_tab == 'manual' %}active{% endif %}" style="display:flex; align-items:center; gap:8px;">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       Manual Entry
     </a>
-    
     <a href="{% url 'attendance_list' %}?tab=reports" class="{% if active_tab == 'reports' %}active{% endif %}" style="display:flex; align-items:center; gap:8px;">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
       Reports
     </a>
   </div>
 
+  <!-- ==================== TODAY PANEL ==================== -->
   <div id="today-panel" class="tab-panel" {% if active_tab != 'today' %}hidden{% endif %}>
     <div class="section-card">
       <div class="section-header">
@@ -167,11 +193,63 @@
       </div>
 
       <div style="padding:20px; display:grid; gap:18px;">
+
+        <!-- Updated Metric Cards (matches image) -->
         <div class="attendance-grid">
-          <div class="metric-card"><p class="metric-value">{{ present_count }}</p><div class="metric-label">Present</div></div>
-          <div class="metric-card"><p class="metric-value">{{ late_count }}</p><div class="metric-label">Late</div></div>
-          <div class="metric-card"><p class="metric-value">{{ on_leave_count }}</p><div class="metric-label">On Leave</div></div>
-          <div class="metric-card"><p class="metric-value">{{ absent_count }}</p><div class="metric-label">Absent Today</div></div>
+
+          <!-- Present -->
+          <div class="metric-card">
+            <div class="metric-icon" style="background:#ECFDF5; color:#16A34A;">
+              <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+            <div>
+              <p class="metric-value">{{ present_count }}</p>
+              <div class="metric-label">Present</div>
+            </div>
+          </div>
+
+          <!-- Late -->
+          <div class="metric-card">
+            <div class="metric-icon" style="background:#FEF9C3; color:#CA8A04;">
+              <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/>
+              </svg>
+            </div>
+            <div>
+              <p class="metric-value">{{ late_count }}</p>
+              <div class="metric-label">Late</div>
+            </div>
+          </div>
+
+          <!-- On Leave -->
+          <div class="metric-card">
+            <div class="metric-icon" style="background:#EFF6FF; color:#2563EB;">
+              <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
+            </div>
+            <div>
+              <p class="metric-value">{{ on_leave_count }}</p>
+              <div class="metric-label">On Leave</div>
+            </div>
+          </div>
+
+          <!-- Absent -->
+          <div class="metric-card">
+            <div class="metric-icon" style="background:#FEF2F2; color:#DC2626;">
+              <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </div>
+            <div>
+              <p class="metric-value">{{ absent_count }}</p>
+              <div class="metric-label">Absent</div>
+            </div>
+          </div>
+
         </div>
 
         <div style="overflow:auto; border:1px solid var(--line); border-radius:14px;">
@@ -205,6 +283,7 @@
     </div>
   </div>
 
+  <!-- ==================== MANUAL PANEL ==================== -->
   <div id="manual-panel" class="tab-panel" {% if active_tab != 'manual' %}hidden{% endif %}>
     <div class="section-card">
       <div class="section-header">
@@ -296,6 +375,7 @@
     </div>
   </div>
 
+  <!-- ==================== REPORTS PANEL ==================== -->
   <div id="reports-panel" class="tab-panel" {% if active_tab != 'reports' %}hidden{% endif %}>
     <div class="section-card">
       <div class="section-header">
@@ -332,223 +412,144 @@
               </select>
             </div>
             <button type="submit" class="btn orange-btn" style="height:46px; padding:0 20px; justify-content:center;" onclick="showGenerateOptions(); return false;">Generate</button>
-            
           </div>
         </form>
 
+        <!-- Updated Report Metric Cards (same design) -->
         <div class="attendance-grid">
-          <div class="metric-card"><p class="metric-value">{{ report_present_count }}</p><div class="metric-label">Present</div></div>
-          <div class="metric-card"><p class="metric-value">{{ report_late_count }}</p><div class="metric-label">Late</div></div>
-          <div class="metric-card"><p class="metric-value">{{ report_leave_count }}</p><div class="metric-label">On Leave</div></div>
-          <div class="metric-card"><p class="metric-value">{{ report_absent_count }}</p><div class="metric-label">Absent</div></div>
+
+          <div class="metric-card">
+            <div class="metric-icon" style="background:#ECFDF5; color:#16A34A;">
+              <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+            <div>
+              <p class="metric-value">{{ report_present_count }}</p>
+              <div class="metric-label">Present</div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon" style="background:#FEF9C3; color:#CA8A04;">
+              <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/>
+              </svg>
+            </div>
+            <div>
+              <p class="metric-value">{{ report_late_count }}</p>
+              <div class="metric-label">Late</div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon" style="background:#EFF6FF; color:#2563EB;">
+              <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
+            </div>
+            <div>
+              <p class="metric-value">{{ report_leave_count }}</p>
+              <div class="metric-label">On Leave</div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon" style="background:#FEF2F2; color:#DC2626;">
+              <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </div>
+            <div>
+              <p class="metric-value">{{ report_absent_count }}</p>
+              <div class="metric-label">Absent</div>
+            </div>
+          </div>
+
         </div>
-<div style="overflow:auto; border:1px solid var(--line); border-radius:14px;">
 
-<table>
+        <div style="overflow:auto; border:1px solid var(--line); border-radius:14px;">
+          <table>
+            <thead>
+              <tr>
+                {% if report_type == 'absent' %}
+                <th>Employee</th>
+                <th>Employee ID</th>
+                <th>Department</th>
+                <th>Absent Days</th>
+                {% elif report_type == 'overtime' %}
+                <th>Employee</th>
+                <th>Date</th>
+                <th>Check In</th>
+                <th>Check Out</th>
+                <th>Overtime Hours</th>
+                {% elif report_type == 'summary' %}
+                <th>Employee</th>
+                <th>Present</th>
+                <th>Late</th>
+                <th>Leave</th>
+                <th>Absent</th>
+                <th>Working Hours</th>
+                <th>Overtime</th>
+                {% else %}
+                <th>Employee</th>
+                <th>Date</th>
+                <th>Check In</th>
+                <th>Check Out</th>
+                <th>Status</th>
+                {% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% if report_type == 'absent' %}
+                {% for row in absent_rows %}
+                <tr>
+                  <td>{{ row.employee.user.get_full_name|default:row.employee.user.username }}</td>
+                  <td>{{ row.employee.emp_id }}</td>
+                  <td>{{ row.employee.department.name|default:"-" }}</td>
+                  <td>{{ row.absent }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4">No absent employees found.</td></tr>
+                {% endfor %}
+              {% elif report_type == 'overtime' %}
+                {% for row in overtime_rows %}
+                <tr>
+                  <td>{{ row.employee.user.get_full_name|default:row.employee.user.username }}</td>
+                  <td>{{ row.date|date:"d M Y" }}</td>
+                  <td>{{ row.check_in|time:"h:i A" }}</td>
+                  <td>{{ row.check_out|time:"h:i A" }}</td>
+                  <td>{{ row.overtime }} hrs</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5">No overtime records found.</td></tr>
+                {% endfor %}
+              {% elif report_type == 'summary' %}
+                {% for row in monthly_summary_rows %}
+                <tr>
+                  <td>{{ row.employee.user.get_full_name|default:row.employee.user.username }}</td>
+                  <td>{{ row.present }}</td>
+                  <td>{{ row.late }}</td>
+                  <td>{{ row.leave }}</td>
+                  <td>{{ row.absent }}</td>
+                  <td>{{ row.working_hours }} hrs</td>
+                  <td>{{ row.overtime_hours }} hrs</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7">No summary data found.</td></tr>
+                {% endfor %}
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
 
-<thead>
-
-<tr>
-
-{% if report_type == 'absent' %}
-
-<th>Employee</th>
-<th>Employee ID</th>
-<th>Department</th>
-<th>Absent Days</th>
-
-{% elif report_type == 'overtime' %}
-
-<th>Employee</th>
-<th>Date</th>
-<th>Check In</th>
-<th>Check Out</th>
-<th>Overtime Hours</th>
-
-{% elif report_type == 'summary' %}
-
-<th>Employee</th>
-<th>Present</th>
-<th>Late</th>
-<th>Leave</th>
-<th>Absent</th>
-<th>Working Hours</th>
-<th>Overtime</th>
-
-{% else %}
-
-<th>Employee</th>
-<th>Date</th>
-<th>Check In</th>
-<th>Check Out</th>
-<th>Status</th>
-
-{% endif %}
-
-</tr>
-
-</thead>
-
-
-<tbody>
-
-
-{% if report_type == 'absent' %}
-
-{% for row in absent_rows %}
-
-<tr>
-
-<td>
-{{ row.employee.user.get_full_name|default:row.employee.user.username }}
-</td>
-
-<td>
-{{ row.employee.emp_id }}
-</td>
-
-<td>
-{{ row.employee.department.name|default:"-" }}
-</td>
-
-<td>
-{{ row.absent }}
-</td>
-
-</tr>
-
-{% empty %}
-
-<tr>
-<td colspan="4">No absent employees found.</td>
-</tr>
-
-{% endfor %}
-
-
-
-{% elif report_type == 'overtime' %}
-
-
-{% for row in overtime_rows %}
-
-<tr>
-
-<td>
-{{ row.employee.user.get_full_name|default:row.employee.user.username }}
-</td>
-
-<td>
-{{ row.date|date:"d M Y" }}
-</td>
-
-<td>
-{{ row.check_in|time:"h:i A" }}
-</td>
-
-<td>
-{{ row.check_out|time:"h:i A" }}
-</td>
-
-<td>
-{{ row.overtime }} hrs
-</td>
-
-
-</tr>
-
-{% empty %}
-
-<tr>
-<td colspan="5">
-No overtime records found.
-</td>
-</tr>
-
-
-{% endfor %}
-
-
-
-{% elif report_type == 'summary' %}
-
-
-
-{% for row in monthly_summary_rows %}
-
-<tr>
-
-<td>
-{{ row.employee.user.get_full_name|default:row.employee.user.username }}
-</td>
-
-
-<td>
-{{ row.present }}
-</td>
-
-
-<td>
-{{ row.late }}
-</td>
-
-
-<td>
-{{ row.leave }}
-</td>
-
-
-<td>
-{{ row.absent }}
-</td>
-
-
-<td>
-{{ row.working_hours }} hrs
-</td>
-
-
-<td>
-{{ row.overtime_hours }} hrs
-</td>
-
-
-</tr>
-
-
-{% empty %}
-
-<tr>
-<td colspan="7">
-No summary data found.
-</td>
-</tr>
-
-
-{% endfor %}
-
-
-
-{% endif %}
-
-
-</tbody>
-
-</table>
-</div>
         <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px;">
-          
           <div class="report-card">
             <strong>Monthly Summary</strong>
             <p style="margin:8px 0 0; color:#9A3412; font-size:13px;">{{ report_total_count }} rows from {{ report_from|date:"d M Y" }} to {{ report_to|date:"d M Y" }}.</p>
             <div style="display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;">
-              <button 
-type="button" 
-class="btn orange-btn" 
-style="padding:10px 16px;"
-onclick="showReportGenerateModal('summary')">
-Generate
-</button>
+              <button type="button" class="btn orange-btn" style="padding:10px 16px;" onclick="showReportGenerateModal('summary')">Generate</button>
               <button type="button" data-export-url="{% url 'attendance_export' %}?report_from={{ report_from|date:'Y-m-d' }}&report_to={{ report_to|date:'Y-m-d' }}&report_department={{ report_department_id }}&report_type=summary" class="btn" style="padding:10px 16px; border:1px solid var(--line); background:white; color:var(--ink);">Export</button>
             </div>
           </div>
@@ -627,10 +628,8 @@ function closeGenerateOptions() {
 function selectGenerateOption(option) {
   closeGenerateOptions();
   if (option === 'manual') {
-    // Switch to manual entry tab
     window.location.href = "{% url 'attendance_list' %}?tab=manual";
   } else if (option === 'sync') {
-    // Sync attendance data
     var status = document.getElementById('actionStatus');
     if (status) {
       status.style.display = 'block';
@@ -644,18 +643,15 @@ function selectGenerateOption(option) {
     }
   }
 }
+
 function showReportGenerateModal(reportType) {
   var modal = document.getElementById('reportGenerateModal');
   var modalTitle = document.getElementById('reportGenerateModalTitle');
   var modalTime = document.getElementById('reportGenerateModalTime');
-  var manualBtn = document.getElementById('reportGenerateManualBtn');
-  var syncBtn = document.getElementById('reportGenerateSyncBtn');
   
-  // Set current time
   var now = new Date();
   modalTime.textContent = now.toLocaleTimeString();
   
-  // Set title based on report type
   if (reportType === 'summary') {
     modalTitle.textContent = 'Generate Monthly Summary';
   } else if (reportType === 'absent') {
@@ -664,10 +660,7 @@ function showReportGenerateModal(reportType) {
     modalTitle.textContent = 'Generate Overtime Report';
   }
   
-  // Store report type for later use
   modal.setAttribute('data-report-type', reportType);
-  
-  // Show modal
   modal.style.display = 'flex';
 }
 
@@ -681,10 +674,8 @@ function selectReportGenerateOption(option) {
   closeReportGenerateModal();
   
   if (option === 'manual') {
-    // Switch to manual entry tab
     window.location.href = "{% url 'attendance_list' %}?tab=manual";
   } else if (option === 'sync') {
-    // Sync attendance data
     var status = document.getElementById('actionStatus');
     if (status) {
       status.style.display = 'block';
@@ -700,32 +691,17 @@ function selectReportGenerateOption(option) {
 }
 
 function generateReportType(type){
-
-    var form = document.getElementById('reportForm');
-
-
-    var oldInput = form.querySelector(
-        'input[name="report_type"]'
-    );
-
-    if(oldInput){
-        oldInput.remove();
-    }
-
-
-    var input = document.createElement("input");
-
-    input.type = "hidden";
-    input.name = "report_type";
-    input.value = type;
-
-
-    form.appendChild(input);
-
-
-    form.submit();
-
+  var form = document.getElementById('reportForm');
+  var oldInput = form.querySelector('input[name="report_type"]');
+  if(oldInput){ oldInput.remove(); }
+  var input = document.createElement("input");
+  input.type = "hidden";
+  input.name = "report_type";
+  input.value = type;
+  form.appendChild(input);
+  form.submit();
 }
+
 function downloadReportExportWithFormat(btn) {
   var fromVal = document.querySelector('[name="report_from"]').value;
   var toVal = document.querySelector('[name="report_to"]').value;
