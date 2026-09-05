@@ -4537,7 +4537,41 @@ def document_generate(request, pk):
         'hrm/document_generate.html',
         _ctx(request, doc_request=doc_request, categories=Document.CAT_CHOICES),
     )
+from django.http import HttpResponse, Http404
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+import os
 
+@login_required
+def document_download(request, pk):
+    doc = get_object_or_404(Document, pk=pk)
+
+    # Check if file field exists and the physical file is present
+    if not doc.file or not doc.file.storage.exists(doc.file.name):
+        messages.error(request, "This document file is missing from the server.")
+        return redirect('document_list')
+
+    try:
+        # Dynamic content type
+        content_type = 'application/octet-stream'
+        if doc.file.name.lower().endswith('.pdf'):
+            content_type = 'application/pdf'
+        elif doc.file.name.lower().endswith(('.doc', '.docx')):
+            content_type = 'application/msword'
+        elif doc.file.name.lower().endswith(('.xls', '.xlsx')):
+            content_type = 'application/vnd.ms-excel'
+        elif doc.file.name.lower().endswith(('.png', '.jpg', '.jpeg')):
+            content_type = 'image/jpeg'
+
+        response = HttpResponse(doc.file.read(), content_type=content_type)
+        filename = os.path.basename(doc.file.name)
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+
+    except Exception:
+        messages.error(request, "Unable to download this file.")
+        return redirect('document_list')
 # ─── SALARY / PAYROLL ─────────────────────────────────────────────────────────
 
 def _payroll_employees(request, department_id=None):
