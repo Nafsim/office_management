@@ -1095,24 +1095,67 @@ function submitAdjustment() {
 }
 
   // ===== Process Payroll =====
-   function processPayroll() {
+function processPayroll() {
   const month = document.getElementById('payroll-month').value;
-  const dept  = document.getElementById('payroll-dept').value;
+  const deptSelect = document.getElementById('payroll-dept');
+  const deptValue = deptSelect.value;                                          // ID (for backend)
+  const deptName  = deptSelect.options[deptSelect.selectedIndex].text;         // Name (for display)
   const date  = document.getElementById('pay-date').value;
 
-  if (!confirm(`Process payroll for ${month}?\nDepartment: ${dept}\nPay Date: ${date}`)) return;
-  const body = new URLSearchParams({month, department: dept, pay_date: date});
-  fetch('{% url "process_payroll" %}', {
-    method: 'POST',
-    headers: {'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/x-www-form-urlencoded'},
-    body
-  }).then(r => r.json()).then(data => {
-    if (!data.success) throw new Error(data.error || 'Payroll processing failed');
-    alert(`${data.processed} payslip(s) processed for ${data.period}.`);
-    location.reload();
-  }).catch(error => alert(error.message));
-}
+  Swal.fire({
+    title: 'Process Payroll?',
+    html: `
+      <div style="text-align: left; margin-top: 10px;">
+        <p style="margin: 6px 0;">Process payroll for <strong>${month}</strong>?</p>
+        <p style="margin: 6px 0;">Department: <strong>${deptName}</strong></p>
+        <p style="margin: 6px 0;">Pay Date: <strong>${date}</strong></p>
+      </div>
+    `,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'OK',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: '#0d5c3d',
+    cancelButtonColor: '#a3d9b1',
+    reverseButtons: true
+  }).then((result) => {
+    if (!result.isConfirmed) return;
 
+    const body = new URLSearchParams({
+      month: month,
+      department: deptValue,   // send ID to backend
+      pay_date: date
+    });
+
+    fetch('{% url "process_payroll" %}', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken'),
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) throw new Error(data.error || 'Payroll processing failed');
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: `${data.processed} payslip(s) processed for ${data.period}.`,
+        confirmButtonColor: '#0d5c3d'
+      }).then(() => location.reload());
+    })
+    .catch(error => {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message,
+        confirmButtonColor: '#0d5c3d'
+      });
+    });
+  });
+}
   // ===== Employee Breakdown (Real AJAX) =====
   function loadEmployeeBreakdown(empId) {
     const btn = document.getElementById('download-payslip-btn');
