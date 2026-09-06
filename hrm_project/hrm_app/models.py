@@ -811,6 +811,22 @@ class TaskImage(models.Model):
         ordering = ['created_at', 'id']
 
 
+class TaskAttachment(models.Model):
+    KIND_CHOICES = [
+        ('image', 'Image'),
+        ('document', 'Document'),
+    ]
+
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='attachments')
+    file = models.FileField(upload_to='task_attachments/')
+    kind = models.CharField(max_length=10, choices=KIND_CHOICES)
+    explanation = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at', 'id']
+
+
 class TaskStep(models.Model):
     """
     Dynamic steps for a task.

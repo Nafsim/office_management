@@ -47,7 +47,7 @@ from .models import (
 
     Notice, Document, DocumentRequest, SalaryStructure, Payslip, PettyCashLedger,
 
-    Asset, Project, Task, TaskImage, TaskStatus, TaskStep, OnboardingRecord, SecureFile,
+    Asset, Project, Task, TaskAttachment, TaskImage, TaskStatus, TaskStep, OnboardingRecord, SecureFile,
     EmailTemplate, Holiday, NotificationRule, Role,
 
 )
@@ -3848,6 +3848,47 @@ def task_update_image_explanation(request, image_id):
 
 @login_required
 @require_POST
+def task_update_attachment_explanation(request, attachment_id):
+    if not has_permission(request.user, "tasks", "edit"):
+        return JsonResponse({'ok': False, 'error': 'Permission denied.'}, status=403)
+
+    attachment = get_object_or_404(TaskAttachment.objects.select_related('task'), pk=attachment_id)
+    if request.user.role == Role.EMPLOYEE and attachment.task.assignee != _emp(request):
+        return JsonResponse({'ok': False, 'error': 'Permission denied.'}, status=403)
+
+    attachment.explanation = request.POST.get('explanation', '').strip()
+    attachment.save(update_fields=['explanation'])
+    return JsonResponse({'ok': True})
+
+
+@login_required
+@require_POST
+def task_upload_attachment(request, pk):
+    if not has_permission(request.user, "tasks", "edit"):
+        return JsonResponse({'ok': False, 'error': 'Permission denied.'}, status=403)
+
+    task = get_object_or_404(Task, pk=pk)
+    if request.user.role == Role.EMPLOYEE and task.assignee != _emp(request):
+        return JsonResponse({'ok': False, 'error': 'Permission denied.'}, status=403)
+
+    uploaded_file = request.FILES.get('file')
+    if not uploaded_file:
+        return JsonResponse({'ok': False, 'error': 'No file uploaded.'}, status=400)
+
+    kind = 'image' if uploaded_file.content_type.startswith('image/') else 'document'
+    attachment = TaskAttachment.objects.create(
+        task=task,
+        file=uploaded_file,
+        kind=kind,
+    )
+    return JsonResponse({
+        'ok': True,
+        'attachment_id': attachment.pk,
+    })
+
+
+@login_required
+@require_POST
 def task_upload_document(request, pk):
     if not has_permission(request.user, "tasks", "edit"):
         return JsonResponse({'ok': False, 'error': 'Permission denied.'}, status=403)
@@ -3875,6 +3916,16 @@ def task_get_attachments(request, pk):
     if request.user.role == Role.EMPLOYEE and task.assignee != _emp(request):
         return JsonResponse({'ok': False, 'error': 'Permission denied.'}, status=403)
 
+    attachments = [
+        {
+            'id': attachment.pk,
+            'kind': attachment.kind,
+            'file_url': attachment.file.url,
+            'file_name': attachment.file.name.split('/')[-1],
+            'explanation': attachment.explanation,
+        }
+        for attachment in task.attachments.all()
+    ]
     images = [
         {
             'id': image.pk,
@@ -3892,6 +3943,7 @@ def task_get_attachments(request, pk):
 
     return JsonResponse({
         'ok': True,
+        'attachments': attachments,
         'images': images,
         'image_url': images[0]['image_url'] if images else None,
         'document_url': task.document.url if task.document else None,

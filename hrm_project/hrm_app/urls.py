@@ -351,6 +351,8 @@ path(
 
 
 path('tasks/<int:pk>/upload-image/', views.task_upload_image, name='task_upload_image'),
+path('tasks/<int:pk>/upload-attachment/', views.task_upload_attachment, name='task_upload_attachment'),
+path('tasks/attachments/<int:attachment_id>/explanation/', views.task_update_attachment_explanation, name='task_update_attachment_explanation'),
 path('tasks/images/<int:image_id>/explanation/', views.task_update_image_explanation, name='task_update_image_explanation'),
 path('tasks/<int:pk>/upload-document/', views.task_upload_document, name='task_upload_document'),
 path('tasks/<int:pk>/attachments/', views.task_get_attachments, name='task_get_attachments'),
