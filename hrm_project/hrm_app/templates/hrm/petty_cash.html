@@ -3,26 +3,284 @@
 {% block title %}Petty Cash — Luminous HRM{% endblock %}
 
 {% block content %}
+<style>
+  /* ===== Petty Cash specific styles ===== */
+  .pc-tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--line, #e5e7eb);
+    margin-bottom: 24px;
+    overflow-x: auto;
+  }
+  .pc-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 18px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--muted, #6b7280);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+  }
+  .pc-tab:hover { color: var(--ink, #111827); }
+  .pc-tab.active {
+    color: #FF6B00;
+    border-bottom-color: #FF6B00;
+  }
+  .pc-tab svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  .pc-panel { display: none; }
+  .pc-panel.active { display: block; }
+
+  /* Category cards */
+  .cat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .cat-card {
+    background: white;
+    border: 1px solid var(--line, #e5e7eb);
+    border-radius: 12px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    transition: box-shadow 0.15s ease;
+  }
+  .cat-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+  .cat-left { display: flex; gap: 12px; align-items: flex-start; }
+  .cat-dot {
+    width: 12px; height: 12px;
+    border-radius: 4px;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+  .cat-name { font-weight: 600; color: var(--ink, #111827); margin-bottom: 2px; }
+  .cat-desc { font-size: 13px; color: var(--muted, #6b7280); }
+  .cat-amount { font-weight: 600; color: #EF4444; white-space: nowrap; }
+  .cat-actions { display: flex; gap: 6px; align-items: center; }
+
+  /* Action icon buttons */
+  .icon-btn {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--line, #e5e7eb);
+    background: white;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--muted, #6b7280);
+    transition: all 0.15s ease;
+  }
+  .icon-btn:hover { background: #f9fafb; color: var(--ink, #111827); border-color: #d1d5db; }
+  .icon-btn.danger:hover { background: #fef2f2; color: #EF4444; border-color: #fecaca; }
+  .icon-btn svg { width: 16px; height: 16px; }
+
+  /* Tags */
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .tag-supplies { background: #dbeafe; color: #1d4ed8; }
+  .tag-food { background: #ffedd5; color: #c2410c; }
+  .tag-funding { background: #dcfce7; color: #15803d; }
+  .tag-logistics { background: #e0e7ff; color: #4338ca; }
+  .tag-utilities { background: #f3e8ff; color: #7e22ce; }
+  .tag-debit { background: #fee2e2; color: #b91c1c; }
+  .tag-credit { background: #dcfce7; color: #15803d; }
+
+  /* Modal */
+  .pc-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+  }
+  .pc-modal-overlay.open { display: flex; }
+  .pc-modal {
+    background: white;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    overflow: hidden;
+  }
+  .pc-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--line, #e5e7eb);
+  }
+  .pc-modal-header h3 { margin: 0; font-size: 17px; font-weight: 600; }
+  .pc-modal-close {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted, #6b7280);
+  }
+  .pc-modal-close:hover { background: #f3f4f6; }
+  .pc-modal-body { padding: 22px; }
+  .pc-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 22px;
+    border-top: 1px solid var(--line, #e5e7eb);
+    background: #fafafa;
+  }
+  .form-group { margin-bottom: 16px; }
+  .form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink, #111827);
+    margin-bottom: 6px;
+  }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--line, #e5e7eb);
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    border-color: #FF6B00;
+    box-shadow: 0 0 0 3px rgba(255,107,0,0.12);
+  }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+
+  /* Analytics */
+  .analytics-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 900px) {
+    .analytics-grid { grid-template-columns: 1fr; }
+  }
+  .chart-card {
+    background: white;
+    border: 1px solid var(--line, #e5e7eb);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .chart-card h3 {
+    margin: 0 0 18px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    height: 180px;
+    padding-top: 10px;
+  }
+  .bar-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .bar {
+    width: 100%;
+    border-radius: 6px 6px 0 0;
+    background: linear-gradient(180deg, #FF8C3A, #FF6B00);
+    min-height: 8px;
+    transition: height 0.3s ease;
+  }
+  .bar-label { font-size: 12px; color: var(--muted, #6b7280); }
+
+  .spend-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .spend-row:last-child { margin-bottom: 0; }
+  .spend-label { width: 80px; font-size: 13px; color: var(--ink, #111827); }
+  .spend-bar-bg {
+    flex: 1;
+    height: 8px;
+    background: #f3f4f6;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .spend-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+  }
+  .spend-pct { width: 40px; text-align: right; font-size: 13px; font-weight: 500; color: var(--ink, #111827); }
+
+  /* Table refinements */
+  .ledger-table th {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--muted, #6b7280);
+    font-weight: 600;
+  }
+</style>
 
 <!-- Top Header -->
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
   <div>
     <h1 style="font-size:28px; font-weight:700; color:var(--ink); margin:0;">Petty Cash</h1>
-    <div style="font-size:14px; color:var(--muted); margin-top:4px;">Home · Finance · Petty Cash · Cashbook</div>
+    <div style="font-size:14px; color:var(--muted); margin-top:4px;" id="pc-breadcrumb">
+      Home · Finance · Petty Cash · Cashbook
+    </div>
   </div>
 
-  <div style="display:flex; gap:10px;">
-    <button onclick="history.back()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">← Back</button>
-    <button type="button" data-export-url="{% url 'petty_cash_export' %}" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">Export</button>
-    <a href="{% url 'petty_cash_add' %}" class="btn" style="background:#FF6B00; color:white;">Add Transaction</a>
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <button onclick="history.back()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">
+      ← Back
+    </button>
+    <button type="button" data-export-url="{% url 'petty_cash_export' %}" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:-3px;">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+      </svg>
+      Export
+    </button>
+    <a href="{% url 'petty_cash_add' %}" class="btn" style="background:#FF6B00; color:white;">
+      + Add Transaction
+    </a>
   </div>
 </div>
 
 <!-- Orange Banner -->
 <div style="background:linear-gradient(90deg, #FF6B00, #FF8C3A); color:white; border-radius:12px; padding:16px 20px; margin-bottom:28px; display:flex; align-items:center; gap:16px;">
   <div style="background:rgba(255,255,255,0.25); width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-1a2 2 0 01-2-2H9a2 2 0 01-2-2v-1a2 2 0 012-2m0-2V9a2 2 0 012-2" />
+    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-1a2 2 0 01-2-2H9a2 2 0 01-2-2v-1a2 2 0 012-2m0-2V9a2 2 0 012-2"/>
     </svg>
   </div>
   <div>
@@ -31,65 +289,458 @@
   </div>
 </div>
 
-<!-- Quick Links -->
-<div style="display:flex; gap:12px; margin-bottom:24px; flex-wrap:wrap;">
-  <button class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">Cash Book</button>
-  <button class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">Categories</button>
-  <button class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">Fixed Costs</button>
-  <button class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">Analytics</button>
+<!-- Tabs -->
+<div class="pc-tabs" id="pc-tabs">
+  <button class="pc-tab active" data-tab="cashbook">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+    </svg>
+    Cash Book
+  </button>
+  <button class="pc-tab" data-tab="categories">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+    </svg>
+    Categories
+  </button>
+  <button class="pc-tab" data-tab="fixed">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    Fixed Costs
+  </button>
+  <button class="pc-tab" data-tab="analytics">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+    </svg>
+    Analytics
+  </button>
 </div>
 
-<!-- Cash Ledger Table -->
-<div class="card">
-  <div style="padding:18px 20px; border-bottom:1px solid var(--line);">
-    <strong>Cash Ledger</strong>
+<!-- ==================== CASH BOOK PANEL ==================== -->
+<div class="pc-panel active" id="panel-cashbook">
+  <div class="card">
+    <div style="padding:18px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;">
+      <strong>Cash Ledger</strong>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="ledger-table">
+        <thead>
+          <tr>
+            <th>DATE</th>
+            <th>DESCRIPTION</th>
+            <th>CATEGORY</th>
+            <th>TYPE</th>
+            <th>AMOUNT</th>
+            <th>BALANCE</th>
+            <th>ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in entries %}
+          <tr>
+            <td>{{ entry.date|date:"Y-m-d" }}</td>
+            <td><b>{{ entry.description }}</b></td>
+            <td>
+              <span class="tag 
+                {% if entry.category|lower == 'supplies' %}tag-supplies
+                {% elif entry.category|lower == 'food' %}tag-food
+                {% elif entry.category|lower == 'funding' %}tag-funding
+                {% elif entry.category|lower == 'logistics' %}tag-logistics
+                {% else %}tag-utilities{% endif %}">
+                {{ entry.category }}
+              </span>
+            </td>
+            <td>
+              {% if entry.entry_type == 'Credit' %}
+                <span class="tag tag-credit">Credit</span>
+              {% else %}
+                <span class="tag tag-debit">Debit</span>
+              {% endif %}
+            </td>
+            <td style="font-weight:600;">
+              {% if entry.entry_type == 'Credit' %}
+                <span style="color:#16a34a;">৳{{ entry.amount }}</span>
+              {% else %}
+                <span style="color:#dc2626;">৳{{ entry.amount }}</span>
+              {% endif %}
+            </td>
+            <td>৳{{ entry.balance }}</td>
+            <td>
+              <div style="display:flex; gap:6px;">
+                <button class="icon-btn" title="View" onclick="viewEntry({{ entry.id }})">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  </svg>
+                </button>
+                <button class="icon-btn" title="Edit" onclick="editEntry({{ entry.id }})">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                  </svg>
+                </button>
+                <button class="icon-btn danger" title="Delete" onclick="deleteEntry({{ entry.id }})">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" style="text-align:center; padding:48px; color:var(--muted);">
+              No transactions yet. Click “+ Add Transaction” to get started.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
-  <table>
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Description</th>
-        <th>Category</th>
-        <th>Type</th>
-        <th>Amount</th>
-        <th>Balance</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for entry in entries %}
-      <tr>
-        <td>{{ entry.date|date:"Y-m-d" }}</td>
-        <td><b>{{ entry.description }}</b></td>
-        <td><span class="tag t-blue">{{ entry.category }}</span></td>
-        <td>
-          {% if entry.entry_type == 'Credit' %}
-            <span class="tag t-green">Credit</span>
-          {% else %}
-            <span class="tag t-red">Debit</span>
-          {% endif %}
-        </td>
-        <td style="font-weight:600;">
-          {% if entry.entry_type == 'Credit' %}
-            <span style="color:#22C55E">+৳{{ entry.amount }}</span>
-          {% else %}
-            <span style="color:#EF4444">-৳{{ entry.amount }}</span>
-          {% endif %}
-        </td>
-        <td>৳{{ entry.balance }}</td>
-        <td>
-          <a href="#" class="btn ghost sm" title="View">👁</a>
-          <a href="#" class="btn ghost sm" title="Edit">✏</a>
-          <a href="#" class="btn ghost sm red" title="Delete" onclick="return confirm('Delete this entry?')">🗑</a>
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="7" style="text-align:center; padding:40px; color:var(--muted);">No transactions yet.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
 </div>
 
+<!-- ==================== CATEGORIES PANEL ==================== -->
+<div class="pc-panel" id="panel-categories">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h2 style="margin:0; font-size:18px; font-weight:600;">Expense Categories</h2>
+    <button class="btn" style="background:#FF6B00; color:white;" onclick="openCategoryModal()">
+      + Add Category
+    </button>
+  </div>
+
+  <div class="cat-grid" id="categories-grid">
+    {% for cat in categories %}
+    <div class="cat-card" data-id="{{ cat.id }}">
+      <div class="cat-left">
+        <div class="cat-dot" style="background:{{ cat.color|default:'#3b82f6' }};"></div>
+        <div>
+          <div class="cat-name">{{ cat.name }}</div>
+          <div class="cat-desc">{{ cat.description|default:"" }}</div>
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:10px;">
+        <div class="cat-amount">৳{{ cat.total_spent|default:"0" }}</div>
+        <div class="cat-actions">
+          <button class="icon-btn" title="View" onclick="viewCategory({{ cat.id }})">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+          </button>
+          <button class="icon-btn" title="Edit" onclick="editCategory({{ cat.id }}, '{{ cat.name|escapejs }}', '{{ cat.monthly_budget|default:"" }}', '{{ cat.description|escapejs }}')">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+            </svg>
+          </button>
+          <button class="icon-btn danger" title="Delete" onclick="deleteCategory({{ cat.id }})">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--muted);">
+      No categories yet. Click “+ Add Category” to create one.
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ==================== FIXED COSTS PANEL ==================== -->
+<div class="pc-panel" id="panel-fixed">
+  <div class="card">
+    <div style="padding:18px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;">
+      <strong>Fixed Monthly Costs</strong>
+      <button class="btn" style="background:#FF6B00; color:white;" onclick="openFixedCostModal()">
+        + Add Fixed Cost
+      </button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>ITEM</th>
+            <th>FREQUENCY</th>
+            <th>AMOUNT</th>
+            <th>DUE</th>
+            <th>ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cost in fixed_costs %}
+          <tr>
+            <td><b>{{ cost.item }}</b></td>
+            <td>{{ cost.frequency|default:"Monthly" }}</td>
+            <td style="font-weight:600;">৳{{ cost.amount }}</td>
+            <td>{{ cost.due_day }}</td>
+            <td>
+              <div style="display:flex; gap:6px;">
+                <button class="icon-btn" title="View" onclick="viewFixedCost({{ cost.id }})">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  </svg>
+                </button>
+                <button class="icon-btn" title="Edit" onclick="editFixedCost({{ cost.id }}, '{{ cost.item|escapejs }}', '{{ cost.amount }}', '{{ cost.due_day }}')">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                  </svg>
+                </button>
+                <button class="icon-btn danger" title="Delete" onclick="deleteFixedCost({{ cost.id }})">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" style="text-align:center; padding:48px; color:var(--muted);">
+              No fixed costs yet. Click “+ Add Fixed Cost” to create one.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== ANALYTICS PANEL ==================== -->
+<div class="pc-panel" id="panel-analytics">
+  <div class="analytics-grid">
+    <!-- Monthly Spend Trend -->
+    <div class="chart-card">
+      <h3>Monthly Spend Trend (৳ thousands)</h3>
+      <div class="bar-chart" id="monthly-bars">
+        <!-- Populated by JS or backend later -->
+        <div class="bar-item">
+          <div class="bar" style="height:55%;"></div>
+          <div class="bar-label">Jan</div>
+        </div>
+        <div class="bar-item">
+          <div class="bar" style="height:75%;"></div>
+          <div class="bar-label">Feb</div>
+        </div>
+        <div class="bar-item">
+          <div class="bar" style="height:65%;"></div>
+          <div class="bar-label">Mar</div>
+        </div>
+        <div class="bar-item">
+          <div class="bar" style="height:90%;"></div>
+          <div class="bar-label">Apr</div>
+        </div>
+        <div class="bar-item">
+          <div class="bar" style="height:80%;"></div>
+          <div class="bar-label">May</div>
+        </div>
+        <div class="bar-item">
+          <div class="bar" style="height:50%;"></div>
+          <div class="bar-label">Jun</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Spend by Category -->
+    <div class="chart-card">
+      <h3>Spend by Category</h3>
+      <div id="spend-by-category">
+        <div class="spend-row">
+          <div class="spend-label">Food</div>
+          <div class="spend-bar-bg"><div class="spend-bar-fill" style="width:35%; background:#f97316;"></div></div>
+          <div class="spend-pct">35%</div>
+        </div>
+        <div class="spend-row">
+          <div class="spend-label">Supplies</div>
+          <div class="spend-bar-bg"><div class="spend-bar-fill" style="width:24%; background:#ef4444;"></div></div>
+          <div class="spend-pct">24%</div>
+        </div>
+        <div class="spend-row">
+          <div class="spend-label">Logistics</div>
+          <div class="spend-bar-bg"><div class="spend-bar-fill" style="width:16%; background:#3b82f6;"></div></div>
+          <div class="spend-pct">16%</div>
+        </div>
+        <div class="spend-row">
+          <div class="spend-label">Funding</div>
+          <div class="spend-bar-bg"><div class="spend-bar-fill" style="width:15%; background:#22c55e;"></div></div>
+          <div class="spend-pct">15%</div>
+        </div>
+        <div class="spend-row">
+          <div class="spend-label">Other</div>
+          <div class="spend-bar-bg"><div class="spend-bar-fill" style="width:10%; background:#a855f7;"></div></div>
+          <div class="spend-pct">10%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODALS ==================== -->
+
+<!-- Category Modal -->
+<div class="pc-modal-overlay" id="category-modal">
+  <div class="pc-modal">
+    <div class="pc-modal-header">
+      <h3 id="category-modal-title">Add Category</h3>
+      <button class="pc-modal-close" onclick="closeCategoryModal()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form id="category-form" method="post" action="">
+      {% csrf_token %}
+      <input type="hidden" name="category_id" id="category_id">
+      <div class="pc-modal-body">
+        <div class="form-group">
+          <label for="category_name">Category Name</label>
+          <input type="text" id="category_name" name="name" required placeholder="e.g. Supplies">
+        </div>
+        <div class="form-group">
+          <label for="category_budget">Monthly Budget</label>
+          <input type="number" id="category_budget" name="monthly_budget" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label for="category_desc">Description</label>
+          <textarea id="category_desc" name="description" placeholder="Short description..."></textarea>
+        </div>
+      </div>
+      <div class="pc-modal-footer">
+        <button type="button" class="btn" style="background:white; border:1px solid var(--line);" onclick="closeCategoryModal()">Cancel</button>
+        <button type="submit" class="btn" style="background:#FF6B00; color:white;">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Fixed Cost Modal -->
+<div class="pc-modal-overlay" id="fixedcost-modal">
+  <div class="pc-modal">
+    <div class="pc-modal-header">
+      <h3 id="fixedcost-modal-title">Add Fixed Cost</h3>
+      <button class="pc-modal-close" onclick="closeFixedCostModal()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form id="fixedcost-form" method="post" action="">
+      {% csrf_token %}
+      <input type="hidden" name="fixedcost_id" id="fixedcost_id">
+      <div class="pc-modal-body">
+        <div class="form-group">
+          <label for="fixed_item">Item</label>
+          <input type="text" id="fixed_item" name="item" required placeholder="e.g. Office Rent">
+        </div>
+        <div class="form-group">
+          <label for="fixed_amount">Amount</label>
+          <input type="number" id="fixed_amount" name="amount" min="0" step="0.01" required placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label for="fixed_due">Due Day</label>
+          <input type="text" id="fixed_due" name="due_day" placeholder="e.g. 1st or 5th" required>
+        </div>
+      </div>
+      <div class="pc-modal-footer">
+        <button type="button" class="btn" style="background:white; border:1px solid var(--line);" onclick="closeFixedCostModal()">Cancel</button>
+        <button type="submit" class="btn" style="background:#FF6B00; color:white;">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // ===== Tab switching =====
+  const tabs = document.querySelectorAll('.pc-tab');
+  const panels = document.querySelectorAll('.pc-panel');
+  const breadcrumb = document.getElementById('pc-breadcrumb');
+
+  const tabLabels = {
+    cashbook: 'Cashbook',
+    categories: 'Categories',
+    fixed: 'Fixed Costs',
+    analytics: 'Analytics'
+  };
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.tab;
+
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      panels.forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-' + target).classList.add('active');
+
+      breadcrumb.textContent = `Home · Finance · Petty Cash · ${tabLabels[target]}`;
+    });
+  });
+
+  // ===== Category Modal =====
+  function openCategoryModal(isEdit = false) {
+    document.getElementById('category-modal-title').textContent = isEdit ? 'Edit Category' : 'Add Category';
+    document.getElementById('category-modal').classList.add('open');
+  }
+
+  function closeCategoryModal() {
+    document.getElementById('category-modal').classList.remove('open');
+    document.getElementById('category-form').reset();
+    document.getElementById('category_id').value = '';
+  }
+
+  function editCategory(id, name, budget, desc) {
+    document.getElementById('category_id').value = id;
+    document.getElementById('category_name').value = name;
+    document.getElementById('category_budget').value = budget;
+    document.getElementById('category_desc').value = desc;
+    openCategoryModal(true);
+  }
+
+  // ===== Fixed Cost Modal =====
+  function openFixedCostModal(isEdit = false) {
+    document.getElementById('fixedcost-modal-title').textContent = isEdit ? 'Edit Fixed Cost' : 'Add Fixed Cost';
+    document.getElementById('fixedcost-modal').classList.add('open');
+  }
+
+  function closeFixedCostModal() {
+    document.getElementById('fixedcost-modal').classList.remove('open');
+    document.getElementById('fixedcost-form').reset();
+    document.getElementById('fixedcost_id').value = '';
+  }
+
+  function editFixedCost(id, item, amount, due) {
+    document.getElementById('fixedcost_id').value = id;
+    document.getElementById('fixed_item').value = item;
+    document.getElementById('fixed_amount').value = amount;
+    document.getElementById('fixed_due').value = due;
+    openFixedCostModal(true);
+  }
+
+  // Close modals on overlay click
+  document.getElementById('category-modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeCategoryModal();
+  });
+  document.getElementById('fixedcost-modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeFixedCostModal();
+  });
+
+  // Placeholder action handlers (wire these to backend later)
+  function viewEntry(id) { console.log('View entry', id); }
+  function editEntry(id) { console.log('Edit entry', id); }
+  function deleteEntry(id) {
+    if (confirm('Delete this entry?')) console.log('Delete entry', id);
+  }
+  function viewCategory(id) { console.log('View category', id); }
+  function deleteCategory(id) {
+    if (confirm('Delete this category?')) console.log('Delete category', id);
+  }
+  function viewFixedCost(id) { console.log('View fixed cost', id); }
+  function deleteFixedCost(id) {
+    if (confirm('Delete this fixed cost?')) console.log('Delete fixed cost', id);
+  }
+</script>
 {% endblock %}

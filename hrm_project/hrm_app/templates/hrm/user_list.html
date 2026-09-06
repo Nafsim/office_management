@@ -92,7 +92,7 @@
     </thead>
     <tbody>
     {% for emp in employees %}
-    <tr>
+    <tr style="height:45px;">
       <td>
         <div class="flex">
           <div class="avatar-sm" style="background:{{ emp.avatar_color }}">{{ emp.avatar_initials }}</div>
@@ -102,33 +102,33 @@
           </div>
         </div>
       </td>
-      <td><span class="tag t-gray">{{ emp.emp_id }}</span></td>
-      <td>{{ emp.department|default:"—" }}</td>
-      <td>{{ emp.designation|default:"—" }}</td>
-      <td>
+      <td style="padding:8px 12px;"><span class="tag t-gray">{{ emp.emp_id }}</span></td>
+      <td style="padding:8px 12px;">{{ emp.department|default:"—" }}</td>
+      <td style="padding:8px 12px;">{{ emp.designation|default:"—" }}</td>
+      <td style="padding:8px 12px;">
         <span class="tag t-{% if emp.user.role == 'super_admin' %}red{% elif emp.user.role == 'manager' %}blue{% else %}gray{% endif %}">
           {{ emp.user.get_role_display }}
         </span>
       </td>
-      <td>
+      <td style="padding:8px 12px;">
         <span class="tag t-{% if emp.status == 'Active' %}green{% elif emp.status == 'On Leave' %}amber{% elif emp.status == 'Probation' %}blue{% else %}gray{% endif %}">
           {{ emp.status }}
         </span>
       </td>
-      <td>
-  <div style="display:flex; gap:4px; align-items:center; flex-wrap:nowrap; max-width:200px; overflow-x:auto;">
+      <td style="padding:8px 12px;">
+  <div style="display:flex; gap:3px; align-items:center; flex-wrap:nowrap; max-width:220px; overflow-x:auto;">
 
-    <a href="{% url 'user_detail' emp.pk %}" class="btn" style="padding:3px 6px; font-size:10px; background:white; color:#FF6B00; text-decoration:none; border:1px solid #FF6B00; border-radius:3px; white-space:nowrap;">View</a>
+    <a href="{% url 'user_detail' emp.pk %}" class="btn" style="padding:2px 5px; font-size:9px; background:white; color:#FF6B00; text-decoration:none; border:1px solid #FF6B00; border-radius:3px; white-space:nowrap;">View</a>
 
     {% if view_role == 'super_admin' %}
-    <a href="{% url 'user_edit' emp.pk %}" class="btn" style="padding:3px 6px; font-size:10px; background:white; color:#FF6B00; text-decoration:none; border:1px solid #FF6B00; border-radius:3px; white-space:nowrap;">Edit</a>
+    <a href="{% url 'user_edit' emp.pk %}" class="btn" style="padding:2px 5px; font-size:9px; background:white; color:#FF6B00; text-decoration:none; border:1px solid #FF6B00; border-radius:3px; white-space:nowrap;">Edit</a>
     {% endif %}
 
     {% if view_role == 'super_admin' %}
-    <a href="{% url 'user_delete' emp.pk %}" class="btn" style="padding:3px 6px; font-size:10px; background:white; color:#FF6B00; text-decoration:none; border:1px solid #FF6B00; border-radius:3px; white-space:nowrap;" onclick="return confirm('Are you sure you want to delete this user?');">Delete</a>
+    <a href="{% url 'user_delete' emp.pk %}" class="btn" style="padding:2px 5px; font-size:9px; background:white; color:#FF6B00; text-decoration:none; border:1px solid #FF6B00; border-radius:3px; white-space:nowrap;" onclick="return confirm('Are you sure you want to delete this user?');">Delete</a>
     {% endif %}
 
-    <a href="{% url 'user_permissions_user' emp.pk %}" class="btn" style="padding:3px 6px; font-size:10px; background:white; color:#FF6B00; text-decoration:none; border:1px solid #FF6B00; border-radius:3px; white-space:nowrap;">Permissions</a>
+    <a href="{% url 'user_permissions_user' emp.pk %}" class="btn" style="padding:2px 5px; font-size:9px; background:white; color:#FF6B00; text-decoration:none; border:1px solid #FF6B00; border-radius:3px; white-space:nowrap;">Permissions</a>
 
 </div>
 </td>

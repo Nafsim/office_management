@@ -219,6 +219,7 @@ box-shadow:0 10px 25px rgba(0,0,0,.15);">
 
 
 <!-- Notices -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(350px, 1fr)); gap:16px;">
 {% for n in notices %}
 
 <a href="#"
@@ -234,16 +235,24 @@ style="text-decoration:none; color:inherit; display:block;">
 
   <div class="card pad"
        style="
-       margin-bottom:16px;
-       border:2px solid #FF9F4D;
+       border-left:3px solid #FF9F4D;
+       border-bottom:3px solid #FF9F4D;
+       border-top:1px solid #E5E7EB;
+       border-right:1px solid #E5E7EB;
        transition:all 0.2s;
        cursor:pointer;"
-       
+
        onmouseover="
-       this.style.transform='translateY(-4px)';
-       this.style.boxShadow='0 10px 25px rgba(255,107,0,0.15)'"
-       
+       this.style.borderLeft='4px solid #FF6B00';
+       this.style.borderBottom='4px solid #FF6B00';
+       this.style.transform='translateY(-2px)';
+       this.style.boxShadow='0 8px 20px rgba(255,107,0,0.12)'"
+
        onmouseout="
+       this.style.borderLeft='3px solid #FF9F4D';
+       this.style.borderBottom='3px solid #FF9F4D';
+       this.style.borderTop='1px solid #E5E7EB';
+       this.style.borderRight='1px solid #E5E7EB';
        this.style.transform='';
        this.style.boxShadow=''">
 
@@ -341,7 +350,8 @@ style="text-decoration:none; color:inherit; display:block;">
 <div class="card pad"
 style="
 text-align:center;
-padding:80px 20px;">
+padding:80px 20px;
+grid-column:1/-1;">
 
 
 <p style="
@@ -357,6 +367,7 @@ No notices posted yet.
 
 
 {% endfor %}
+</div>
 
 
 <!-- Notice Popup Modal -->
@@ -369,7 +380,7 @@ top:0;
 left:0;
 width:100%;
 height:100%;
-background:rgba(0,0,0,0.45);
+background:rgba(0,0,0,0.5);
 z-index:9999;
 align-items:center;
 justify-content:center;">
@@ -378,9 +389,9 @@ justify-content:center;">
 <div style="
 background:white;
 width:90%;
-max-width:550px;
-border-radius:16px;
-padding:25px;
+max-width:700px;
+border-radius:12px;
+padding:24px;
 box-shadow:0 20px 40px rgba(0,0,0,.2);">
 
 
@@ -389,15 +400,17 @@ box-shadow:0 20px 40px rgba(0,0,0,.2);">
 <div style="
 display:flex;
 justify-content:space-between;
-align-items:center;
-margin-bottom:15px;">
+align-items:flex-start;
+margin-bottom:16px;">
 
 
 <h2 id="modalTitle"
 style="
 margin:0;
-font-size:22px;
-font-weight:700;">
+font-size:20px;
+font-weight:700;
+color:var(--ink);
+flex:1;">
 </h2>
 
 
@@ -405,8 +418,11 @@ font-weight:700;">
 style="
 border:none;
 background:none;
-font-size:25px;
-cursor:pointer;">
+font-size:24px;
+cursor:pointer;
+color:#999;
+line-height:1;
+padding:0;">
 ×
 </button>
 
@@ -422,10 +438,11 @@ style="
 display:inline-block;
 background:#F59E0B;
 color:white;
-padding:5px 12px;
-border-radius:20px;
-font-size:13px;
-margin-bottom:10px;">
+padding:4px 12px;
+border-radius:16px;
+font-size:12px;
+margin-bottom:12px;
+font-weight:500;">
 </div>
 
 
@@ -435,7 +452,8 @@ margin-bottom:10px;">
 <p id="modalInfo"
 style="
 color:#777;
-font-size:14px;">
+font-size:13px;
+margin:0 0 16px 0;">
 </p>
 
 
@@ -444,9 +462,10 @@ font-size:14px;">
 
 <div id="modalBody"
 style="
-line-height:1.8;
-font-size:15px;
-margin-top:15px;">
+line-height:1.6;
+font-size:14px;
+color:var(--ink);
+margin-bottom:24px;">
 </div>
 
 
@@ -456,17 +475,19 @@ margin-top:15px;">
 <div style="
 display:flex;
 justify-content:flex-end;
-gap:12px;
-margin-top:25px;">
+gap:10px;
+margin-top:20px;">
 
 
 <button onclick="closeNoticeModal()"
 style="
-padding:10px 22px;
+padding:8px 18px;
 border:none;
-border-radius:8px;
-background:#eee;
-font-weight:600;
+border-radius:6px;
+background:#E5E7EB;
+color:#374151;
+font-weight:500;
+font-size:14px;
 cursor:pointer;">
 Close
 </button>
@@ -475,12 +496,13 @@ Close
 
 <button onclick="notifyAgain()"
 style="
-padding:10px 22px;
+padding:8px 18px;
 border:none;
-border-radius:8px;
+border-radius:6px;
 background:#FF6B00;
 color:white;
-font-weight:700;
+font-weight:600;
+font-size:14px;
 cursor:pointer;">
 Notify Again
 </button>

@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import (
     User, Employee, Department, Designation, Shift, BankAccount,
     AttendanceLog, Attendance, LateEntry, LeaveType, LeaveRequest,
-    Notice, Document, SalaryStructure, Payslip, PettyCashLedger,
+    Notice, Document, SalaryStructure, Payslip,
     Asset, Project, Task, OnboardingRecord, SecureFile,
     EmailTemplate, Holiday, NotificationRule,
 )
@@ -35,7 +35,6 @@ admin.site.register(Notice)
 admin.site.register(Document)
 admin.site.register(SalaryStructure)
 admin.site.register(Payslip)
-admin.site.register(PettyCashLedger)
 admin.site.register(Asset)
 admin.site.register(Project)
 admin.site.register(Task)

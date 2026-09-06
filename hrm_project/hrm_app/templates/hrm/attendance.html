@@ -5,14 +5,15 @@
 {% block content %}
 <style>
   .attendance-shell { display: grid; gap: 20px; }
+
   .attendance-tabs {
-    display: flex; gap: 24px; flex-wrap: wrap;
-    border-bottom: 1px solid var(--line); padding-bottom: 8px;
+    display: flex; gap: 20px; flex-wrap: wrap;
+    border-bottom: 1px solid var(--line); padding-bottom: 6px;
   }
   .attendance-tabs a {
-    text-decoration: none; font-weight: 700; padding: 10px 0;
+    text-decoration: none; font-weight: 700; padding: 8px 0;
     color: var(--muted); border-bottom: 3px solid transparent;
-    transition: all 0.2s;
+    transition: all 0.2s; font-size: 14px;
   }
   .attendance-tabs a.active {
     color: #FF6B00; border-bottom-color: #FF6B00;
@@ -20,57 +21,35 @@
 
   .attendance-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
   }
 
-  .tab-panel[hidden] {
-    display: none;
-  }
+  .tab-panel[hidden] { display: none; }
+  .tab-panel { display: block; }
 
-  .muted-chip {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 8px 12px; border-radius: 999px;
-    background: #F8FAFC; border: 1px solid var(--line);
-    color: #0F172A; font-size: 13px; font-weight: 600;
-  }
-
-  .subtle-card {
-    background: #F8FAFC; border: 1px solid var(--line);
-    border-radius: 14px; padding: 16px;
-  }
-
-  .report-card {
-    background: #FFF7ED; border: 1px solid #FED7AA;
-    border-radius: 14px; padding: 16px;
-  }
-
-  .tab-panel {
-    display: block;
-  }
-
-  /* Updated metric cards to match image */
+  /* Compact metric cards */
   .metric-card {
     background: white;
-    border: 1px solid #f0f0f0;
-    border-radius: 16px;
-    padding: 22px 20px;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    border: 1px solid #F3F4F6;
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    gap: 10px;
   }
   .metric-icon {
-    width: 42px;
-    height: 42px;
+    width: 38px;
+    height: 38px;
     border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
   .metric-value {
-    font-size: 32px;
+    font-size: 28px;
     font-weight: 700;
     color: var(--ink);
     line-height: 1;
@@ -78,19 +57,31 @@
   }
   .metric-label {
     color: var(--muted);
-    font-size: 14px;
-    margin-top: 2px;
+    font-size: 13px;
+    margin-top: 1px;
   }
 
   .section-card {
-    background: white; border: 1px solid var(--line);
-    border-radius: 18px; overflow: hidden; box-shadow: 0 10px 30px rgba(15,23,42,0.06);
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 6px 20px rgba(15,23,42,0.05);
   }
   .section-header {
-    padding: 20px; border-bottom: 1px solid var(--line);
-    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
   }
-  .section-title { font-size: 19px; font-weight: 700; margin: 0; }
+  .section-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0;
+  }
 
   .input-shell { position: relative; }
   .input-shell svg {
@@ -103,23 +94,48 @@
     background: #FF6B00; color: white; border: none; font-weight: 700;
     display: flex; align-items: center; gap: 8px;
   }
+
+  /* Compact table */
+  .att-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .att-table thead th {
+    padding: 11px 14px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    background: #F8FAFC;
+    border-bottom: 1px solid var(--line);
+  }
+  .att-table tbody td {
+    padding: 11px 14px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--line);
+  }
+  .att-table tbody tr:last-child td {
+    border-bottom: none;
+  }
 </style>
 
 <div class="attendance-shell">
-  <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;">
+
+  <!-- Page Header (compact) -->
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
     <div>
-      <h1 style="font-size:28px; font-weight:800; color:var(--ink); margin:0;">Attendance Management</h1>
-      <div style="font-size:14px; color:var(--muted); margin-top:4px;">Home · Time & Attendance · Attendance</div>
+      <h1 style="font-size:24px; font-weight:700; color:var(--ink); margin:0; line-height:1.2;">Attendance Management</h1>
+      <div style="font-size:13px; color:var(--muted); margin-top:3px;">Home · Time & Attendance · Attendance</div>
     </div>
 
-    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-      <button onclick="history.back()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand); display:flex; align-items:center; gap:6px;">
-        <svg class="ico" style="width:16px;height:16px;" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+      <button onclick="history.back()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand); display:flex; align-items:center; gap:6px; padding:8px 14px; font-size:13px;">
+        <svg class="ico" style="width:15px;height:15px;" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
         Back
       </button>
 
-      <button type="button" data-export-url="{% url 'attendance_export' %}?month={{ today|date:'m' }}&year={{ today|date:'Y' }}" class="btn" style="border-color:#FED7AA; background:#FFF7ED; color:#9A3412; display:flex; align-items:center; gap:6px; text-decoration:none;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      <button type="button" data-export-url="{% url 'attendance_export' %}?month={{ today|date:'m' }}&year={{ today|date:'Y' }}" class="btn" style="border-color:#FED7AA; background:#FFF7ED; color:#9A3412; display:flex; align-items:center; gap:6px; text-decoration:none; padding:8px 14px; font-size:13px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
         Export
       </button>
 
@@ -127,8 +143,8 @@
       <form method="POST" action="{% url 'attendance_checkin' %}" style="margin:0;">
         {% csrf_token %}
         <input type="hidden" name="return_tab" value="{{ active_tab }}">
-        <button type="submit" id="checkInButton" class="btn" style="background:#16A34A; border:none; color:white; display:flex; align-items:center; gap:6px; font-weight:700;">
-          <svg class="ico" style="width:16px;height:16px;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        <button type="submit" id="checkInButton" class="btn" style="background:#16A34A; border:none; color:white; display:flex; align-items:center; gap:6px; font-weight:700; padding:8px 14px; font-size:13px;">
+          <svg class="ico" style="width:15px;height:15px;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
           Check In
         </button>
       </form>
@@ -155,52 +171,45 @@
   </script>
   {% endif %}
 
-  <!-- Updated Banner (matches image) -->
+  <!-- Compact Banner -->
   <div class="section-card" style="background:linear-gradient(90deg,#FF6B00,#FF8C3A); color:white; border:none;">
-    <div style="padding:18px 20px; display:flex; align-items:center; gap:16px;">
-      <div style="background:rgba(255,255,255,0.25); width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-        <svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+    <div style="padding:14px 18px; display:flex; align-items:center; gap:14px;">
+      <div style="background:rgba(255,255,255,0.25); width:42px; height:42px; border-radius:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+        <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <rect x="3" y="4" width="18" height="18" rx="2"/>
           <path d="M16 2v4M8 2v4M3 10h18"/>
         </svg>
       </div>
       <div>
-        <strong style="font-size:16px;">Track presence in real time</strong><br>
-        <span style="opacity:0.95;">See who is in, add manual attendance, sync biometric punch logs from devices, and pull date-range reports.</span>
+        <strong style="font-size:15px;">Track presence in real time</strong><br>
+        <span style="opacity:0.95; font-size:13px;">See who is in, add manual attendance, sync biometric punch logs, and pull date-range reports.</span>
       </div>
     </div>
   </div>
 
+  <!-- Tabs -->
   <div class="attendance-tabs">
-    <a href="{% url 'attendance_list' %}?tab=today" class="{% if active_tab == 'today' %}active{% endif %}" style="display:flex; align-items:center; gap:8px;">
+    <a href="{% url 'attendance_list' %}?tab=today" class="{% if active_tab == 'today' %}active{% endif %}" style="display:flex; align-items:center; gap:6px;">
       Today
     </a>
-    <a href="{% url 'attendance_list' %}?tab=manual" class="{% if active_tab == 'manual' %}active{% endif %}" style="display:flex; align-items:center; gap:8px;">
+    <a href="{% url 'attendance_list' %}?tab=manual" class="{% if active_tab == 'manual' %}active{% endif %}" style="display:flex; align-items:center; gap:6px;">
       Manual Entry
     </a>
-    <a href="{% url 'attendance_list' %}?tab=reports" class="{% if active_tab == 'reports' %}active{% endif %}" style="display:flex; align-items:center; gap:8px;">
+    <a href="{% url 'attendance_list' %}?tab=reports" class="{% if active_tab == 'reports' %}active{% endif %}" style="display:flex; align-items:center; gap:6px;">
       Reports
     </a>
   </div>
 
   <!-- ==================== TODAY PANEL ==================== -->
   <div id="today-panel" class="tab-panel" {% if active_tab != 'today' %}hidden{% endif %}>
-    <div class="section-card">
-      <div class="section-header">
-        <div>
-          <div class="section-title">Today — {{ today|date:"j F Y" }}</div>
-        </div>
-      </div>
 
-      <div style="padding:20px; display:grid; gap:18px;">
-
-        <!-- Updated Metric Cards (matches image) -->
-        <div class="attendance-grid">
+    <!-- Metric Cards (compact) -->
+    <div class="attendance-grid" style="margin-bottom:24px;">
 
           <!-- Present -->
           <div class="metric-card">
             <div class="metric-icon" style="background:#ECFDF5; color:#16A34A;">
-              <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
               </svg>
             </div>
@@ -213,7 +222,7 @@
           <!-- Late -->
           <div class="metric-card">
             <div class="metric-icon" style="background:#FEF9C3; color:#CA8A04;">
-              <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"/>
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/>
               </svg>
@@ -227,7 +236,7 @@
           <!-- On Leave -->
           <div class="metric-card">
             <div class="metric-icon" style="background:#EFF6FF; color:#2563EB;">
-              <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
               </svg>
             </div>
@@ -240,7 +249,7 @@
           <!-- Absent -->
           <div class="metric-card">
             <div class="metric-icon" style="background:#FEF2F2; color:#DC2626;">
-              <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
               </svg>
             </div>
@@ -250,10 +259,17 @@
             </div>
           </div>
 
-        </div>
+    </div>
 
-        <div style="overflow:auto; border:1px solid var(--line); border-radius:14px;">
-          <table>
+    <!-- Table Section -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title">Today — {{ today|date:"j F Y" }}</div>
+      </div>
+
+      <div style="padding:0;">
+        <div style="border-top: none;">
+          <table class="att-table">
             <thead>
               <tr>
                 <th>Employee</th>
@@ -266,21 +282,26 @@
               {% for row in attendance_rows %}
               <tr>
                 <td>
-                  <strong>{{ row.employee.user.get_full_name|default:row.employee.user.username }}</strong><br>
-                  <small>{{ row.employee.emp_id }}</small>
+                  <strong style="font-size:13px;">{{ row.employee.user.get_full_name|default:row.employee.user.username }}</strong><br>
+                  <small style="font-size:11px; color:var(--muted);">{{ row.employee.emp_id }}</small>
                 </td>
                 <td>{{ row.check_in|time:"h:i A"|default:"—" }}</td>
                 <td>{{ row.check_out|time:"h:i A"|default:"—" }}</td>
-                <td><span class="tag t-{{ row.status_class }}">{{ row.status_label }}</span></td>
+                <td><span class="tag t-{{ row.status_class }}" style="font-size:12px;">{{ row.status_label }}</span></td>
               </tr>
               {% empty %}
-              <tr><td colspan="4" style="text-align:center; color:var(--muted); padding:24px;">No attendance rows found for today.</td></tr>
+              <tr>
+                <td colspan="4" style="text-align:center; color:var(--muted); padding:28px; font-size:13px;">
+                  No attendance rows found for today.
+                </td>
+              </tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
       </div>
     </div>
+
   </div>
 
   <!-- ==================== MANUAL PANEL ==================== -->
@@ -289,15 +310,15 @@
       <div class="section-header">
         <div>
           <div class="section-title">Manual Entry</div>
-          <div class="section-subtitle">Save attendance records directly when a punch is missed.</div>
+          <div style="font-size:13px; color:var(--muted); margin-top:2px;">Save attendance records directly when a punch is missed.</div>
         </div>
       </div>
 
-      <div style="padding:20px; display:grid; grid-template-columns:minmax(320px, 1fr) minmax(320px, 1fr); gap:18px;">
+      <div style="padding:18px; display:grid; grid-template-columns:minmax(300px, 1fr) minmax(300px, 1fr); gap:16px;">
         <form method="POST" action="{% url 'attendance_manual' %}">
           {% csrf_token %}
           <input type="hidden" name="return_tab" value="manual">
-          <div style="display:grid; gap:14px;">
+          <div style="display:grid; gap:12px;">
             <div>
               <label>Employee</label>
               <div class="input-shell">
@@ -319,7 +340,7 @@
               </div>
             </div>
 
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
               <div>
                 <label>Check In</label>
                 <input type="time" name="check_in" class="input">
@@ -345,29 +366,29 @@
               <textarea name="note" class="input" rows="3" placeholder="Device error, forgot to punch, approved leave..."></textarea>
             </div>
 
-            <button type="submit" class="btn orange-btn" style="padding:14px 24px; font-size:15px;">Save Manual Entry</button>
+            <button type="submit" class="btn orange-btn" style="padding:12px 20px; font-size:14px;">Save Manual Entry</button>
           </div>
         </form>
 
         <div>
-          <h3 style="margin:0 0 12px 0; font-size:16px;">Recent Manual Entries</h3>
-          <div style="max-height:520px; overflow:auto; display:grid; gap:12px;">
+          <h3 style="margin:0 0 10px 0; font-size:15px;">Recent Manual Entries</h3>
+          <div style="max-height:480px; overflow:auto; display:grid; gap:10px;">
             {% for entry in manual_entries %}
-            <div style="background:#F8FAFC; border:1px solid var(--line); border-radius:12px; padding:14px;">
-              <div style="display:flex; justify-content:space-between; gap:12px;">
+            <div style="background:#F8FAFC; border:1px solid var(--line); border-radius:12px; padding:12px;">
+              <div style="display:flex; justify-content:space-between; gap:10px;">
                 <div>
-                  <strong>{{ entry.employee.user.get_full_name|default:entry.employee.user.username }}</strong><br>
-                  <small>{{ entry.date|date:"d M Y" }}</small>
+                  <strong style="font-size:13px;">{{ entry.employee.user.get_full_name|default:entry.employee.user.username }}</strong><br>
+                  <small style="font-size:12px;">{{ entry.date|date:"d M Y" }}</small>
                 </div>
                 <span class="tag t-{{ entry.status|lower }}">{{ entry.status }}</span>
               </div>
-              <div style="margin-top:8px; font-size:13px; color:var(--muted);">
+              <div style="margin-top:6px; font-size:12px; color:var(--muted);">
                 {{ entry.check_in|time:"h:i A"|default:"—" }} / {{ entry.check_out|time:"h:i A"|default:"—" }}
               </div>
-              {% if entry.note %}<div style="margin-top:6px; font-size:13px;">{{ entry.note }}</div>{% endif %}
+              {% if entry.note %}<div style="margin-top:5px; font-size:12px;">{{ entry.note }}</div>{% endif %}
             </div>
             {% empty %}
-            <p style="color:var(--muted); text-align:center; padding:40px 0;">No manual entries yet.</p>
+            <p style="color:var(--muted); text-align:center; padding:36px 0;">No manual entries yet.</p>
             {% endfor %}
           </div>
         </div>
@@ -379,31 +400,29 @@
   <div id="reports-panel" class="tab-panel" {% if active_tab != 'reports' %}hidden{% endif %}>
     <div class="section-card">
       <div class="section-header">
-        <div>
-          <div class="section-title">Generate Attendance Report</div>
-        </div>
+        <div class="section-title">Generate Attendance Report</div>
       </div>
 
-      <div style="padding:20px; display:grid; gap:18px;">
-        <form id="reportForm" method="GET" action="{% url 'attendance_list' %}" class="subtle-card" style="display:grid; gap:16px;">
+      <div style="padding:18px; display:grid; gap:16px;">
+        <form id="reportForm" method="GET" action="{% url 'attendance_list' %}" style="background:#F8FAFC; border:1px solid var(--line); border-radius:12px; padding:14px; display:grid; gap:12px;">
           <input type="hidden" name="tab" value="reports">
-          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; align-items:end;">
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; align-items:end;">
             <div>
-              <label>From</label>
+              <label style="font-size:13px;">From</label>
               <div class="input-shell">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
                 <input type="date" name="report_from" class="input" value="{{ report_from|date:'Y-m-d' }}">
               </div>
             </div>
             <div>
-              <label>To</label>
+              <label style="font-size:13px;">To</label>
               <div class="input-shell">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
                 <input type="date" name="report_to" class="input" value="{{ report_to|date:'Y-m-d' }}">
               </div>
             </div>
             <div>
-              <label>Department</label>
+              <label style="font-size:13px;">Department</label>
               <select name="report_department" class="input">
                 <option value="" {% if not report_department_id %}selected{% endif %}>All</option>
                 {% for dept in report_departments %}
@@ -411,16 +430,15 @@
                 {% endfor %}
               </select>
             </div>
-            <button type="submit" class="btn orange-btn" style="height:46px; padding:0 20px; justify-content:center;" onclick="showGenerateOptions(); return false;">Generate</button>
+            <button type="submit" class="btn orange-btn" style="height:42px; padding:0 18px; justify-content:center;" onclick="showGenerateOptions(); return false;">Generate</button>
           </div>
         </form>
 
-        <!-- Updated Report Metric Cards (same design) -->
-        <div class="attendance-grid">
-
+        <!-- Updated Metric Cards (matches image) -->
+        <div class="attendance-grid" style="margin-bottom:24px;">
           <div class="metric-card">
             <div class="metric-icon" style="background:#ECFDF5; color:#16A34A;">
-              <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
               </svg>
             </div>
@@ -432,7 +450,7 @@
 
           <div class="metric-card">
             <div class="metric-icon" style="background:#FEF9C3; color:#CA8A04;">
-              <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"/>
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/>
               </svg>
@@ -445,7 +463,7 @@
 
           <div class="metric-card">
             <div class="metric-icon" style="background:#EFF6FF; color:#2563EB;">
-              <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
               </svg>
             </div>
@@ -457,7 +475,7 @@
 
           <div class="metric-card">
             <div class="metric-icon" style="background:#FEF2F2; color:#DC2626;">
-              <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
               </svg>
             </div>
@@ -466,11 +484,11 @@
               <div class="metric-label">Absent</div>
             </div>
           </div>
-
         </div>
 
-        <div style="overflow:auto; border:1px solid var(--line); border-radius:14px;">
-          <table>
+        <!-- Report Table -->
+        <div style="border:1px solid var(--line); border-radius:12px; overflow:hidden;">
+          <table class="att-table">
             <thead>
               <tr>
                 {% if report_type == 'absent' %}
@@ -511,7 +529,7 @@
                   <td>{{ row.absent }}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="4">No absent employees found.</td></tr>
+                <tr><td colspan="4" style="text-align:center; color:var(--muted); padding:24px;">No absent employees found.</td></tr>
                 {% endfor %}
               {% elif report_type == 'overtime' %}
                 {% for row in overtime_rows %}
@@ -523,7 +541,7 @@
                   <td>{{ row.overtime }} hrs</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="5">No overtime records found.</td></tr>
+                <tr><td colspan="5" style="text-align:center; color:var(--muted); padding:24px;">No overtime records found.</td></tr>
                 {% endfor %}
               {% elif report_type == 'summary' %}
                 {% for row in monthly_summary_rows %}
@@ -537,36 +555,37 @@
                   <td>{{ row.overtime_hours }} hrs</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="7">No summary data found.</td></tr>
+                <tr><td colspan="7" style="text-align:center; color:var(--muted); padding:24px;">No summary data found.</td></tr>
                 {% endfor %}
               {% endif %}
             </tbody>
           </table>
         </div>
 
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px;">
-          <div class="report-card">
-            <strong>Monthly Summary</strong>
-            <p style="margin:8px 0 0; color:#9A3412; font-size:13px;">{{ report_total_count }} rows from {{ report_from|date:"d M Y" }} to {{ report_to|date:"d M Y" }}.</p>
-            <div style="display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;">
-              <button type="button" class="btn orange-btn" style="padding:10px 16px;" onclick="showReportGenerateModal('summary')">Generate</button>
-              <button type="button" data-export-url="{% url 'attendance_export' %}?report_from={{ report_from|date:'Y-m-d' }}&report_to={{ report_to|date:'Y-m-d' }}&report_department={{ report_department_id }}&report_type=summary" class="btn" style="padding:10px 16px; border:1px solid var(--line); background:white; color:var(--ink);">Export</button>
+        <!-- Report Action Cards -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px;">
+          <div style="background:#FFF7ED; border:1px solid #FED7AA; border-radius:12px; padding:14px;">
+            <strong style="font-size:14px;">Monthly Summary</strong>
+            <p style="margin:6px 0 0; color:#9A3412; font-size:12px;">{{ report_total_count }} rows from {{ report_from|date:"d M Y" }} to {{ report_to|date:"d M Y" }}.</p>
+            <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+              <button type="button" class="btn orange-btn" style="padding:8px 14px; font-size:13px;" onclick="showReportGenerateModal('summary')">Generate</button>
+              <button type="button" data-export-url="{% url 'attendance_export' %}?report_from={{ report_from|date:'Y-m-d' }}&report_to={{ report_to|date:'Y-m-d' }}&report_department={{ report_department_id }}&report_type=summary" class="btn" style="padding:8px 14px; font-size:13px; border:1px solid var(--line); background:white; color:var(--ink);">Export</button>
             </div>
           </div>
-          <div class="report-card">
-            <strong>Absent Report</strong>
-            <p style="margin:8px 0 0; color:#9A3412; font-size:13px;">{{ report_absent_count }} employees without attendance in the selected range.</p>
-            <div style="display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;">
-              <button type="button" class="btn orange-btn" style="padding:10px 16px;" onclick="showReportGenerateModal('absent')">Generate</button>
-              <button type="button" data-export-url="{% url 'attendance_export' %}?report_from={{ report_from|date:'Y-m-d' }}&report_to={{ report_to|date:'Y-m-d' }}&report_department={{ report_department_id }}&report_type=absent" class="btn" style="padding:10px 16px; border:1px solid var(--line); background:white; color:var(--ink);">Export</button>
+          <div style="background:#FFF7ED; border:1px solid #FED7AA; border-radius:12px; padding:14px;">
+            <strong style="font-size:14px;">Absent Report</strong>
+            <p style="margin:6px 0 0; color:#9A3412; font-size:12px;">{{ report_absent_count }} employees without attendance in the selected range.</p>
+            <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+              <button type="button" class="btn orange-btn" style="padding:8px 14px; font-size:13px;" onclick="showReportGenerateModal('absent')">Generate</button>
+              <button type="button" data-export-url="{% url 'attendance_export' %}?report_from={{ report_from|date:'Y-m-d' }}&report_to={{ report_to|date:'Y-m-d' }}&report_department={{ report_department_id }}&report_type=absent" class="btn" style="padding:8px 14px; font-size:13px; border:1px solid var(--line); background:white; color:var(--ink);">Export</button>
             </div>
           </div>
-          <div class="report-card">
-            <strong>Overtime Report</strong>
-            <p style="margin:8px 0 0; color:#9A3412; font-size:13px;">{{ report_overtime_count }} attendance rows with extra hours.</p>
-            <div style="display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;">
-              <button type="button" class="btn orange-btn" style="padding:10px 16px;" onclick="showReportGenerateModal('overtime')">Generate</button>
-              <button type="button" data-export-url="{% url 'attendance_export' %}?report_from={{ report_from|date:'Y-m-d' }}&report_to={{ report_to|date:'Y-m-d' }}&report_department={{ report_department_id }}&report_type=overtime" class="btn" style="padding:10px 16px; border:1px solid var(--line); background:white; color:var(--ink);">Export</button>
+          <div style="background:#FFF7ED; border:1px solid #FED7AA; border-radius:12px; padding:14px;">
+            <strong style="font-size:14px;">Overtime Report</strong>
+            <p style="margin:6px 0 0; color:#9A3412; font-size:12px;">{{ report_overtime_count }} attendance rows with extra hours.</p>
+            <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+              <button type="button" class="btn orange-btn" style="padding:8px 14px; font-size:13px;" onclick="showReportGenerateModal('overtime')">Generate</button>
+              <button type="button" data-export-url="{% url 'attendance_export' %}?report_from={{ report_from|date:'Y-m-d' }}&report_to={{ report_to|date:'Y-m-d' }}&report_department={{ report_department_id }}&report_type=overtime" class="btn" style="padding:8px 14px; font-size:13px; border:1px solid var(--line); background:white; color:var(--ink);">Export</button>
             </div>
           </div>
         </div>
@@ -592,15 +611,13 @@ function showExportMessage() {
 }
 
 function prepareCheckIn(button) {
-  if (button) {
-    button.disabled = true;
-  }
+  if (button) button.disabled = true;
   var status = document.getElementById('actionStatus');
   if (status) {
     status.style.display = 'block';
     status.textContent = 'Processing check in...';
   }
-  return true; 
+  return true;
 }
 
 function showGenerateMessage() {
@@ -724,55 +741,55 @@ function downloadReportExport(btn, reportType) {
 
 <!-- Generate Options Modal -->
 <div id="generateOptionsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:9999;">
-  <div style="background:white; width:400px; border-radius:16px; padding:24px; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
-    <h2 style="margin:0 0 16px 0; font-size:20px; color:var(--ink);">Generate Attendance</h2>
-    <p style="color:var(--muted); margin-bottom:20px;">Choose how you want to generate attendance data:</p>
+  <div style="background:white; width:380px; border-radius:14px; padding:20px; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+    <h2 style="margin:0 0 12px 0; font-size:18px; color:var(--ink);">Generate Attendance</h2>
+    <p style="color:var(--muted); margin-bottom:16px; font-size:13px;">Choose how you want to generate attendance data:</p>
     
-    <div style="display:grid; gap:12px;">
-      <button onclick="selectGenerateOption('manual')" class="btn" style="background:#FF6B00; color:white; padding:14px; border:none; display:flex; align-items:center; gap:10px; cursor:pointer;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+    <div style="display:grid; gap:10px;">
+      <button onclick="selectGenerateOption('manual')" class="btn" style="background:#FF6B00; color:white; padding:12px; border:none; display:flex; align-items:center; gap:10px; cursor:pointer;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
         </svg>
         Manual Entry
       </button>
       
-      <button onclick="selectGenerateOption('sync')" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand); padding:14px; display:flex; align-items:center; gap:10px; cursor:pointer;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <button onclick="selectGenerateOption('sync')" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand); padding:12px; display:flex; align-items:center; gap:10px; cursor:pointer;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
         </svg>
         Sync with Device
       </button>
     </div>
     
-    <button onclick="closeGenerateOptions()" class="btn" style="margin-top:16px; background:#F1F5F9; color:var(--muted); border:none; width:100%; padding:12px; cursor:pointer;">Cancel</button>
+    <button onclick="closeGenerateOptions()" class="btn" style="margin-top:14px; background:#F1F5F9; color:var(--muted); border:none; width:100%; padding:10px; cursor:pointer;">Cancel</button>
   </div>
 </div>
 
 <!-- Report Generate Modal -->
 <div id="reportGenerateModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:9999;">
-  <div style="background:white; width:400px; border-radius:16px; padding:24px; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
-    <h2 id="reportGenerateModalTitle" style="margin:0 0 8px 0; font-size:20px; color:var(--ink);">Generate Report</h2>
-    <p id="reportGenerateModalTime" style="color:var(--muted); margin-bottom:20px; font-size:14px;">Current Time</p>
+  <div style="background:white; width:380px; border-radius:14px; padding:20px; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+    <h2 id="reportGenerateModalTitle" style="margin:0 0 6px 0; font-size:18px; color:var(--ink);">Generate Report</h2>
+    <p id="reportGenerateModalTime" style="color:var(--muted); margin-bottom:16px; font-size:13px;">Current Time</p>
     
-    <p style="color:var(--muted); margin-bottom:20px;">Choose how you want to generate this report:</p>
+    <p style="color:var(--muted); margin-bottom:16px; font-size:13px;">Choose how you want to generate this report:</p>
     
-    <div style="display:grid; gap:12px;">
-      <button id="reportGenerateManualBtn" onclick="selectReportGenerateOption('manual')" class="btn" style="background:#FF6B00; color:white; padding:14px; border:none; display:flex; align-items:center; gap:10px; cursor:pointer;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+    <div style="display:grid; gap:10px;">
+      <button id="reportGenerateManualBtn" onclick="selectReportGenerateOption('manual')" class="btn" style="background:#FF6B00; color:white; padding:12px; border:none; display:flex; align-items:center; gap:10px; cursor:pointer;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
         </svg>
         Manual Entry
       </button>
       
-      <button id="reportGenerateSyncBtn" onclick="selectReportGenerateOption('sync')" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand); padding:14px; display:flex; align-items:center; gap:10px; cursor:pointer;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <button id="reportGenerateSyncBtn" onclick="selectReportGenerateOption('sync')" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand); padding:12px; display:flex; align-items:center; gap:10px; cursor:pointer;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
         </svg>
         Sync Punch
       </button>
     </div>
     
-    <button onclick="closeReportGenerateModal()" class="btn" style="margin-top:16px; background:#F1F5F9; color:var(--muted); border:none; width:100%; padding:12px; cursor:pointer;">Cancel</button>
+    <button onclick="closeReportGenerateModal()" class="btn" style="margin-top:14px; background:#F1F5F9; color:var(--muted); border:none; width:100%; padding:10px; cursor:pointer;">Cancel</button>
   </div>
 </div>
 
