@@ -801,6 +801,16 @@ class Task(models.Model):
         return f"{self.title} [{status_name}]"
 
 
+class TaskImage(models.Model):
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='images')
+    image = models.ImageField(upload_to='task_images/')
+    explanation = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at', 'id']
+
+
 class TaskStep(models.Model):
     """
     Dynamic steps for a task.

@@ -889,16 +889,31 @@
     <form method="post" action="{% url 'salary_setup_create' %}" class="setup-form">
       {% csrf_token %}
       <div class="form-group wide"><label>Employee</label><select class="form-control" name="employee" required><option value="">Select employee</option>{% for emp in setup_employees %}<option value="{{ emp.id }}">{{ emp.user.get_full_name|default:emp.user.username }} — {{ emp.emp_id }}</option>{% endfor %}</select></div>
-      <div class="form-group"><label>Basic Salary (৳)</label><input class="form-control" type="number" name="basic" min="0" step="0.01" required></div>
-      <div class="form-group"><label>House Rent</label><input class="form-control" type="number" name="house_rent" min="0" step="0.01" value="0"></div>
-      <div class="form-group"><label>Medical</label><input class="form-control" type="number" name="medical" min="0" step="0.01" value="0"></div>
-      <div class="form-group"><label>Transport</label><input class="form-control" type="number" name="transport" min="0" step="0.01" value="0"></div>
-      <div class="form-group"><label>Other Allowance</label><input class="form-control" type="number" name="other_allowance" min="0" step="0.01" value="0"></div>
-      <div class="form-group"><label>Tax Deduction</label><input class="form-control" type="number" name="tax_deduction" min="0" step="0.01" value="0"></div>
-      <div class="form-group"><label>PF Deduction</label><input class="form-control" type="number" name="pf_deduction" min="0" step="0.01" value="0"></div>
+      <div class="form-group wide"><label>Total Salary (৳)</label><input class="form-control" type="number" name="total_salary" id="salary-total" min="0" step="0.01" required></div>
+      <div class="form-group"><label>Basic Salary (50% of total)</label><input class="form-control salary-calculated" type="number" name="basic" id="salary-basic" min="0" step="0.01" value="0" readonly></div>
+      <div class="form-group"><label>House Rent (50% of basic)</label><input class="form-control salary-calculated" type="number" name="house_rent" id="salary-house-rent" min="0" step="0.01" value="0" readonly></div>
+      <div class="form-group"><label>Medical (10% of basic)</label><input class="form-control salary-calculated" type="number" name="medical" id="salary-medical" min="0" step="0.01" value="0" readonly></div>
+      <div class="form-group"><label>Transport (5% of basic)</label><input class="form-control salary-calculated" type="number" name="transport" id="salary-transport" min="0" step="0.01" value="0" readonly></div>
+      <div class="form-group"><label>Other Allowance (5% of basic)</label><input class="form-control salary-calculated" type="number" name="other_allowance" id="salary-other-allowance" min="0" step="0.01" value="0" readonly></div>
+      <div class="form-group"><label>Tax Deduction (3% of basic)</label><input class="form-control salary-calculated" type="number" name="tax_deduction" id="salary-tax" min="0" step="0.01" value="0" readonly></div>
+      <div class="form-group"><label>PF Deduction (5% of basic)</label><input class="form-control salary-calculated" type="number" name="pf_deduction" id="salary-pf" min="0" step="0.01" value="0" readonly></div>
       <div class="form-group"><label>Effective From</label><input class="form-control" type="date" name="effective_from" required></div>
       <button type="submit" class="btn" style="background:#ff6b00;color:white;">Save Salary</button>
     </form>
+    <script>
+      const totalSalaryInput = document.getElementById('salary-total');
+      totalSalaryInput.addEventListener('input', () => {
+        const total = Number(totalSalaryInput.value) || 0;
+        const basic = total * 0.5;
+        document.getElementById('salary-basic').value = basic.toFixed(2);
+        document.getElementById('salary-house-rent').value = (basic * 0.5).toFixed(2);
+        document.getElementById('salary-medical').value = (basic * 0.1).toFixed(2);
+        document.getElementById('salary-transport').value = (basic * 0.05).toFixed(2);
+        document.getElementById('salary-other-allowance').value = (basic * 0.05).toFixed(2);
+        document.getElementById('salary-tax').value = (basic * 0.03).toFixed(2);
+        document.getElementById('salary-pf').value = (basic * 0.05).toFixed(2);
+      });
+    </script>
   </div>
 
   <div id="setup-increment" class="setup-panel">

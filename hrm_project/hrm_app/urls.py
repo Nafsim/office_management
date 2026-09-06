@@ -351,6 +351,7 @@ path(
 
 
 path('tasks/<int:pk>/upload-image/', views.task_upload_image, name='task_upload_image'),
+path('tasks/images/<int:image_id>/explanation/', views.task_update_image_explanation, name='task_update_image_explanation'),
 path('tasks/<int:pk>/upload-document/', views.task_upload_document, name='task_upload_document'),
 path('tasks/<int:pk>/attachments/', views.task_get_attachments, name='task_get_attachments'),
 

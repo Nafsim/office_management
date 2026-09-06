@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from html import escape
 from io import BytesIO
 
@@ -47,7 +47,7 @@ from .models import (
 
     Notice, Document, DocumentRequest, SalaryStructure, Payslip, PettyCashLedger,
 
-    Asset, Project, Task, TaskStatus, TaskStep, OnboardingRecord, SecureFile,
+    Asset, Project, Task, TaskImage, TaskStatus, TaskStep, OnboardingRecord, SecureFile,
     EmailTemplate, Holiday, NotificationRule, Role,
 
 )
@@ -3817,13 +3817,33 @@ def task_upload_image(request, pk):
     if 'image' not in request.FILES:
         return JsonResponse({'ok': False, 'error': 'No image uploaded.'}, status=400)
 
-    task.image = request.FILES['image']
-    task.save(update_fields=['image'])
+    image = TaskImage.objects.create(
+        task=task,
+        image=request.FILES['image'],
+        explanation=request.POST.get('explanation', '').strip(),
+    )
 
     return JsonResponse({
         'ok': True,
-        'image_url': task.image.url if task.image else None
+        'image_url': image.image.url,
+        'image_id': image.pk,
+        'explanation': image.explanation,
     })
+
+
+@login_required
+@require_POST
+def task_update_image_explanation(request, image_id):
+    if not has_permission(request.user, "tasks", "edit"):
+        return JsonResponse({'ok': False, 'error': 'Permission denied.'}, status=403)
+
+    image = get_object_or_404(TaskImage.objects.select_related('task'), pk=image_id)
+    if request.user.role == Role.EMPLOYEE and image.task.assignee != _emp(request):
+        return JsonResponse({'ok': False, 'error': 'Permission denied.'}, status=403)
+
+    image.explanation = request.POST.get('explanation', '').strip()
+    image.save(update_fields=['explanation'])
+    return JsonResponse({'ok': True})
 
 
 @login_required
@@ -3855,9 +3875,25 @@ def task_get_attachments(request, pk):
     if request.user.role == Role.EMPLOYEE and task.assignee != _emp(request):
         return JsonResponse({'ok': False, 'error': 'Permission denied.'}, status=403)
 
+    images = [
+        {
+            'id': image.pk,
+            'image_url': image.image.url,
+            'explanation': image.explanation,
+        }
+        for image in task.images.all()
+    ]
+    if task.image:
+        images.insert(0, {
+            'id': None,
+            'image_url': task.image.url,
+            'explanation': '',
+        })
+
     return JsonResponse({
         'ok': True,
-        'image_url': task.image.url if task.image else None,
+        'images': images,
+        'image_url': images[0]['image_url'] if images else None,
         'document_url': task.document.url if task.document else None,
         'document_name': task.document.name.split('/')[-1] if task.document else None,
     })
@@ -4747,16 +4783,18 @@ def salary_setup_create(request):
     employee = get_object_or_404(Employee, pk=request.POST.get('employee'))
     try:
         effective_from = date.fromisoformat(request.POST.get('effective_from', ''))
+        total_salary = Decimal(request.POST.get('total_salary', '0'))
+        basic = (total_salary * Decimal('0.50')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         values = {
-            'basic': Decimal(request.POST.get('basic', '0')),
-            'house_rent': Decimal(request.POST.get('house_rent', '0') or 0),
-            'medical': Decimal(request.POST.get('medical', '0') or 0),
-            'transport': Decimal(request.POST.get('transport', '0') or 0),
-            'other_allowance': Decimal(request.POST.get('other_allowance', '0') or 0),
-            'tax_deduction': Decimal(request.POST.get('tax_deduction', '0') or 0),
-            'pf_deduction': Decimal(request.POST.get('pf_deduction', '0') or 0),
+            'basic': basic,
+            'house_rent': (basic * Decimal('0.50')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+            'medical': (basic * Decimal('0.10')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+            'transport': (basic * Decimal('0.05')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+            'other_allowance': (basic * Decimal('0.05')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+            'tax_deduction': (basic * Decimal('0.03')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+            'pf_deduction': (basic * Decimal('0.05')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
         }
-        if values['basic'] < 0 or any(value < 0 for key, value in values.items() if key != 'basic'):
+        if total_salary < 0:
             raise ValueError('Salary amounts cannot be negative.')
     except (TypeError, ValueError, ArithmeticError):
         messages.error(request, "Enter valid salary amounts and an effective date.")
