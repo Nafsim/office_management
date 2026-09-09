@@ -8,31 +8,15 @@
   .task-attachments{margin:14px 0;padding:12px;background:linear-gradient(135deg,#fffaf7,#f8fafc);border:1px solid #f1ddd2;border-radius:12px}
   .task-attachments-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
   .task-attachments-title{font-size:14px;font-weight:700;color:#263246}
-  .task-attachments-hint{font-size:11px;color:#8a94a6}
-  .task-attachment-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(150px,.6fr);gap:10px}
-  .task-attachment-box{min-width:0;padding:9px;background:#fff;border:1px solid #e7eaf0;border-radius:9px}
-  .task-attachment-label{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:12px;font-weight:600;color:#64748b}
-  .task-icon-button{width:30px;height:30px;display:inline-grid;place-items:center;border:1px solid #ffb48e;border-radius:7px;background:#fff3eb;color:#d95722;cursor:pointer}
+  .task-attachment-stream{display:flex;flex-direction:column;gap:12px;min-height:40px}
+  .task-attachment-item{background:#fff;border:1px solid #e7eaf0;border-radius:10px;padding:12px;}
+  .task-attachment-image{max-width:100%;max-height:300px;display:block;border-radius:8px;margin-bottom:10px;}
+  .task-attachment-text{width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;resize:vertical;min-height:60px;box-sizing:border-box;}
+  .task-attachment-file-link{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;color:#FF6B00;font-weight:600;text-decoration:none;margin-bottom:10px;}
+  .task-icon-button{width:50px;height:50px;display:inline-grid;place-items:center;border:1px solid #ffb48e;border-radius:50%;background:#fff3eb;color:#d95722;cursor:pointer;margin:0 auto;}
   .task-icon-button:hover{background:#ff6b00;color:#fff}
-  .task-icon-button svg{width:15px;height:15px}
-  .task-image-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;min-height:90px;padding:8px;background:#fbfcfe;border:1px dashed #d8dee8;border-radius:10px}
-  .task-image-card{min-width:0;padding:7px;background:#fff;border:1px solid #e7eaf0;border-radius:8px}
-  .task-image-card img{display:block;width:100%;height:130px;object-fit:contain;border-radius:6px;background:#f8fafc}
-  .task-image-explanation{display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:6px 7px;color:#475569;font-size:12px;line-height:1.35;border:1px solid #e5e7eb;border-radius:6px;resize:vertical}
-  .task-attachment-stream{display:grid;gap:12px}
-  .task-attachment-item{padding:8px;background:#fff;border:1px solid #e7eaf0;border-radius:8px}
-  .task-attachment-item img{display:block;width:100%;max-height:420px;object-fit:contain;border-radius:6px;background:#f8fafc}
-  .task-document-link{display:flex;align-items:center;gap:7px;color:#FF6B00;font-weight:600;font-size:13px;text-decoration:none;overflow-wrap:anywhere}
-  #taskDocumentPreview{
-  display:flex;
-  align-items:center;
-  justify-content:flex-start;
-  gap:8px;
-  min-height:28px;
-  margin-top:14px;          /* ← adds space so it doesn’t touch the image border */
-  padding-top:4px;
-}
-  @media(max-width:650px){.task-modal-shell{padding:20px 16px}.task-attachment-grid{grid-template-columns:1fr}.task-attachments-hint{display:none}}
+  .task-icon-button svg{width:24px;height:24px}
+  @media(max-width:650px){.task-modal-shell{padding:20px 16px}}
 </style>
 <div data-view-mode="{% if view_mode == 'table' %}table{% else %}card{% endif %}">
 
@@ -106,12 +90,13 @@
       <div class="task-attachments">
         <div class="task-attachments-header">
           <span class="task-attachments-title">Attachments</span>
-          <button type="button" class="task-icon-button" title="Upload image or document" aria-label="Upload image or document" onclick="document.getElementById('taskAttachmentInput').click()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>
-          </button>
         </div>
         <div id="taskAttachmentPreview" class="task-attachment-stream">
-          <span style="color:#999; font-size:12px;">No attachments uploaded</span>
+          <div id="uploadTrigger" style="text-align:center; padding:20px;">
+            <button type="button" class="task-icon-button" title="Upload image or document" aria-label="Upload image or document" onclick="document.getElementById('taskAttachmentInput').click()" style="width:50px; height:50px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px; height:24px;"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>
+            </button>
+          </div>
         </div>
         <input type="file" id="taskAttachmentInput" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip" style="display:none;" onchange="uploadTaskAttachment()">
       </div>
@@ -448,10 +433,6 @@ function openTaskModal(id, title, priority, project, assignee, date, progress, e
   document.getElementById('modalProgressBar').style.width = window.currentProgress + '%';
   document.getElementById('modalEditLink').href = editUrl;
 
-  // Clear first
-  document.getElementById('taskImagePreview').innerHTML = '<span style="color:#999; font-size:12px;">No images uploaded</span>';
-  renderTaskDocument(null, null);
-
   // Load existing attachments
   loadTaskAttachments(id);
   loadTaskSteps(id);
@@ -661,98 +642,114 @@ async function loadTaskAttachments(taskId) {
     const data = await res.json();
     
     if (data.ok) {
-      const images = data.images || (data.image_url ? [{ image_url: data.image_url, explanation: '' }] : []);
-      if (images.length) {
-        document.getElementById('taskImagePreview').innerHTML = images.map(image => `
-          <div class="task-image-card">
-            <img src="${image.image_url}" alt="Task attachment">
-            ${image.id ? `<textarea class="task-image-explanation" rows="2" data-image-id="${image.id}" onkeydown="saveTaskImageExplanation(event, ${image.id})">${escapeHtml(image.explanation || '')}</textarea>` : ''}
-          </div>
-        `).join('');
-      } else {
-        document.getElementById('taskImagePreview').innerHTML = '<span style="color:#999; font-size:12px;">No images uploaded</span>';
+      const preview = document.getElementById('taskAttachmentPreview');
+      const items = [];
+      
+      // Add images
+      if (data.images && data.images.length) {
+        data.images.forEach(img => {
+          items.push(`
+            <div class="task-attachment-item" data-id="${img.id || ''}" data-type="image">
+              <img src="${img.image_url}" class="task-attachment-image" alt="Attachment">
+              <textarea class="task-attachment-text" placeholder="Add description..." data-id="${img.id}" onblur="saveAttachmentText(this, 'image', ${img.id})">${escapeHtml(img.explanation || '')}</textarea>
+            </div>
+          `);
+        });
       }
-      renderTaskDocument(data.document_url, data.document_name);
+      
+      // Add documents
+      if (data.attachments && data.attachments.length) {
+        data.attachments.forEach(att => {
+          if (att.kind === 'document') {
+            items.push(`
+              <div class="task-attachment-item" data-id="${att.id}" data-type="document">
+                <a href="${att.file_url}" target="_blank" download class="task-attachment-file-link">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8m-8 4h6"/></svg>
+                  ${escapeHtml(att.file_name)}
+                </a>
+                <textarea class="task-attachment-text" placeholder="Add description..." data-id="${att.id}" onblur="saveAttachmentText(this, 'document', ${att.id})">${escapeHtml(att.explanation || '')}</textarea>
+              </div>
+            `);
+          }
+        });
+      }
+      
+      // Add upload button at the end
+      items.push(`
+        <div id="uploadTrigger" style="text-align:center; padding:20px;">
+          <button type="button" class="task-icon-button" title="Upload image or document" aria-label="Upload image or document" onclick="document.getElementById('taskAttachmentInput').click()" style="width:50px; height:50px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px; height:24px;"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>
+          </button>
+        </div>
+      `);
+      
+      preview.innerHTML = items.join('');
     }
   } catch (err) {
     console.error('Error loading attachments:', err);
   }
 }
 
-function renderTaskDocument(url, name) {
-  const preview = document.getElementById('taskDocumentPreview');
-  preview.innerHTML = `
-    <button type="button" class="task-icon-button" title="Upload document" aria-label="Upload document" onclick="document.getElementById('taskDocumentInput').click()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8m-8 4h6"/></svg>
-    </button>
-    ${url ? `<a href="${url}" target="_blank" download style="color:#FF6B00; font-weight:600; font-size:13px; text-decoration:none;">${escapeHtml(name || 'Download document')}</a>` : ''}
-    <input type="file" id="taskDocumentInput" style="display:none;" onchange="uploadTaskDocument()">
-  `;
-}
+async function uploadTaskAttachment() {
+  const input = document.getElementById('taskAttachmentInput');
+  const file = input.files[0];
+  if (!file || !window.selectedTaskId) return;
 
-async function uploadTaskImage() {
-  const input = document.getElementById('taskImageInput');
-  const files = Array.from(input.files || []);
-  if (!files.length || !window.selectedTaskId) return;
+  const isImage = file.type.startsWith('image/');
+  const formData = new FormData();
+  
+  if (isImage) {
+    formData.append('image', file);
+  } else {
+    formData.append('file', file);
+  }
 
   try {
-    for (const file of files) {
-      const formData = new FormData();
-      formData.append('image', file);
-      const res = await fetch(`/tasks/${window.selectedTaskId}/upload-image/`, {
-        method: 'POST',
-        headers: { 'X-CSRFToken': getCsrfToken() },
-        body: formData
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
-        alert(data.error || 'Upload failed');
-        break;
-      }
+    const url = isImage 
+      ? `/tasks/${window.selectedTaskId}/upload-image/`
+      : `/tasks/${window.selectedTaskId}/upload-attachment/`;
+    
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCsrfToken() },
+      body: formData
+    });
+    
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      input.value = '';
+      await loadTaskAttachments(window.selectedTaskId);
+    } else {
+      alert(data.error || 'Upload failed');
     }
-    input.value = '';
-    await loadTaskAttachments(window.selectedTaskId);
   } catch (err) {
-    alert('Network error while uploading image');
+    alert('Network error while uploading');
   }
 }
 
-async function saveTaskImageExplanation(event, imageId) {
-  if (event.key !== 'Enter' || event.shiftKey) return;
-  event.preventDefault();
-
-  const field = event.currentTarget;
-  const res = await fetch(`/tasks/images/${imageId}/explanation/`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'X-CSRFToken': getCsrfToken()
-    },
-    body: new URLSearchParams({ explanation: field.value })
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok || !data.ok) alert(data.error || 'Could not save image explanation.');
-}
-
-document.addEventListener('paste', function(event) {
-  if (!window.selectedTaskId || document.getElementById('taskModal').style.display !== 'flex') return;
-
-  const items = event.clipboardData ? event.clipboardData.items : [];
-  for (const item of items) {
-    if (item.type && item.type.startsWith('image/')) {
-      const file = item.getAsFile();
-      if (file) {
-        const input = document.getElementById('taskImageInput');
-        const transfer = new DataTransfer();
-        transfer.items.add(file);
-        input.files = transfer.files;
-        uploadTaskImage();
-      }
-      event.preventDefault();
-      break;
+async function saveAttachmentText(textarea, type, id) {
+  const text = textarea.value.trim();
+  const url = type === 'image' 
+    ? `/tasks/images/${id}/explanation/`
+    : `/tasks/attachments/${id}/explanation/`;
+  
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': getCsrfToken()
+      },
+      body: new URLSearchParams({ explanation: text })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      alert(data.error || 'Could not save description');
     }
+  } catch (err) {
+    console.error('Error saving text:', err);
   }
-});
+}
 
 async function deleteTask(taskId, taskTitle) {
   const result = await Swal.fire({
@@ -778,32 +775,6 @@ async function deleteTask(taskId, taskTitle) {
     }
   } catch (err) {
     Swal.fire('Error', 'Network error', 'error');
-  }
-}
-
-async function uploadTaskDocument() {
-  const input = document.getElementById('taskDocumentInput');
-  const file = input.files[0];
-  if (!file || !window.selectedTaskId) return;
-
-  const formData = new FormData();
-  formData.append('document', file);
-
-  try {
-    const res = await fetch(`/tasks/${window.selectedTaskId}/upload-document/`, {
-      method: 'POST',
-      headers: { 'X-CSRFToken': getCsrfToken() },
-      body: formData
-    });
-    const data = await res.json();
-
-    if (data.ok && data.document_url) {
-      renderTaskDocument(data.document_url, data.document_name);
-    } else {
-      alert(data.error || 'Upload failed');
-    }
-  } catch (err) {
-    alert('Network error while uploading document');
   }
 }
 

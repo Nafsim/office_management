@@ -45,7 +45,7 @@ from .models import (
 
     Attendance, AttendanceLog, LateEntry, LeaveType, LeaveRequest,
 
-    Notice, Document, DocumentRequest, SalaryStructure, Payslip, PettyCashLedger,
+    Notice, Document, DocumentRequest, SalaryStructure, Payslip,
 
     Asset, Project, Task, TaskAttachment, TaskImage, TaskStatus, TaskStep, OnboardingRecord, SecureFile,
     EmailTemplate, Holiday, NotificationRule, Role,
