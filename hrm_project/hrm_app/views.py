@@ -37,7 +37,8 @@ from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN
 from pptx.util import Inches, Pt
-
+from .models import PettyCashLedger, ExpenseCategory, FixedCost
+from .forms import PettyCashForm, ExpenseCategoryForm, FixedCostForm
 
 from .models import (
 
@@ -45,7 +46,7 @@ from .models import (
 
     Attendance, AttendanceLog, LateEntry, LeaveType, LeaveRequest,
 
-    Notice, Document, DocumentRequest, SalaryStructure, Payslip,
+    Notice, Document, DocumentRequest, SalaryStructure, Payslip, PettyCashLedger,
 
     Asset, Project, Task, TaskAttachment, TaskImage, TaskStatus, TaskStep, OnboardingRecord, SecureFile,
     EmailTemplate, Holiday, NotificationRule, Role,
@@ -5196,103 +5197,265 @@ def salary_export(request):
         ]
 
     return _export_tabular_response('Salary Export', sections, 'Salary_Report', request.GET.get('format'))
-# ─── PETTY CASH ───────────────────────────────────────────────────────────────
-
-@admin_required
-
-def petty_cash(request):
-    if not has_permission(request.user, "petty_cash", "view"):
-        messages.error(request, "You don't have permission to access Petty Cash.")
-        return redirect("dashboard")
-
-
-    entries = PettyCashLedger.objects.select_related('created_by').all()
-
-    total_credit = entries.filter(entry_type='Credit').aggregate(s=Sum('amount'))['s'] or 0
-
-    total_debit  = entries.filter(entry_type='Debit').aggregate(s=Sum('amount'))['s'] or 0
-
-    balance = total_credit - total_debit
-
-    return render(request, 'hrm/petty_cash.html', _ctx(
-
-        request, entries=entries, total_credit=total_credit,
-
-        total_debit=total_debit, balance=balance,
-
-    ))
-
-
+# ─── PETTY CASH MAIN ─────────────────────────────────────────────────────────
 @admin_required
 def petty_cash_export(request):
     if not has_permission(request.user, "petty_cash", "view"):
         messages.error(request, "You don't have permission to export petty cash.")
         return redirect("petty_cash")
 
-    entries = PettyCashLedger.objects.select_related('created_by').all()
-
-    rows = [
-        [
-            entry.date.strftime('%Y-%m-%d'),
-            entry.description,
-            entry.category,
-            entry.entry_type,
-            entry.amount,
-            entry.balance,
-            entry.created_by.get_full_name() or entry.created_by.username,
-            entry.note,
-        ]
-        for entry in entries
-    ]
-
+    entries = PettyCashLedger.objects.select_related('created_by').order_by('-date', '-id')
     sections = [
-        ('Petty Cash Ledger', ['Date', 'Description', 'Category', 'Type', 'Amount', 'Balance', 'Created By', 'Note'], rows),
+        (
+            'Petty Cash Ledger',
+            ['Date', 'Description', 'Category', 'Type', 'Amount', 'Balance', 'Note', 'Created By'],
+            [
+                [
+                    entry.date,
+                    entry.description,
+                    entry.category,
+                    entry.entry_type,
+                    entry.amount,
+                    entry.balance,
+                    entry.note,
+                    entry.created_by.get_full_name() or entry.created_by.username,
+                ]
+                for entry in entries
+            ],
+        )
     ]
-
-    return _export_tabular_response('Petty Cash Export', sections, 'Petty_Cash_Ledger', request.GET.get('format'))
-
-
-
+    return _export_tabular_response(
+        'Petty Cash Export', sections, 'Petty_Cash', request.GET.get('format')
+    )
 
 
 @admin_required
+def petty_cash(request):
+    if not has_permission(request.user, "petty_cash", "view"):
+        messages.error(request, "You don't have permission to access Petty Cash.")
+        return redirect("dashboard")
 
+    entries = PettyCashLedger.objects.select_related('created_by').order_by('-date', '-id')
+    categories = ExpenseCategory.objects.all()
+    fixed_costs = FixedCost.objects.all()
+
+    total_credit = entries.filter(entry_type='Credit').aggregate(s=Sum('amount'))['s'] or 0
+    total_debit  = entries.filter(entry_type='Debit').aggregate(s=Sum('amount'))['s'] or 0
+    balance = total_credit - total_debit
+    active_fixed_total = fixed_costs.filter(status='Active').aggregate(s=Sum('amount'))['s'] or 0
+
+    # Analytics data
+    from django.db.models.functions import TruncMonth
+    debit_entries = entries.filter(entry_type__iexact='Debit')
+    analytics_entries = debit_entries if debit_entries.exists() else entries
+    analytics_label = 'Spend' if debit_entries.exists() else 'Cash Activity'
+
+    monthly = (
+        analytics_entries
+        .annotate(month=TruncMonth('date'))
+        .values('month')
+        .annotate(total=Sum('amount'))
+        .order_by('month')
+    )
+    cat_spend = (
+        analytics_entries
+        .values('category')
+        .annotate(total=Sum('amount'))
+        .order_by('-total')
+    )
+    total_spend = sum(c['total'] for c in cat_spend) or 1
+    monthly_data = list(monthly)
+    monthly_chart_max = max((row['total'] for row in monthly_data), default=1)
+
+    # Show the real ledger total for each saved category.
+    category_totals = {}
+    for cat in categories:
+        total = entries.filter(
+            category__iexact=cat.name
+        ).aggregate(s=Sum('amount'))['s'] or 0
+        category_totals[cat.name.lower()] = total
+
+    return render(request, 'hrm/petty_cash.html', _ctx(
+        request,
+        entries=entries,
+        categories=categories,
+        fixed_costs=fixed_costs,
+        total_credit=total_credit,
+        total_debit=total_debit,
+        balance=balance,
+        active_fixed_total=active_fixed_total,
+        monthly_data=monthly_data,
+        monthly_chart_max=monthly_chart_max,
+        cat_spend=list(cat_spend),
+        total_spend=total_spend,
+        analytics_label=analytics_label,
+        category_totals=category_totals,   # ← this is important
+    ))
+
+# ─── CASH BOOK CRUD (already existed – keep / slight polish) ─────────────────
+@admin_required
 def petty_cash_add(request):
     if not has_permission(request.user, "petty_cash", "create"):
-        messages.error(request, "You don't have permission to add petty cash entry.")
+        messages.error(request, "You don't have permission to add entry.")
         return redirect("petty_cash")
-
-
     form = PettyCashForm(request.POST or None)
-
     if form.is_valid():
-
         entry = form.save(commit=False)
-
         entry.created_by = request.user
-
-        # compute running balance
-
         last = PettyCashLedger.objects.order_by('-id').first()
-
         prev_bal = last.balance if last else 0
-
-        if entry.entry_type == 'Credit':
-
-            entry.balance = prev_bal + entry.amount
-
-        else:
-
-            entry.balance = prev_bal - entry.amount
-
+        entry.balance = prev_bal + entry.amount if entry.entry_type == 'Credit' else prev_bal - entry.amount
         entry.save()
-
         messages.success(request, 'Entry added.')
-
         return redirect('petty_cash')
-
     return render(request, 'hrm/form.html', _ctx(request, form=form, title='Add Cash Entry', back='petty_cash'))
 
+
+@admin_required
+def petty_cash_edit(request, pk):
+    if not has_permission(request.user, "petty_cash", "edit"):
+        messages.error(request, "No permission.")
+        return redirect("petty_cash")
+    entry = get_object_or_404(PettyCashLedger, pk=pk)
+    form = PettyCashForm(request.POST or None, instance=entry)
+    if form.is_valid():
+        entry = form.save(commit=False)
+        last = PettyCashLedger.objects.filter(id__lt=pk).order_by('-id').first()
+        prev_bal = last.balance if last else 0
+        entry.balance = prev_bal + entry.amount if entry.entry_type == 'Credit' else prev_bal - entry.amount
+        entry.save()
+        # recalculate subsequent
+        current = entry.balance
+        for sub in PettyCashLedger.objects.filter(id__gt=pk).order_by('id'):
+            current = current + sub.amount if sub.entry_type == 'Credit' else current - sub.amount
+            sub.balance = current
+            sub.save()
+        messages.success(request, 'Entry updated.')
+        return redirect('petty_cash')
+    return render(request, 'hrm/form.html', _ctx(request, form=form, title='Edit Cash Entry', back='petty_cash'))
+
+
+@admin_required
+def petty_cash_delete(request, pk):
+    if not has_permission(request.user, "petty_cash", "delete"):
+        messages.error(request, "No permission.")
+        return redirect("petty_cash")
+    entry = get_object_or_404(PettyCashLedger, pk=pk)
+    if request.method == 'POST':
+        entry.delete()
+        # full recalculation
+        bal = 0
+        for e in PettyCashLedger.objects.order_by('id'):
+            bal = bal + e.amount if e.entry_type == 'Credit' else bal - e.amount
+            e.balance = bal
+            e.save()
+        messages.success(request, 'Entry deleted.')
+        return redirect('petty_cash')
+    return render(request, 'hrm/confirm_delete.html', _ctx(request, obj=entry, title='Delete Entry', back='petty_cash'))
+
+
+# ─── CATEGORIES ──────────────────────────────────────────────────────────────
+@admin_required
+def category_add(request):
+    if not has_permission(request.user, "petty_cash", "create"):
+        messages.error(request, "No permission.")
+        return redirect("petty_cash")
+    form = ExpenseCategoryForm(request.POST or None)
+    if form.is_valid():
+        form.save()
+        messages.success(request, 'Category added.')
+        return redirect('petty_cash')
+    return render(request, 'hrm/form.html', _ctx(request, form=form, title='Add Category', back='petty_cash'))
+
+
+@admin_required
+def category_edit(request, pk):
+    if not has_permission(request.user, "petty_cash", "edit"):
+        messages.error(request, "No permission.")
+        return redirect("petty_cash")
+    cat = get_object_or_404(ExpenseCategory, pk=pk)
+    form = ExpenseCategoryForm(request.POST or None, instance=cat)
+    if form.is_valid():
+        form.save()
+        messages.success(request, 'Category updated.')
+        return redirect('petty_cash')
+    return render(request, 'hrm/form.html', _ctx(request, form=form, title='Edit Category', back='petty_cash'))
+
+
+@admin_required
+def category_delete(request, pk):
+    if not has_permission(request.user, "petty_cash", "delete"):
+        messages.error(request, "No permission.")
+        return redirect("petty_cash")
+    cat = get_object_or_404(ExpenseCategory, pk=pk)
+    if request.method == 'POST':
+        cat.delete()
+        messages.success(request, 'Category deleted.')
+        return redirect('petty_cash')
+    return render(request, 'hrm/confirm_delete.html', _ctx(
+        request, obj=cat, title='Delete Category',
+        message=f'You are about to permanently delete <strong>{cat.name}</strong>. This action cannot be undone and any linked records may be affected.',
+        back='petty_cash'
+    ))
+
+
+@admin_required
+def category_detail(request, pk):
+    cat = get_object_or_404(ExpenseCategory, pk=pk)
+    return render(request, 'hrm/category_detail.html', _ctx(request, cat=cat))
+
+
+# ─── FIXED COSTS ─────────────────────────────────────────────────────────────
+@admin_required
+def fixedcost_add(request):
+    if not has_permission(request.user, "petty_cash", "create"):
+        messages.error(request, "No permission.")
+        return redirect("petty_cash")
+    form = FixedCostForm(request.POST or None)
+    if form.is_valid():
+        obj = form.save(commit=False)
+        obj.created_by = request.user
+        obj.save()
+        messages.success(request, 'Fixed cost added.')
+        return redirect('petty_cash')
+    return render(request, 'hrm/form.html', _ctx(request, form=form, title='Add Fixed Cost', back='petty_cash'))
+
+
+@admin_required
+def fixedcost_edit(request, pk):
+    if not has_permission(request.user, "petty_cash", "edit"):
+        messages.error(request, "No permission.")
+        return redirect("petty_cash")
+    cost = get_object_or_404(FixedCost, pk=pk)
+    form = FixedCostForm(request.POST or None, instance=cost)
+    if form.is_valid():
+        form.save()
+        messages.success(request, 'Fixed cost updated.')
+        return redirect('petty_cash')
+    return render(request, 'hrm/form.html', _ctx(request, form=form, title='Edit Fixed Cost', back='petty_cash'))
+
+
+@admin_required
+def fixedcost_delete(request, pk):
+    if not has_permission(request.user, "petty_cash", "delete"):
+        messages.error(request, "No permission.")
+        return redirect("petty_cash")
+    cost = get_object_or_404(FixedCost, pk=pk)
+    if request.method == 'POST':
+        cost.delete()
+        messages.success(request, 'Fixed cost deleted.')
+        return redirect('petty_cash')
+    return render(request, 'hrm/confirm_delete.html', _ctx(
+        request, obj=cost, title='Delete Fixed Cost',
+        message=f'You are about to permanently delete <strong>{cost.item}</strong>. This action cannot be undone and any linked records may be affected.',
+        back='petty_cash'
+    ))
+
+
+@admin_required
+def fixedcost_detail(request, pk):
+    cost = get_object_or_404(FixedCost, pk=pk)
+    return render(request, 'hrm/fixedcost_detail.html', _ctx(request, cost=cost))
 
 
 

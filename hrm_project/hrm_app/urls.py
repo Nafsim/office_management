@@ -400,21 +400,24 @@ path('tasks/<int:pk>/attachments/', views.task_get_attachments, name='task_get_a
     
 
 
-    # Petty Cash
+   # Petty Cash
+path('petty-cash/', views.petty_cash, name='petty_cash'),
+path('petty-cash/export/', views.petty_cash_export, name='petty_cash_export'),
+path('petty-cash/add/', views.petty_cash_add, name='petty_cash_add'),
+path('petty-cash/<int:pk>/edit/', views.petty_cash_edit, name='petty_cash_edit'),
+path('petty-cash/<int:pk>/delete/', views.petty_cash_delete, name='petty_cash_delete'),
 
+# Categories
+path('petty-cash/categories/add/', views.category_add, name='category_add'),
+path('petty-cash/categories/<int:pk>/', views.category_detail, name='category_detail'),
+path('petty-cash/categories/<int:pk>/edit/', views.category_edit, name='category_edit'),
+path('petty-cash/categories/<int:pk>/delete/', views.category_delete, name='category_delete'),
 
-
-    path('petty-cash/',      views.petty_cash,     name='petty_cash'),
-
-
-
-    path('petty-cash/export/', views.petty_cash_export, name='petty_cash_export'),
-
-
-
-    path('petty-cash/add/',  views.petty_cash_add, name='petty_cash_add'),
-
-
+# Fixed Costs
+path('petty-cash/fixed-costs/add/', views.fixedcost_add, name='fixedcost_add'),
+path('petty-cash/fixed-costs/<int:pk>/', views.fixedcost_detail, name='fixedcost_detail'),
+path('petty-cash/fixed-costs/<int:pk>/edit/', views.fixedcost_edit, name='fixedcost_edit'),
+path('petty-cash/fixed-costs/<int:pk>/delete/', views.fixedcost_delete, name='fixedcost_delete'),
 
 
 

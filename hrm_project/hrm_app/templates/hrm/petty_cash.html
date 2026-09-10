@@ -1,356 +1,160 @@
 {% extends 'hrm/base.html' %}
-
+{% load hrm_filters %}
 {% block title %}Petty Cash — Luminous HRM{% endblock %}
 
 {% block content %}
 <style>
-  /* ===== Petty Cash specific styles ===== */
-  .pc-tabs {
-    display: flex;
-    gap: 4px;
-    border-bottom: 1px solid var(--line, #e5e7eb);
-    margin-bottom: 24px;
-    overflow-x: auto;
-  }
-  .pc-tab {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 18px;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--muted, #6b7280);
-    background: transparent;
-    border: none;
-    border-bottom: 2px solid transparent;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.15s ease;
-  }
-  .pc-tab:hover { color: var(--ink, #111827); }
-  .pc-tab.active {
-    color: #FF6B00;
-    border-bottom-color: #FF6B00;
-  }
-  .pc-tab svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .pc-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line,#e5e7eb);margin-bottom:24px;overflow-x:auto}
+  .pc-tab{display:inline-flex;align-items:center;gap:8px;padding:12px 18px;font-size:14px;font-weight:500;color:var(--muted,#6b7280);background:transparent;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:all .15s}
+  .pc-tab:hover{color:var(--ink,#111827)}
+  .pc-tab.active{color:#FF6B00;border-bottom-color:#FF6B00}
+  .pc-tab svg{width:16px;height:16px;flex-shrink:0}
+  .pc-panel{display:none}.pc-panel.active{display:block}
 
-  .pc-panel { display: none; }
-  .pc-panel.active { display: block; }
+  /* ===== Categories – slightly smaller ===== */
+  .category-shell{background:#fff;border:1px solid var(--line,#e5e7eb);border-radius:14px;padding:22px 24px;box-shadow:0 8px 24px rgba(15,23,42,.04)}
+  .category-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px}
+  .category-heading h2{margin:0;font-size:19px;font-weight:700;color:var(--ink,#111827)}
+  .cat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .cat-card{background:#fff;border:1px solid var(--line,#e5e7eb);border-radius:12px;padding:16px 18px;min-height:92px;display:flex;align-items:center;justify-content:space-between;gap:12px;transition:box-shadow .15s,transform .15s}
+  .cat-card:hover{box-shadow:0 6px 14px rgba(15,23,42,.07);transform:translateY(-1px)}
+  .cat-left{display:flex;gap:10px;align-items:flex-start}
+  .cat-dot{width:11px;height:11px;border-radius:3px;margin-top:4px;flex-shrink:0}
+  .cat-name{font-size:15px;font-weight:700;color:var(--ink,#111827);margin-bottom:2px}
+  .cat-desc{font-size:13px;color:var(--muted,#6b7280)}
+  .cat-amount{font-size:15px;font-weight:700;color:#f2634d;white-space:nowrap}
+  .cat-actions{display:flex;gap:5px;align-items:center}
+  .icon-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--line,#e5e7eb);background:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted,#6b7280);transition:all .15s}
+  .icon-btn:hover{background:#f9fafb;color:var(--ink,#111827);border-color:#d1d5db}
+  .icon-btn.danger:hover{background:#fef2f2;color:#EF4444;border-color:#fecaca}
+  .icon-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
-  /* Category cards */
-  .cat-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
-  }
-  .cat-card {
-    background: white;
-    border: 1px solid var(--line, #e5e7eb);
-    border-radius: 12px;
-    padding: 16px 18px;
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-    transition: box-shadow 0.15s ease;
-  }
-  .cat-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
-  .cat-left { display: flex; gap: 12px; align-items: flex-start; }
-  .cat-dot {
-    width: 12px; height: 12px;
-    border-radius: 4px;
-    margin-top: 4px;
-    flex-shrink: 0;
-  }
-  .cat-name { font-weight: 600; color: var(--ink, #111827); margin-bottom: 2px; }
-  .cat-desc { font-size: 13px; color: var(--muted, #6b7280); }
-  .cat-amount { font-weight: 600; color: #EF4444; white-space: nowrap; }
-  .cat-actions { display: flex; gap: 6px; align-items: center; }
-
-  /* Action icon buttons */
-  .icon-btn {
-    width: 32px; height: 32px;
-    border-radius: 8px;
-    border: 1px solid var(--line, #e5e7eb);
-    background: white;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: var(--muted, #6b7280);
-    transition: all 0.15s ease;
-  }
-  .icon-btn:hover { background: #f9fafb; color: var(--ink, #111827); border-color: #d1d5db; }
-  .icon-btn.danger:hover { background: #fef2f2; color: #EF4444; border-color: #fecaca; }
-  .icon-btn svg { width: 16px; height: 16px; }
-
-  /* Tags */
-  .tag {
-    display: inline-flex;
-    align-items: center;
-    padding: 3px 10px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 500;
-  }
-  .tag-supplies { background: #dbeafe; color: #1d4ed8; }
-  .tag-food { background: #ffedd5; color: #c2410c; }
-  .tag-funding { background: #dcfce7; color: #15803d; }
-  .tag-logistics { background: #e0e7ff; color: #4338ca; }
-  .tag-utilities { background: #f3e8ff; color: #7e22ce; }
-  .tag-debit { background: #fee2e2; color: #b91c1c; }
-  .tag-credit { background: #dcfce7; color: #15803d; }
+  .tag{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:500}
+  .tag-debit{background:#fee2e2;color:#b91c1c}
+  .tag-credit{background:#dcfce7;color:#15803d}
 
   /* Modal */
-  .pc-modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.45);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 20px;
-  }
-  .pc-modal-overlay.open { display: flex; }
-  .pc-modal {
-    background: white;
-    border-radius: 16px;
-    width: 100%;
-    max-width: 420px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-    overflow: hidden;
-  }
-  .pc-modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 18px 22px;
-    border-bottom: 1px solid var(--line, #e5e7eb);
-  }
-  .pc-modal-header h3 { margin: 0; font-size: 17px; font-weight: 600; }
-  .pc-modal-close {
-    width: 32px; height: 32px;
-    border-radius: 8px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--muted, #6b7280);
-  }
-  .pc-modal-close:hover { background: #f3f4f6; }
-  .pc-modal-body { padding: 22px; }
-  .pc-modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    padding: 16px 22px;
-    border-top: 1px solid var(--line, #e5e7eb);
-    background: #fafafa;
-  }
-  .form-group { margin-bottom: 16px; }
-  .form-group label {
-    display: block;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--ink, #111827);
-    margin-bottom: 6px;
-  }
-  .form-group input,
-  .form-group select,
-  .form-group textarea {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid var(--line, #e5e7eb);
-    border-radius: 8px;
-    font-size: 14px;
-    outline: none;
-    transition: border-color 0.15s;
-  }
-  .form-group input:focus,
-  .form-group select:focus,
-  .form-group textarea:focus {
-    border-color: #FF6B00;
-    box-shadow: 0 0 0 3px rgba(255,107,0,0.12);
-  }
-  .form-group textarea { resize: vertical; min-height: 80px; }
+  .pc-modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
+  .pc-modal-overlay.open{display:flex}
+  .pc-modal{background:#fff;border-radius:16px;width:100%;max-width:420px;box-shadow:0 20px 40px rgba(0,0,0,.15);overflow:hidden}
+  #fixedcost-modal .pc-modal{max-width:480px}
+  .pc-modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--line,#e5e7eb)}
+  .pc-modal-header h3{margin:0;font-size:17px;font-weight:600;color:#111827}
+  .pc-modal-close{width:32px;height:32px;border-radius:8px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted,#6b7280);font-size:20px;line-height:1}
+  .pc-modal-close:hover{background:#f3f4f6}
+  .pc-modal-body{padding:22px}
+  .pc-modal-footer{display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid var(--line,#e5e7eb);background:#fafafa}
+  .form-group{margin-bottom:16px}
+  .form-group label{display:block;font-size:13px;font-weight:500;color:#6b7280;margin-bottom:6px}
+  .form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 12px;border:1px solid var(--line,#e5e7eb);border-radius:8px;font-size:14px;outline:none;transition:border-color .15s;color:#111827}
+  .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#FF6B00;box-shadow:0 0 0 3px rgba(255,107,0,.12)}
+  .form-group textarea{resize:vertical;min-height:80px}
+  .fixedcost-fields{display:grid;grid-template-columns:1fr 1fr;gap:0 24px}
+  .fixedcost-fields .form-group.full{grid-column:1 / -1}
+  .pc-cancel-btn,.pc-secondary-btn{background:#fff;border:1px solid #e5e7eb;color:#111827}
+  .pc-secondary-btn:hover,.pc-cancel-btn:hover{background:#f9fafb;border-color:#d1d5db}
+  .cash-action-btn{width:26px;height:26px;padding:0;line-height:1;flex:0 0 26px}
+  .cash-action-btn svg{width:13px;height:13px}
 
-  /* Analytics */
-  .analytics-grid {
-    display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 20px;
-  }
-  @media (max-width: 900px) {
-    .analytics-grid { grid-template-columns: 1fr; }
-  }
-  .chart-card {
-    background: white;
-    border: 1px solid var(--line, #e5e7eb);
-    border-radius: 12px;
-    padding: 20px;
-  }
-  .chart-card h3 {
-    margin: 0 0 18px;
-    font-size: 15px;
-    font-weight: 600;
-  }
-  .bar-chart {
-    display: flex;
-    align-items: flex-end;
-    gap: 12px;
-    height: 180px;
-    padding-top: 10px;
-  }
-  .bar-item {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-  }
-  .bar {
-    width: 100%;
-    border-radius: 6px 6px 0 0;
-    background: linear-gradient(180deg, #FF8C3A, #FF6B00);
-    min-height: 8px;
-    transition: height 0.3s ease;
-  }
-  .bar-label { font-size: 12px; color: var(--muted, #6b7280); }
+  /* ===== Analytics – smaller like screenshot ===== */
+  .analytics-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:18px}
+  @media(max-width:900px){.analytics-grid{grid-template-columns:1fr}}
+  .chart-card{background:#fff;border:1px solid var(--line,#e5e7eb);border-radius:14px;padding:22px 24px;min-width:0}
+  .chart-card h3{margin:0 0 20px;font-size:16px;font-weight:700;color:var(--ink,#111827)}
+  .bar-chart{display:flex;align-items:flex-end;gap:14px;height:220px;padding:6px 0 0}
+  .bar-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px}
+  .bar{width:100%;max-width:58px;border-radius:8px 8px 0 0;background:linear-gradient(180deg,#f86b4e,#ff9815);min-height:6px}
+  .bar-label{font-size:13px;color:var(--muted,#6b7280);font-weight:500}
+  .spend-row{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+  .spend-row:last-child{margin-bottom:0}
+  .spend-label{width:80px;font-size:14px;color:var(--ink,#111827);font-weight:500}
+  .spend-bar-bg{flex:1;height:10px;background:#e7ebf1;border-radius:999px;overflow:hidden}
+  .spend-bar-fill{height:100%;border-radius:999px}
+  .spend-pct{width:38px;text-align:right;font-size:14px;font-weight:700;color:var(--ink,#111827)}
+  .analytics-empty{color:var(--muted,#6b7280);display:flex;align-items:center;justify-content:center;height:200px;font-size:14px}
+  .ledger-table th{font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted,#6b7280);font-weight:600}
 
-  .spend-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 14px;
-  }
-  .spend-row:last-child { margin-bottom: 0; }
-  .spend-label { width: 80px; font-size: 13px; color: var(--ink, #111827); }
-  .spend-bar-bg {
-    flex: 1;
-    height: 8px;
-    background: #f3f4f6;
-    border-radius: 999px;
-    overflow: hidden;
-  }
-  .spend-bar-fill {
-    height: 100%;
-    border-radius: 999px;
-  }
-  .spend-pct { width: 40px; text-align: right; font-size: 13px; font-weight: 500; color: var(--ink, #111827); }
+  .preview-icon-wrap{width:40px;height:40px;border-radius:10px;background:#fff7ed;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .preview-meta{font-size:14px}
+  .preview-meta td{padding:11px 0;border-bottom:1px solid #f3f4f6}
+  .preview-meta tr:last-child td{border-bottom:none}
+  .preview-meta td:first-child{color:#6b7280;width:110px}
+  .preview-meta td:last-child{font-weight:500;color:#111827}
 
-  /* Table refinements */
-  .ledger-table th {
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    color: var(--muted, #6b7280);
-    font-weight: 600;
+  @media(max-width:760px){
+    .cat-grid{grid-template-columns:1fr}
+    .category-shell{padding:16px}
+    .category-heading{align-items:flex-start;flex-direction:column}
+    .cat-card{padding:14px}
+    .fixedcost-fields{grid-template-columns:1fr}
   }
 </style>
 
-<!-- Top Header -->
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
+<!-- Header + Banner + Tabs -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:16px">
   <div>
-    <h1 style="font-size:28px; font-weight:700; color:var(--ink); margin:0;">Petty Cash</h1>
-    <div style="font-size:14px; color:var(--muted); margin-top:4px;" id="pc-breadcrumb">
-      Home · Finance · Petty Cash · Cashbook
-    </div>
+    <h1 style="font-size:28px;font-weight:700;color:var(--ink);margin:0">Petty Cash</h1>
+    <div style="font-size:14px;color:var(--muted);margin-top:4px" id="pc-breadcrumb">Home · Finance · Petty Cash · Cashbook</div>
   </div>
-
-  <div style="display:flex; gap:10px; flex-wrap:wrap;">
-    <button onclick="history.back()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">
-      ← Back
-    </button>
-    <button type="button" data-export-url="{% url 'petty_cash_export' %}" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:-3px;">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-      </svg>
-      Export
-    </button>
-    <a href="{% url 'petty_cash_add' %}" class="btn" style="background:#FF6B00; color:white;">
-      + Add Transaction
-    </a>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button onclick="history.back()" class="btn" style="background:#fff;color:var(--brand);border:1px solid var(--brand)">← Back</button>
+    <a href="{% url 'petty_cash_export' %}" class="btn" style="background:#fff;color:var(--brand);border:1px solid var(--brand)">Export</a>
+    <a href="{% url 'petty_cash_add' %}" class="btn" style="background:#FF6B00;color:#fff">+ Add Transaction</a>
   </div>
 </div>
 
-<!-- Orange Banner -->
-<div style="background:linear-gradient(90deg, #FF6B00, #FF8C3A); color:white; border-radius:12px; padding:16px 20px; margin-bottom:28px; display:flex; align-items:center; gap:16px;">
-  <div style="background:rgba(255,255,255,0.25); width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-1a2 2 0 01-2-2H9a2 2 0 01-2-2v-1a2 2 0 012-2m0-2V9a2 2 0 012-2"/>
-    </svg>
+<div style="background:linear-gradient(90deg,#FF6B00,#FF8C3A);color:#fff;border-radius:12px;padding:16px 20px;margin-bottom:28px;display:flex;align-items:center;gap:16px">
+  <div style="background:rgba(255,255,255,.25);width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-1a2 2 0 01-2-2H9a2 2 0 01-2-2v-1a2 2 0 012-2m0-2V9a2 2 0 012-2"/></svg>
   </div>
   <div>
-    <strong style="font-size:16px;">Track small expenses</strong><br>
-    <span style="opacity:0.95;">Maintain the cash ledger, categorise spends, set fixed monthly costs and view analytics.</span>
+    <strong style="font-size:16px">Track small expenses</strong><br>
+    <span style="opacity:.95">Maintain the cash ledger, categorise spends, set fixed monthly costs and view analytics.</span>
   </div>
 </div>
 
-<!-- Tabs -->
 <div class="pc-tabs" id="pc-tabs">
   <button class="pc-tab active" data-tab="cashbook">
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-    </svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M6 3h9l3 3v15H6z"/><path stroke-linecap="round" d="M9 11h6M9 15h6"/></svg>
     Cash Book
   </button>
   <button class="pc-tab" data-tab="categories">
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
-    </svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg>
     Categories
   </button>
   <button class="pc-tab" data-tab="fixed">
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-    </svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18M17 7.5c0-1.7-1.9-3-4.5-3S8 5.8 8 7.5s1.5 2.5 4.5 3 4.5 1.3 4.5 3-1.9 3-4.5 3-4.5-1.3-4.5-3"/></svg>
     Fixed Costs
   </button>
   <button class="pc-tab" data-tab="analytics">
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-    </svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="m13 2-9 12h7l-1 8 9-12h-7z"/></svg>
     Analytics
   </button>
 </div>
 
-<!-- ==================== CASH BOOK PANEL ==================== -->
+<!-- ==================== CASH BOOK ==================== -->
 <div class="pc-panel active" id="panel-cashbook">
   <div class="card">
-    <div style="padding:18px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;">
-      <strong>Cash Ledger</strong>
-    </div>
-    <div style="overflow-x:auto;">
+    <div style="padding:18px 20px;border-bottom:1px solid var(--line)"><strong>Cash Ledger</strong></div>
+    <div style="overflow-x:auto">
       <table class="ledger-table">
         <thead>
           <tr>
-            <th>DATE</th>
-            <th>DESCRIPTION</th>
-            <th>CATEGORY</th>
-            <th>TYPE</th>
-            <th>AMOUNT</th>
-            <th>BALANCE</th>
-            <th>ACTIONS</th>
+            <th>DATE</th><th>DESCRIPTION</th><th>CATEGORY</th><th>TYPE</th><th>AMOUNT</th><th>BALANCE</th><th>ACTIONS</th>
           </tr>
         </thead>
         <tbody>
           {% for entry in entries %}
-          <tr>
+          <tr data-id="{{ entry.id }}"
+              data-item="{{ entry.description|escapejs }}"
+              data-category="{{ entry.category|escapejs }}"
+              data-type="{{ entry.entry_type }}"
+              data-amount="{{ entry.amount }}"
+              data-balance="{{ entry.balance }}"
+              data-date="{{ entry.date|date:'d M Y' }}">
             <td>{{ entry.date|date:"Y-m-d" }}</td>
             <td><b>{{ entry.description }}</b></td>
-            <td>
-              <span class="tag 
-                {% if entry.category|lower == 'supplies' %}tag-supplies
-                {% elif entry.category|lower == 'food' %}tag-food
-                {% elif entry.category|lower == 'funding' %}tag-funding
-                {% elif entry.category|lower == 'logistics' %}tag-logistics
-                {% else %}tag-utilities{% endif %}">
-                {{ entry.category }}
-              </span>
-            </td>
+            <td><span class="tag">{{ entry.category }}</span></td>
             <td>
               {% if entry.entry_type == 'Credit' %}
                 <span class="tag tag-credit">Credit</span>
@@ -358,41 +162,30 @@
                 <span class="tag tag-debit">Debit</span>
               {% endif %}
             </td>
-            <td style="font-weight:600;">
+            <td style="font-weight:600">
               {% if entry.entry_type == 'Credit' %}
-                <span style="color:#16a34a;">৳{{ entry.amount }}</span>
+                <span style="color:#16a34a">৳{{ entry.amount }}</span>
               {% else %}
-                <span style="color:#dc2626;">৳{{ entry.amount }}</span>
+                <span style="color:#dc2626">৳{{ entry.amount }}</span>
               {% endif %}
             </td>
             <td>৳{{ entry.balance }}</td>
             <td>
-              <div style="display:flex; gap:6px;">
-                <button class="icon-btn" title="View" onclick="viewEntry({{ entry.id }})">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                  </svg>
+              <div style="display:flex;gap:5px">
+                <button type="button" class="icon-btn cash-action-btn" title="View" onclick="viewCashEntry(this)">
+                  <svg viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>
                 </button>
-                <button class="icon-btn" title="Edit" onclick="editEntry({{ entry.id }})">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                  </svg>
-                </button>
-                <button class="icon-btn danger" title="Delete" onclick="deleteEntry({{ entry.id }})">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                  </svg>
+                <a href="{% url 'petty_cash_edit' entry.id %}" class="icon-btn cash-action-btn" title="Edit">
+                  <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>
+                </a>
+                <button type="button" class="icon-btn danger cash-action-btn" title="Delete" onclick="deleteByUrl('{% url 'petty_cash_delete' entry.id %}', '{{ entry.description|escapejs }}')">
+                  <svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="m6 7 1 13h10l1-13M9 7V4h6v3"/></svg>
                 </button>
               </div>
             </td>
           </tr>
           {% empty %}
-          <tr>
-            <td colspan="7" style="text-align:center; padding:48px; color:var(--muted);">
-              No transactions yet. Click “+ Add Transaction” to get started.
-            </td>
-          </tr>
+          <tr><td colspan="7" style="text-align:center;padding:48px;color:var(--muted)">No transactions yet.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -400,109 +193,102 @@
   </div>
 </div>
 
-<!-- ==================== CATEGORIES PANEL ==================== -->
+<!-- ==================== CATEGORIES ==================== -->
 <div class="pc-panel" id="panel-categories">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-    <h2 style="margin:0; font-size:18px; font-weight:600;">Expense Categories</h2>
-    <button class="btn" style="background:#FF6B00; color:white;" onclick="openCategoryModal()">
-      + Add Category
-    </button>
-  </div>
-
-  <div class="cat-grid" id="categories-grid">
-    {% for cat in categories %}
-    <div class="cat-card" data-id="{{ cat.id }}">
-      <div class="cat-left">
-        <div class="cat-dot" style="background:{{ cat.color|default:'#3b82f6' }};"></div>
-        <div>
-          <div class="cat-name">{{ cat.name }}</div>
-          <div class="cat-desc">{{ cat.description|default:"" }}</div>
+  <div class="category-shell">
+    <div class="category-heading">
+      <h2>Expense Categories</h2>
+      <button class="btn" style="background:#FF6B00;color:#fff;border-radius:8px;padding:8px 14px;font-size:13px" onclick="openCategoryModal()">+ Add Category</button>
+    </div>
+    <div class="cat-grid">
+      {% for cat in categories %}
+      <div class="cat-card"
+           data-id="{{ cat.id }}"
+           data-name="{{ cat.name|escapejs }}"
+           data-desc="{{ cat.description|escapejs }}"
+           data-color="{{ cat.color }}"
+           data-budget="{{ cat.monthly_budget|default:'' }}">
+        <div class="cat-left">
+          <div class="cat-dot" style="background:{{ cat.color|default:'#3b82f6' }}"></div>
+          <div>
+            <div class="cat-name">{{ cat.name }}</div>
+            <div class="cat-desc">{{ cat.description|default:"" }}</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+          <div class="cat-amount">
+            {% with category_key=cat.name|lower %}
+            ৳{{ category_totals|get_item:category_key|floatformat:0 }}
+            {% endwith %}
+</div>
+          <div class="cat-actions">
+            <button class="icon-btn" title="View" onclick="viewCategory(this)">
+              <svg viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+            </button>
+            <button class="icon-btn" title="Edit" onclick="editCategory(this)">
+              <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>
+            </button>
+            <button class="icon-btn danger" title="Delete" onclick="deleteCategory({{ cat.id }}, '{{ cat.name|escapejs }}')">
+              <svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="m6 7 1 13h10l1-13M9 7V4h6v3"/></svg>
+            </button>
+          </div>
         </div>
       </div>
-      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:10px;">
-        <div class="cat-amount">৳{{ cat.total_spent|default:"0" }}</div>
-        <div class="cat-actions">
-          <button class="icon-btn" title="View" onclick="viewCategory({{ cat.id }})">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-              <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-            </svg>
-          </button>
-          <button class="icon-btn" title="Edit" onclick="editCategory({{ cat.id }}, '{{ cat.name|escapejs }}', '{{ cat.monthly_budget|default:"" }}', '{{ cat.description|escapejs }}')">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-            </svg>
-          </button>
-          <button class="icon-btn danger" title="Delete" onclick="deleteCategory({{ cat.id }})">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-            </svg>
-          </button>
-        </div>
-      </div>
+      {% empty %}
+      <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">No categories yet.</div>
+      {% endfor %}
     </div>
-    {% empty %}
-    <div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--muted);">
-      No categories yet. Click “+ Add Category” to create one.
-    </div>
-    {% endfor %}
   </div>
 </div>
 
-<!-- ==================== FIXED COSTS PANEL ==================== -->
+<!-- ==================== FIXED COSTS ==================== -->
 <div class="pc-panel" id="panel-fixed">
   <div class="card">
-    <div style="padding:18px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;">
+    <div style="padding:18px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center">
       <strong>Fixed Monthly Costs</strong>
-      <button class="btn" style="background:#FF6B00; color:white;" onclick="openFixedCostModal()">
-        + Add Fixed Cost
-      </button>
+      <button class="btn" style="background:#FF6B00;color:#fff;border-radius:8px;padding:8px 14px;font-size:13px" onclick="openFixedCostModal()">+ Add Fixed Cost</button>
     </div>
-    <div style="overflow-x:auto;">
+    <div style="overflow-x:auto">
       <table>
         <thead>
           <tr>
-            <th>ITEM</th>
-            <th>FREQUENCY</th>
-            <th>AMOUNT</th>
-            <th>DUE</th>
-            <th>ACTIONS</th>
+            <th>ITEM</th><th>FREQUENCY</th><th>AMOUNT</th><th>STATUS</th><th>DUE</th><th>ACTIONS</th>
           </tr>
         </thead>
         <tbody>
           {% for cost in fixed_costs %}
-          <tr>
+          <tr data-id="{{ cost.id }}"
+              data-item="{{ cost.item|escapejs }}"
+              data-amount="{{ cost.amount }}"
+              data-freq="{{ cost.frequency }}"
+              data-due="{{ cost.due_day|default:'' }}"
+              data-status="{{ cost.status }}"
+              data-desc="{{ cost.description|escapejs }}"
+              data-created="{{ cost.created_at|date:'d M Y' }}"
+              data-updated="{{ cost.updated_at|date:'d M Y' }}">
             <td><b>{{ cost.item }}</b></td>
-            <td>{{ cost.frequency|default:"Monthly" }}</td>
-            <td style="font-weight:600;">৳{{ cost.amount }}</td>
-            <td>{{ cost.due_day }}</td>
+            <td>{{ cost.frequency }}</td>
+            <td style="font-weight:600">৳{{ cost.amount }}</td>
             <td>
-              <div style="display:flex; gap:6px;">
-                <button class="icon-btn" title="View" onclick="viewFixedCost({{ cost.id }})">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                  </svg>
+              <span class="tag {% if cost.status == 'Active' %}tag-credit{% else %}tag-debit{% endif %}">{{ cost.status }}</span>
+            </td>
+            <td>{{ cost.due_day|default:"—" }}</td>
+            <td>
+              <div style="display:flex;gap:5px">
+                <button class="icon-btn" title="View" onclick="viewFixedCost(this)">
+                  <svg viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>
                 </button>
-                <button class="icon-btn" title="Edit" onclick="editFixedCost({{ cost.id }}, '{{ cost.item|escapejs }}', '{{ cost.amount }}', '{{ cost.due_day }}')">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                  </svg>
+                <button class="icon-btn" title="Edit" onclick="editFixedCost(this)">
+                  <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>
                 </button>
-                <button class="icon-btn danger" title="Delete" onclick="deleteFixedCost({{ cost.id }})">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                  </svg>
+                <button class="icon-btn danger" title="Delete" onclick="deleteFixedCost({{ cost.id }}, '{{ cost.item|escapejs }}')">
+                  <svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="m6 7 1 13h10l1-13M9 7V4h6v3"/></svg>
                 </button>
               </div>
             </td>
           </tr>
           {% empty %}
-          <tr>
-            <td colspan="5" style="text-align:center; padding:48px; color:var(--muted);">
-              No fixed costs yet. Click “+ Add Fixed Cost” to create one.
-            </td>
-          </tr>
+          <tr><td colspan="6" style="text-align:center;padding:48px;color:var(--muted)">No fixed costs yet.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -510,110 +296,80 @@
   </div>
 </div>
 
-<!-- ==================== ANALYTICS PANEL ==================== -->
+<!-- ==================== ANALYTICS ==================== -->
 <div class="pc-panel" id="panel-analytics">
   <div class="analytics-grid">
-    <!-- Monthly Spend Trend -->
     <div class="chart-card">
       <h3>Monthly Spend Trend (৳ thousands)</h3>
-      <div class="bar-chart" id="monthly-bars">
-        <!-- Populated by JS or backend later -->
-        <div class="bar-item">
-          <div class="bar" style="height:55%;"></div>
-          <div class="bar-label">Jan</div>
+      <div class="bar-chart">
+        {% for m in monthly_data %}
+        <div class="bar-item" title="৳{{ m.total|floatformat:2 }}">
+          <div class="bar" style="height:{% widthratio m.total monthly_chart_max 100 %}%"></div>
+          <div class="bar-label">{{ m.month|date:"M" }}</div>
         </div>
-        <div class="bar-item">
-          <div class="bar" style="height:75%;"></div>
-          <div class="bar-label">Feb</div>
-        </div>
-        <div class="bar-item">
-          <div class="bar" style="height:65%;"></div>
-          <div class="bar-label">Mar</div>
-        </div>
-        <div class="bar-item">
-          <div class="bar" style="height:90%;"></div>
-          <div class="bar-label">Apr</div>
-        </div>
-        <div class="bar-item">
-          <div class="bar" style="height:80%;"></div>
-          <div class="bar-label">May</div>
-        </div>
-        <div class="bar-item">
-          <div class="bar" style="height:50%;"></div>
-          <div class="bar-label">Jun</div>
-        </div>
+        {% empty %}
+        <div class="analytics-empty">No debit data yet</div>
+        {% endfor %}
       </div>
     </div>
-
-    <!-- Spend by Category -->
     <div class="chart-card">
       <h3>Spend by Category</h3>
-      <div id="spend-by-category">
-        <div class="spend-row">
-          <div class="spend-label">Food</div>
-          <div class="spend-bar-bg"><div class="spend-bar-fill" style="width:35%; background:#f97316;"></div></div>
-          <div class="spend-pct">35%</div>
+      {% for c in cat_spend %}
+      <div class="spend-row">
+        <div class="spend-label">{{ c.category|truncatechars:12 }}</div>
+        <div class="spend-bar-bg">
+          <div class="spend-bar-fill"
+               style="width:{% widthratio c.total total_spend 100 %}%;
+                      background:{% if forloop.counter == 1 %}#f97316
+                                 {% elif forloop.counter == 2 %}#ef4444
+                                 {% elif forloop.counter == 3 %}#3b82f6
+                                 {% elif forloop.counter == 4 %}#22c55e
+                                 {% else %}#a855f7{% endif %}">
+          </div>
         </div>
-        <div class="spend-row">
-          <div class="spend-label">Supplies</div>
-          <div class="spend-bar-bg"><div class="spend-bar-fill" style="width:24%; background:#ef4444;"></div></div>
-          <div class="spend-pct">24%</div>
-        </div>
-        <div class="spend-row">
-          <div class="spend-label">Logistics</div>
-          <div class="spend-bar-bg"><div class="spend-bar-fill" style="width:16%; background:#3b82f6;"></div></div>
-          <div class="spend-pct">16%</div>
-        </div>
-        <div class="spend-row">
-          <div class="spend-label">Funding</div>
-          <div class="spend-bar-bg"><div class="spend-bar-fill" style="width:15%; background:#22c55e;"></div></div>
-          <div class="spend-pct">15%</div>
-        </div>
-        <div class="spend-row">
-          <div class="spend-label">Other</div>
-          <div class="spend-bar-bg"><div class="spend-bar-fill" style="width:10%; background:#a855f7;"></div></div>
-          <div class="spend-pct">10%</div>
-        </div>
+        <div class="spend-pct">{% widthratio c.total total_spend 100 %}%</div>
       </div>
+      {% empty %}
+      <div class="analytics-empty">No debit data yet</div>
+      {% endfor %}
     </div>
   </div>
 </div>
 
 <!-- ==================== MODALS ==================== -->
 
-<!-- Category Modal -->
-<div class="pc-modal-overlay" id="category-modal">
+<!-- Preview Modal -->
+<div class="pc-modal-overlay" id="preview-modal">
   <div class="pc-modal">
     <div class="pc-modal-header">
-      <h3 id="category-modal-title">Add Category</h3>
-      <button class="pc-modal-close" onclick="closeCategoryModal()">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
+      <h3 id="preview-title">Preview</h3>
+      <button class="pc-modal-close" onclick="closeModal('preview-modal')">×</button>
     </div>
-    <form id="category-form" method="post" action="">
-      {% csrf_token %}
-      <input type="hidden" name="category_id" id="category_id">
-      <div class="pc-modal-body">
-        <div class="form-group">
-          <label for="category_name">Category Name</label>
-          <input type="text" id="category_name" name="name" required placeholder="e.g. Supplies">
+    <div class="pc-modal-body">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px">
+        <div class="preview-icon-wrap">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#FF6B00" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+          </svg>
         </div>
-        <div class="form-group">
-          <label for="category_budget">Monthly Budget</label>
-          <input type="number" id="category_budget" name="monthly_budget" min="0" step="0.01" placeholder="0.00">
-        </div>
-        <div class="form-group">
-          <label for="category_desc">Description</label>
-          <textarea id="category_desc" name="description" placeholder="Short description..."></textarea>
+        <div>
+          <div style="font-weight:600;font-size:16px;color:#111827" id="preview-item">—</div>
+          <div style="font-size:13px;color:#6b7280" id="preview-subtitle">Details</div>
         </div>
       </div>
-      <div class="pc-modal-footer">
-        <button type="button" class="btn" style="background:white; border:1px solid var(--line);" onclick="closeCategoryModal()">Cancel</button>
-        <button type="submit" class="btn" style="background:#FF6B00; color:white;">Save Changes</button>
-      </div>
-    </form>
+      <table class="preview-meta" style="width:100%">
+        <tr><td id="preview-label-one">Name</td><td id="preview-name">—</td></tr>
+        <tr><td>Status</td><td id="preview-status">—</td></tr>
+        <tr><td>Created</td><td id="preview-created">—</td></tr>
+        <tr><td>Updated</td><td id="preview-updated">—</td></tr>
+      </table>
+    </div>
+    <div class="pc-modal-footer">
+      <button class="btn pc-secondary-btn" onclick="closeModal('preview-modal')">Close</button>
+      <button class="btn pc-secondary-btn" id="preview-edit-btn">✎ Edit</button>
+      <button class="btn" style="background:#EF4444;color:#fff" id="preview-delete-btn">🗑 Delete</button>
+    </div>
   </div>
 </div>
 
@@ -621,126 +377,279 @@
 <div class="pc-modal-overlay" id="fixedcost-modal">
   <div class="pc-modal">
     <div class="pc-modal-header">
-      <h3 id="fixedcost-modal-title">Add Fixed Cost</h3>
-      <button class="pc-modal-close" onclick="closeFixedCostModal()">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
+      <h3 id="fixedcost-modal-title">Edit Fixed Cost</h3>
+      <button class="pc-modal-close" onclick="closeModal('fixedcost-modal')">×</button>
     </div>
     <form id="fixedcost-form" method="post" action="">
       {% csrf_token %}
       <input type="hidden" name="fixedcost_id" id="fixedcost_id">
       <div class="pc-modal-body">
-        <div class="form-group">
-          <label for="fixed_item">Item</label>
-          <input type="text" id="fixed_item" name="item" required placeholder="e.g. Office Rent">
-        </div>
-        <div class="form-group">
-          <label for="fixed_amount">Amount</label>
-          <input type="number" id="fixed_amount" name="amount" min="0" step="0.01" required placeholder="0.00">
-        </div>
-        <div class="form-group">
-          <label for="fixed_due">Due Day</label>
-          <input type="text" id="fixed_due" name="due_day" placeholder="e.g. 1st or 5th" required>
+        <div class="fixedcost-fields">
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" name="item" id="fixed_item" required>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select name="status" id="fixed_status">
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label>Description</label>
+            <textarea name="description" id="fixed_desc" rows="3" placeholder="Optional description..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Amount (৳)</label>
+            <input type="number" name="amount" id="fixed_amount" step="0.01" min="0" required>
+          </div>
+          <div class="form-group">
+            <label>Due Day</label>
+            <input type="text" name="due_day" id="fixed_due" placeholder="e.g. 1st">
+          </div>
         </div>
       </div>
       <div class="pc-modal-footer">
-        <button type="button" class="btn" style="background:white; border:1px solid var(--line);" onclick="closeFixedCostModal()">Cancel</button>
-        <button type="submit" class="btn" style="background:#FF6B00; color:white;">Save Changes</button>
+        <button type="button" class="btn pc-cancel-btn" onclick="closeModal('fixedcost-modal')">Cancel</button>
+        <button type="submit" class="btn" style="background:#FF6B00;color:#fff">✓ Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Confirm Delete -->
+<div class="pc-modal-overlay" id="confirm-delete-modal">
+  <div class="pc-modal">
+    <div class="pc-modal-header">
+      <h3>Confirm Delete</h3>
+      <button class="pc-modal-close" onclick="closeModal('confirm-delete-modal')">×</button>
+    </div>
+    <div class="pc-modal-body">
+      <div style="display:flex;gap:14px;align-items:flex-start">
+        <div style="width:40px;height:40px;border-radius:50%;background:#fef2f2;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#EF4444" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+        </div>
+        <div>
+          <div style="font-weight:600;margin-bottom:6px;color:#111827">Are you sure you want to delete?</div>
+          <div style="font-size:14px;color:#6b7280;line-height:1.5">
+            You are about to permanently delete <strong id="delete-name"></strong>. This action cannot be undone and any linked records may be affected.
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;margin-top:16px;font-size:14px;cursor:pointer;color:#111827">
+            <input type="checkbox" id="confirm-check" onchange="document.getElementById('final-delete-btn').disabled=!this.checked">
+            I understand this is permanent
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="pc-modal-footer">
+      <button class="btn pc-secondary-btn" onclick="closeModal('confirm-delete-modal')">Cancel</button>
+      <button class="btn" style="background:#EF4444;color:#fff" id="final-delete-btn" disabled onclick="confirmDelete()">🗑 Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Category Modal -->
+<div class="pc-modal-overlay" id="category-modal">
+  <div class="pc-modal">
+    <div class="pc-modal-header">
+      <h3 id="category-modal-title">Add Category</h3>
+      <button class="pc-modal-close" onclick="closeModal('category-modal')">×</button>
+    </div>
+    <form id="category-form" method="post" action="">
+      {% csrf_token %}
+      <input type="hidden" name="category_id" id="category_id">
+      <div class="pc-modal-body">
+        <div class="form-group">
+          <label>Category Name</label>
+          <input type="text" name="name" id="category_name" required>
+        </div>
+        <div class="form-group">
+          <label>Monthly Budget (৳)</label>
+          <input type="number" name="monthly_budget" id="category_budget" step="0.01" min="0">
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea name="description" id="category_desc" rows="3"></textarea>
+        </div>
+      </div>
+      <div class="pc-modal-footer">
+        <button type="button" class="btn pc-cancel-btn" onclick="closeModal('category-modal')">Cancel</button>
+        <button type="submit" class="btn" style="background:#FF6B00;color:#fff">Save Changes</button>
       </div>
     </form>
   </div>
 </div>
 
 <script>
-  // ===== Tab switching =====
-  const tabs = document.querySelectorAll('.pc-tab');
-  const panels = document.querySelectorAll('.pc-panel');
-  const breadcrumb = document.getElementById('pc-breadcrumb');
-
-  const tabLabels = {
-    cashbook: 'Cashbook',
-    categories: 'Categories',
-    fixed: 'Fixed Costs',
-    analytics: 'Analytics'
-  };
-
-  tabs.forEach(tab => {
+  document.querySelectorAll('.pc-tab').forEach(tab => {
     tab.addEventListener('click', () => {
-      const target = tab.dataset.tab;
-
-      tabs.forEach(t => t.classList.remove('active'));
+      const t = tab.dataset.tab;
+      document.querySelectorAll('.pc-tab').forEach(x => x.classList.remove('active'));
       tab.classList.add('active');
-
-      panels.forEach(p => p.classList.remove('active'));
-      document.getElementById('panel-' + target).classList.add('active');
-
-      breadcrumb.textContent = `Home · Finance · Petty Cash · ${tabLabels[target]}`;
+      document.querySelectorAll('.pc-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-' + t).classList.add('active');
+      const labels = {cashbook:'Cashbook', categories:'Categories', fixed:'Fixed Costs', analytics:'Analytics'};
+      document.getElementById('pc-breadcrumb').textContent = `Home · Finance · Petty Cash · ${labels[t]}`;
     });
   });
 
-  // ===== Category Modal =====
-  function openCategoryModal(isEdit = false) {
-    document.getElementById('category-modal-title').textContent = isEdit ? 'Edit Category' : 'Add Category';
-    document.getElementById('category-modal').classList.add('open');
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
   }
 
-  function closeCategoryModal() {
-    document.getElementById('category-modal').classList.remove('open');
-    document.getElementById('category-form').reset();
-    document.getElementById('category_id').value = '';
+  function openPreview(data) {
+    document.getElementById('preview-title').textContent = data.title;
+    document.getElementById('preview-item').textContent = data.item;
+    document.getElementById('preview-subtitle').textContent = data.subtitle;
+    document.getElementById('preview-label-one').textContent = data.label || 'Name';
+    document.getElementById('preview-name').textContent = data.name;
+    document.getElementById('preview-status').textContent = data.status;
+    document.getElementById('preview-created').textContent = data.created;
+    document.getElementById('preview-updated').textContent = data.updated;
+
+    document.getElementById('preview-edit-btn').onclick = () => {
+      if (data.edit && (data.edit.startsWith('http') || data.edit.startsWith('/'))) {
+        window.location.href = data.edit;
+      } else {
+        closeModal('preview-modal');
+        if (data.editFn) data.editFn();
+      }
+    };
+    document.getElementById('preview-delete-btn').onclick = () => {
+      closeModal('preview-modal');
+      deleteByUrl(data.remove, data.item);
+    };
+    document.getElementById('preview-modal').classList.add('open');
   }
 
-  function editCategory(id, name, budget, desc) {
-    document.getElementById('category_id').value = id;
-    document.getElementById('category_name').value = name;
-    document.getElementById('category_budget').value = budget;
-    document.getElementById('category_desc').value = desc;
-    openCategoryModal(true);
+  function viewCashEntry(btn) {
+    const row = btn.closest('tr');
+    openPreview({
+      title: 'Preview Cash Entry',
+      item: row.dataset.item,
+      subtitle: 'Cash Book details',
+      label: 'Description',
+      name: row.dataset.item,
+      status: `${row.dataset.type} · ${row.dataset.category}`,
+      created: row.dataset.date,
+      updated: `Amount ৳${row.dataset.amount} · Balance ৳${row.dataset.balance}`,
+      edit: `{% url 'petty_cash_edit' 0 %}`.replace('/0/', `/${row.dataset.id}/`),
+      remove: `{% url 'petty_cash_delete' 0 %}`.replace('/0/', `/${row.dataset.id}/`)
+    });
   }
 
-  // ===== Fixed Cost Modal =====
-  function openFixedCostModal(isEdit = false) {
-    document.getElementById('fixedcost-modal-title').textContent = isEdit ? 'Edit Fixed Cost' : 'Add Fixed Cost';
+  let currentDeleteUrl = '';
+
+  function viewFixedCost(btn) {
+    const tr = btn.closest('tr');
+    openPreview({
+      title: 'Preview Fixed Cost',
+      item: tr.dataset.item,
+      subtitle: 'Fixed Cost details',
+      label: 'Name',
+      name: tr.dataset.item,
+      status: tr.dataset.status,
+      created: tr.dataset.created,
+      updated: tr.dataset.updated,
+      edit: null,
+      editFn: () => editFixedCost(btn),
+      remove: `/petty-cash/fixed-costs/${tr.dataset.id}/delete/`
+    });
+  }
+
+  function editFixedCost(btn) {
+    const tr = btn.closest('tr');
+    document.getElementById('fixedcost_id').value = tr.dataset.id;
+    document.getElementById('fixed_item').value = tr.dataset.item;
+    document.getElementById('fixed_amount').value = tr.dataset.amount;
+    document.getElementById('fixed_due').value = tr.dataset.due || '';
+    document.getElementById('fixed_status').value = tr.dataset.status || 'Active';
+    document.getElementById('fixed_desc').value = tr.dataset.desc || '';
+    document.getElementById('fixedcost-form').action = `/petty-cash/fixed-costs/${tr.dataset.id}/edit/`;
+    document.getElementById('fixedcost-modal-title').textContent = 'Edit Fixed Cost — ' + tr.dataset.item;
     document.getElementById('fixedcost-modal').classList.add('open');
   }
 
-  function closeFixedCostModal() {
-    document.getElementById('fixedcost-modal').classList.remove('open');
-    document.getElementById('fixedcost-form').reset();
-    document.getElementById('fixedcost_id').value = '';
+  function openFixedCostModal(isEdit = false) {
+    if (!isEdit) {
+      document.getElementById('fixedcost_id').value = '';
+      document.getElementById('fixedcost-form').reset();
+      document.getElementById('fixed_status').value = 'Active';
+      document.getElementById('fixedcost-form').action = "{% url 'fixedcost_add' %}";
+      document.getElementById('fixedcost-modal-title').textContent = 'Add Fixed Cost';
+    }
+    document.getElementById('fixedcost-modal').classList.add('open');
   }
 
-  function editFixedCost(id, item, amount, due) {
-    document.getElementById('fixedcost_id').value = id;
-    document.getElementById('fixed_item').value = item;
-    document.getElementById('fixed_amount').value = amount;
-    document.getElementById('fixed_due').value = due;
-    openFixedCostModal(true);
+  function deleteFixedCost(id, name) {
+    deleteByUrl(`/petty-cash/fixed-costs/${id}/delete/`, name);
   }
 
-  // Close modals on overlay click
-  document.getElementById('category-modal').addEventListener('click', e => {
-    if (e.target === e.currentTarget) closeCategoryModal();
+  function openCategoryModal(isEdit = false) {
+    document.getElementById('category-modal-title').textContent = isEdit ? 'Edit Category' : 'Add Category';
+    if (!isEdit) {
+      document.getElementById('category_id').value = '';
+      document.getElementById('category-form').reset();
+      document.getElementById('category-form').action = "{% url 'category_add' %}";
+    }
+    document.getElementById('category-modal').classList.add('open');
+  }
+
+  function editCategory(btn) {
+    const card = btn.closest('.cat-card');
+    document.getElementById('category_id').value = card.dataset.id;
+    document.getElementById('category_name').value = card.dataset.name;
+    document.getElementById('category_budget').value = card.dataset.budget || '';
+    document.getElementById('category_desc').value = card.dataset.desc || '';
+    document.getElementById('category-form').action = `/petty-cash/categories/${card.dataset.id}/edit/`;
+    openCategoryModal(true);
+  }
+
+  function viewCategory(btn) {
+    const card = btn.closest('.cat-card');
+    openPreview({
+      title: 'Preview Category',
+      item: card.dataset.name,
+      subtitle: 'Expense Category details',
+      label: 'Category',
+      name: card.dataset.name,
+      status: `Budget ৳${card.dataset.budget || '0.00'}`,
+      created: card.dataset.desc || 'No description',
+      updated: 'Available for petty cash',
+      edit: null,
+      editFn: () => editCategory(btn),
+      remove: `/petty-cash/categories/${card.dataset.id}/delete/`
+    });
+  }
+
+  function deleteCategory(id, name) {
+    deleteByUrl(`/petty-cash/categories/${id}/delete/`, name);
+  }
+
+  function deleteByUrl(url, name) {
+    document.getElementById('delete-name').textContent = name;
+    currentDeleteUrl = url;
+    document.getElementById('confirm-check').checked = false;
+    document.getElementById('final-delete-btn').disabled = true;
+    document.getElementById('confirm-delete-modal').classList.add('open');
+  }
+
+  function confirmDelete() {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = currentDeleteUrl;
+    form.innerHTML = `{% csrf_token %}`;
+    document.body.appendChild(form);
+    form.submit();
+  }
+
+  document.querySelectorAll('.pc-modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) overlay.classList.remove('open');
+    });
   });
-  document.getElementById('fixedcost-modal').addEventListener('click', e => {
-    if (e.target === e.currentTarget) closeFixedCostModal();
-  });
-
-  // Placeholder action handlers (wire these to backend later)
-  function viewEntry(id) { console.log('View entry', id); }
-  function editEntry(id) { console.log('Edit entry', id); }
-  function deleteEntry(id) {
-    if (confirm('Delete this entry?')) console.log('Delete entry', id);
-  }
-  function viewCategory(id) { console.log('View category', id); }
-  function deleteCategory(id) {
-    if (confirm('Delete this category?')) console.log('Delete category', id);
-  }
-  function viewFixedCost(id) { console.log('View fixed cost', id); }
-  function deleteFixedCost(id) {
-    if (confirm('Delete this fixed cost?')) console.log('Delete fixed cost', id);
-  }
 </script>
 {% endblock %}

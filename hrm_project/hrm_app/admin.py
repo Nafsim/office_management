@@ -5,7 +5,7 @@ from .models import (
     AttendanceLog, Attendance, LateEntry, LeaveType, LeaveRequest,
     Notice, Document, SalaryStructure, Payslip,
     Asset, Project, Task, OnboardingRecord, SecureFile,
-    EmailTemplate, Holiday, NotificationRule,
+    EmailTemplate, Holiday, NotificationRule, PettyCashLedger,
 )
 
 @admin.register(User)
@@ -43,3 +43,4 @@ admin.site.register(SecureFile)
 admin.site.register(EmailTemplate)
 admin.site.register(Holiday)
 admin.site.register(NotificationRule)
+admin.site.register(PettyCashLedger)

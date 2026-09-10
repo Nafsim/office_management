@@ -4,7 +4,7 @@ from .models import SiteSettings
 from .models import (
     User, Employee, Department, Designation, Shift,
     Notice, LeaveRequest, LeaveType, Asset, Task, Project,
-    PettyCashLedger, Document, SalaryStructure, OnboardingRecord,
+    ExpenseCategory, FixedCost, PettyCashLedger , Document, SalaryStructure, OnboardingRecord,
     EmailTemplate, Holiday, NotificationRule,
 )
 
@@ -109,13 +109,39 @@ class TaskForm(forms.ModelForm):
 
         self.fields['description'].required = False
         self.fields['color'].required = False
-        
+
+
 class PettyCashForm(forms.ModelForm):
     class Meta:
-        model  = PettyCashLedger
+        model = PettyCashLedger
         fields = ['date', 'description', 'category', 'entry_type', 'amount', 'note']
-        widgets = {'date': forms.DateInput(attrs={'type': 'date'})}
+        widgets = {
+            'date': forms.DateInput(attrs={'type': 'date'}),
+            'note': forms.Textarea(attrs={'rows': 3}),
+        }
 
+
+class ExpenseCategoryForm(forms.ModelForm):
+    class Meta:
+        model = ExpenseCategory
+        fields = ['name', 'description', 'color', 'monthly_budget']
+        widgets = {
+            'name': forms.TextInput(attrs={'placeholder': 'e.g. Supplies'}),
+            'description': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Short description...'}),
+            'color': forms.TextInput(attrs={'type': 'color'}),
+            'monthly_budget': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
+        }
+
+class FixedCostForm(forms.ModelForm):
+    class Meta:
+        model = FixedCost
+        fields = ['item', 'amount', 'frequency', 'due_day', 'status', 'description']
+        widgets = {
+            'item': forms.TextInput(attrs={'placeholder': 'e.g. Office Rent'}),
+            'amount': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
+            'due_day': forms.TextInput(attrs={'placeholder': 'e.g. 1st or 5th'}),
+            'description': forms.Textarea(attrs={'rows': 3}),
+        }
 
 class DocumentForm(forms.ModelForm):
     class Meta:

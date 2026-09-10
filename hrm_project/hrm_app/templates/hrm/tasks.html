@@ -10,9 +10,11 @@
   .task-attachments-title{font-size:14px;font-weight:700;color:#263246}
   .task-attachment-stream{display:flex;flex-direction:column;gap:12px;min-height:40px}
   .task-attachment-item{background:#fff;border:1px solid #e7eaf0;border-radius:10px;padding:12px;}
-  .task-attachment-image{max-width:100%;max-height:300px;display:block;border-radius:8px;margin-bottom:10px;}
-  .task-attachment-text{width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;resize:vertical;min-height:60px;box-sizing:border-box;}
-  .task-attachment-file-link{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;color:#FF6B00;font-weight:600;text-decoration:none;margin-bottom:10px;}
+  .task-attachment-image{max-width:100%;max-height:300px;display:block;border-radius:8px;}
+  .task-attachment-file-link{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;color:#FF6B00;font-weight:600;text-decoration:none;}
+  .task-attachment-text-input{width:100%;padding:8px 0;border:none;border-bottom:1px solid transparent;font-size:14px;margin-top:8px;background:transparent;outline:none;transition:border-color 0.2s;}
+  .task-attachment-text-input:focus{border-bottom:1px solid #e5e7eb;}
+  .task-attachment-text-input::placeholder{color:#999;}
   .task-icon-button{width:50px;height:50px;display:inline-grid;place-items:center;border:1px solid #ffb48e;border-radius:50%;background:#fff3eb;color:#d95722;cursor:pointer;margin:0 auto;}
   .task-icon-button:hover{background:#ff6b00;color:#fff}
   .task-icon-button svg{width:24px;height:24px}
@@ -651,7 +653,7 @@ async function loadTaskAttachments(taskId) {
           items.push(`
             <div class="task-attachment-item" data-id="${img.id || ''}" data-type="image">
               <img src="${img.image_url}" class="task-attachment-image" alt="Attachment">
-              <textarea class="task-attachment-text" placeholder="Add description..." data-id="${img.id}" onblur="saveAttachmentText(this, 'image', ${img.id})">${escapeHtml(img.explanation || '')}</textarea>
+              <div class="task-attachment-text-input" contenteditable="true" placeholder="Type here and press Enter..." data-id="${img.id}" data-type="image">${escapeHtml(img.explanation || '')}</div>
             </div>
           `);
         });
@@ -667,7 +669,7 @@ async function loadTaskAttachments(taskId) {
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8m-8 4h6"/></svg>
                   ${escapeHtml(att.file_name)}
                 </a>
-                <textarea class="task-attachment-text" placeholder="Add description..." data-id="${att.id}" onblur="saveAttachmentText(this, 'document', ${att.id})">${escapeHtml(att.explanation || '')}</textarea>
+                <div class="task-attachment-text-input" contenteditable="true" placeholder="Type here and press Enter..." data-id="${att.id}" data-type="document">${escapeHtml(att.explanation || '')}</div>
               </div>
             `);
           }
@@ -684,9 +686,45 @@ async function loadTaskAttachments(taskId) {
       `);
       
       preview.innerHTML = items.join('');
+      
+      // Add event listeners to text inputs
+      document.querySelectorAll('.task-attachment-text-input').forEach(el => {
+        el.addEventListener('keydown', handleTextKeypress);
+      });
     }
   } catch (err) {
     console.error('Error loading attachments:', err);
+  }
+}
+
+async function handleTextKeypress(event) {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    const el = event.target;
+    const text = el.innerText.trim();
+    const id = el.dataset.id;
+    const type = el.dataset.type;
+    
+    const url = type === 'image' 
+      ? `/tasks/images/${id}/explanation/`
+      : `/tasks/attachments/${id}/explanation/`;
+    
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': getCsrfToken()
+        },
+        body: new URLSearchParams({ explanation: text })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        alert(data.error || 'Could not save text');
+      }
+    } catch (err) {
+      console.error('Error saving text:', err);
+    }
   }
 }
 
@@ -727,29 +765,26 @@ async function uploadTaskAttachment() {
   }
 }
 
-async function saveAttachmentText(textarea, type, id) {
-  const text = textarea.value.trim();
-  const url = type === 'image' 
-    ? `/tasks/images/${id}/explanation/`
-    : `/tasks/attachments/${id}/explanation/`;
-  
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'X-CSRFToken': getCsrfToken()
-      },
-      body: new URLSearchParams({ explanation: text })
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.ok) {
-      alert(data.error || 'Could not save description');
+// Paste handler for images
+document.addEventListener('paste', function(event) {
+  if (!window.selectedTaskId || document.getElementById('taskModal').style.display !== 'flex') return;
+
+  const items = event.clipboardData ? event.clipboardData.items : [];
+  for (const item of items) {
+    if (item.type && item.type.startsWith('image/')) {
+      const file = item.getAsFile();
+      if (file) {
+        const input = document.getElementById('taskAttachmentInput');
+        const transfer = new DataTransfer();
+        transfer.items.add(file);
+        input.files = transfer.files;
+        uploadTaskAttachment();
+      }
+      event.preventDefault();
+      break;
     }
-  } catch (err) {
-    console.error('Error saving text:', err);
   }
-}
+});
 
 async function deleteTask(taskId, taskTitle) {
   const result = await Swal.fire({

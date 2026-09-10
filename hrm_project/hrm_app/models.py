@@ -1,45 +1,26 @@
 import os
-from django.db import models
+
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser, Group, Permission
+from django.db import models
 from django.utils import timezone
 
 
-# ─────────────────────────────────────────────
-#  ROLE CONSTANTS
-# ─────────────────────────────────────────────
 class Role(models.TextChoices):
     SUPER_ADMIN = 'super_admin', 'Super Admin'
-    MANAGER     = 'manager',     'Manager'
-    EMPLOYEE    = 'employee',    'Employee'
+    MANAGER = 'manager', 'Manager'
+    EMPLOYEE = 'employee', 'Employee'
 
 
-# ─────────────────────────────────────────────
-#  CUSTOM USER  (replaces auth.User)
-# ─────────────────────────────────────────────
 class User(AbstractUser):
-    """
-    Extends Django's AbstractUser.
-    Role is stored on the model AND synced to Django Groups so that
-    Django's built-in permission system works out of the box.
-    """ 
-    role = models.CharField(
-        max_length=20,
-        choices=Role.choices,
-        default=Role.EMPLOYEE,
-    )
-    # Override M2M to avoid clashes with auth.User
-    groups = models.ManyToManyField(
-        Group,
-        related_name='hrm_users',
-        blank=True,
-    )
+    role = models.CharField(max_length=20, choices=Role.choices, default=Role.EMPLOYEE)
+    groups = models.ManyToManyField(Group, related_name='hrm_users', blank=True)
     user_permissions = models.ManyToManyField(
         Permission,
         related_name='hrm_user_permissions',
         blank=True,
     )
 
-    # ── helpers ──────────────────────────────
     @property
     def is_super_admin(self):
         return self.role == Role.SUPER_ADMIN
@@ -53,13 +34,12 @@ class User(AbstractUser):
         return self.role == Role.EMPLOYEE
 
     def sync_group(self):
-        """Keep Django Group membership aligned with self.role."""
-        for r in Role.values:
-            grp, _ = Group.objects.get_or_create(name=r)
-            if r == self.role:
-                self.groups.add(grp)
+        for role in Role.values:
+            group, _ = Group.objects.get_or_create(name=role)
+            if role == self.role:
+                self.groups.add(group)
             else:
-                self.groups.remove(grp)
+                self.groups.remove(group)
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -613,27 +593,90 @@ class PayrollAdjustment(models.Model):
 #  PETTY CASH
 # ─────────────────────────────────────────────
 class PettyCashLedger(models.Model):
-    TYPE_CHOICES = [('Credit', 'Credit'), ('Debit', 'Debit')]
-    CAT_CHOICES  = [
-        ('Supplies', 'Supplies'), ('Food', 'Food'), ('Logistics', 'Logistics'),
-        ('Funding', 'Funding'), ('Other', 'Other'),
+    CATEGORY_CHOICES = [
+        ('Supplies', 'Supplies'),
+        ('Food', 'Food'),
+        ('Logistics', 'Logistics'),
+        ('Funding', 'Funding'),
+        ('Other', 'Other'),
     ]
-    date        = models.DateField(default=timezone.now)
+    ENTRY_TYPE_CHOICES = [
+        ('Credit', 'Credit'),
+        ('Debit', 'Debit'),
+    ]
+
+    date = models.DateField(default=timezone.now)
     description = models.CharField(max_length=200)
-    category    = models.CharField(max_length=20, choices=CAT_CHOICES, default='Other')
-    entry_type  = models.CharField(max_length=6, choices=TYPE_CHOICES)
-    amount      = models.DecimalField(max_digits=10, decimal_places=2)
-    balance     = models.DecimalField(max_digits=10, decimal_places=2)
-    created_by  = models.ForeignKey(User, on_delete=models.CASCADE)
-    note        = models.TextField(blank=True)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='Other')
+    entry_type = models.CharField(max_length=6, choices=ENTRY_TYPE_CHOICES)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    balance = models.DecimalField(max_digits=10, decimal_places=2)
+    note = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
 
     class Meta:
         ordering = ['-date', '-id']
 
     def __str__(self):
-        return f"{self.date} {self.entry_type} ৳{self.amount}"
+        return f"{self.date} - {self.description}"
 
 
+class ExpenseCategory(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    color = models.CharField(max_length=20, default='#3b82f6')  # hex
+    monthly_budget = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = "Expense Categories"
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def total_spent(self):
+        from django.db.models import Sum
+        total = PettyCashLedger.objects.filter(
+            category__iexact=self.name,
+            entry_type='Debit'
+        ).aggregate(s=Sum('amount'))['s']
+        return total or 0
+
+
+class FixedCost(models.Model):
+    STATUS_CHOICES = [
+        ('Active', 'Active'),
+        ('Inactive', 'Inactive'),
+    ]
+
+    item = models.CharField(max_length=150)                    # e.g. "Office Rent"
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    frequency = models.CharField(max_length=50, default='Monthly')
+    due_day = models.CharField(max_length=30, blank=True)      # e.g. "1st", "5th"
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Active')
+    description = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,          # ← correct way
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='fixed_costs'
+    )
+
+    class Meta:
+        ordering = ['item']
+        verbose_name = 'Fixed Cost'
+        verbose_name_plural = 'Fixed Costs'
+
+    def __str__(self):
+        return self.item
 # ─────────────────────────────────────────────
 #  ASSET MANAGEMENT
 # ─────────────────────────────────────────────
