@@ -55,6 +55,13 @@
   .pc-secondary-btn:hover,.pc-cancel-btn:hover{background:#f9fafb;border-color:#d1d5db}
   .cash-action-btn{width:26px;height:26px;padding:0;line-height:1;flex:0 0 26px}
   .cash-action-btn svg{width:13px;height:13px}
+  .daily-shell{background:#fff;border:1px solid var(--line,#e5e7eb);border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(15,23,42,.04)}
+  .daily-toolbar{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:18px 20px;border-bottom:1px solid var(--line,#e5e7eb);flex-wrap:wrap}
+  .daily-filters{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .daily-filters select{height:34px;padding:0 10px;border:1px solid var(--line,#e5e7eb);border-radius:7px;background:#fff;color:#111827;font-size:13px}
+  .daily-total{display:flex;justify-content:flex-end;align-items:center;gap:16px;padding:15px 20px;border-top:1px solid var(--line,#e5e7eb);font-weight:700}
+  .daily-total strong{color:#f2634d;font-size:17px}
+  .daily-export{display:flex;gap:7px}
 
   /* ===== Analytics – smaller like screenshot ===== */
   .analytics-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:18px}
@@ -114,13 +121,17 @@
 </div>
 
 <div class="pc-tabs" id="pc-tabs">
-  <button class="pc-tab active" data-tab="cashbook">
+  <button class="pc-tab{% if request.GET.view != 'daily' %} active{% endif %}" data-tab="cashbook">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M6 3h9l3 3v15H6z"/><path stroke-linecap="round" d="M9 11h6M9 15h6"/></svg>
     Cash Book
   </button>
   <button class="pc-tab" data-tab="categories">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg>
     Categories
+  </button>
+  <button class="pc-tab{% if request.GET.view == 'daily' %} active{% endif %}" data-tab="daily">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M6 3h12v18H6zM9 7h6M9 11h6M9 15h4"/></svg>
+    Daily Costs
   </button>
   <button class="pc-tab" data-tab="fixed">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18M17 7.5c0-1.7-1.9-3-4.5-3S8 5.8 8 7.5s1.5 2.5 4.5 3 4.5 1.3 4.5 3-1.9 3-4.5 3-4.5-1.3-4.5-3"/></svg>
@@ -132,10 +143,96 @@
   </button>
 </div>
 
+<!-- ==================== DAILY COSTS ==================== -->
+<div class="pc-panel{% if request.GET.view == 'daily' %} active{% endif %}" id="panel-daily">
+  <div class="daily-shell">
+    <div class="daily-toolbar">
+      <strong>Daily Costs</strong>
+      <div class="daily-filters">
+        <form method="get" action="{% url 'petty_cash' %}" class="daily-filters">
+          <input type="hidden" name="view" value="daily">
+          <select name="daily_period" aria-label="Period" onchange="this.form.submit()">
+            <option value="all"{% if daily_period == 'all' %} selected{% endif %}>All</option>
+            <option value="1"{% if daily_period == '1' %} selected{% endif %}>Jan</option>
+            <option value="2"{% if daily_period == '2' %} selected{% endif %}>Feb</option>
+            <option value="3"{% if daily_period == '3' %} selected{% endif %}>Mar</option>
+            <option value="4"{% if daily_period == '4' %} selected{% endif %}>Apr</option>
+            <option value="5"{% if daily_period == '5' %} selected{% endif %}>May</option>
+            <option value="6"{% if daily_period == '6' %} selected{% endif %}>Jun</option>
+            <option value="7"{% if daily_period == '7' %} selected{% endif %}>Jul</option>
+            <option value="8"{% if daily_period == '8' %} selected{% endif %}>Aug</option>
+            <option value="9"{% if daily_period == '9' %} selected{% endif %}>Sep</option>
+            <option value="10"{% if daily_period == '10' %} selected{% endif %}>Oct</option>
+            <option value="11"{% if daily_period == '11' %} selected{% endif %}>Nov</option>
+            <option value="12"{% if daily_period == '12' %} selected{% endif %}>Dec</option>
+          </select>
+          <select name="daily_type" aria-label="Transaction type" onchange="this.form.submit()">
+            <option value="All"{% if daily_type == 'All' %} selected{% endif %}>All</option>
+            <option value="Debit"{% if daily_type == 'Debit' %} selected{% endif %}>Debit</option>
+            <option value="Credit"{% if daily_type == 'Credit' %} selected{% endif %}>Credit</option>
+          </select>
+        </form>
+        <div class="daily-export">
+          <a class="btn pc-secondary-btn" href="{% url 'petty_cash_export' %}?format=pdf&daily_period={{ daily_period }}&daily_type={{ daily_type }}">PDF</a>
+          <a class="btn pc-secondary-btn" href="{% url 'petty_cash_export' %}?format=xlsx&daily_period={{ daily_period }}&daily_type={{ daily_type }}">XLSX</a>
+        </div>
+        <a class="btn" style="background:#FF6B00;color:#fff;border-radius:8px;padding:8px 14px;font-size:13px" href="{% url 'petty_cash_add' %}">+ Add Transaction</a>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="ledger-table">
+        <thead><tr><th>DATE</th><th>DESCRIPTION</th><th>CATEGORY</th><th>TYPE</th><th>AMOUNT</th><th>BALANCE</th><th>ACTIONS</th></tr></thead>
+        <tbody>
+          {% for entry in daily_entries %}
+          <tr data-id="{{ entry.id }}" data-item="{{ entry.description|escapejs }}" data-category="{{ entry.category|escapejs }}" data-type="{{ entry.entry_type }}" data-amount="{{ entry.amount }}" data-balance="{{ entry.balance }}" data-date="{{ entry.date|date:'d M Y' }}">
+            <td>{{ entry.date|date:"Y-m-d" }}</td><td><b>{{ entry.description }}</b></td><td><span class="tag">{{ entry.category }}</span></td>
+            <td><span class="tag {% if entry.entry_type == 'Credit' %}tag-credit{% else %}tag-debit{% endif %}">{{ entry.entry_type }}</span></td>
+            <td style="font-weight:600">৳{{ entry.amount }}</td><td>৳{{ entry.balance }}</td>
+            <td><div style="display:flex;gap:5px"><button type="button" class="icon-btn cash-action-btn" title="View" onclick="viewCashEntry(this)"><svg viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg></button><a href="{% url 'petty_cash_edit' entry.id %}" class="icon-btn cash-action-btn" title="Edit"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg></a><button type="button" class="icon-btn danger cash-action-btn" title="Delete" onclick="deleteByUrl('{% url 'petty_cash_delete' entry.id %}', '{{ entry.description|escapejs }}')"><svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="m6 7 1 13h10l1-13M9 7V4h6v3"/></svg></button></div></td>
+          </tr>
+          {% empty %}<tr><td colspan="7" style="text-align:center;padding:48px;color:var(--muted)">No {{ daily_type|lower }} transactions for this period.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="daily-total"><span>Total {{ daily_type }}</span><strong>৳{{ daily_total|floatformat:2 }}</strong></div>
+  </div>
+</div>
+
 <!-- ==================== CASH BOOK ==================== -->
-<div class="pc-panel active" id="panel-cashbook">
+<div class="pc-panel{% if request.GET.view != 'daily' %} active{% endif %}" id="panel-cashbook">
   <div class="card">
-    <div style="padding:18px 20px;border-bottom:1px solid var(--line)"><strong>Cash Ledger</strong></div>
+    <div class="daily-toolbar">
+      <strong>Cash Ledger</strong>
+      <div class="daily-filters">
+        <form method="get" action="{% url 'petty_cash' %}" class="daily-filters">
+          <input type="hidden" name="view" value="cashbook">
+          <select name="cash_period" aria-label="Cash Book period" onchange="this.form.submit()">
+            <option value="all"{% if cash_period == 'all' %} selected{% endif %}>All</option>
+            <option value="1"{% if cash_period == '1' %} selected{% endif %}>Jan</option>
+            <option value="2"{% if cash_period == '2' %} selected{% endif %}>Feb</option>
+            <option value="3"{% if cash_period == '3' %} selected{% endif %}>Mar</option>
+            <option value="4"{% if cash_period == '4' %} selected{% endif %}>Apr</option>
+            <option value="5"{% if cash_period == '5' %} selected{% endif %}>May</option>
+            <option value="6"{% if cash_period == '6' %} selected{% endif %}>Jun</option>
+            <option value="7"{% if cash_period == '7' %} selected{% endif %}>Jul</option>
+            <option value="8"{% if cash_period == '8' %} selected{% endif %}>Aug</option>
+            <option value="9"{% if cash_period == '9' %} selected{% endif %}>Sep</option>
+            <option value="10"{% if cash_period == '10' %} selected{% endif %}>Oct</option>
+            <option value="11"{% if cash_period == '11' %} selected{% endif %}>Nov</option>
+            <option value="12"{% if cash_period == '12' %} selected{% endif %}>Dec</option>
+          </select>
+          <select name="cash_type" aria-label="Cash Book transaction type" onchange="this.form.submit()">
+            <option value="All"{% if cash_type == 'All' %} selected{% endif %}>All</option>
+            <option value="Debit"{% if cash_type == 'Debit' %} selected{% endif %}>Debit</option>
+            <option value="Credit"{% if cash_type == 'Credit' %} selected{% endif %}>Credit</option>
+          </select>
+        </form>
+        <div class="daily-export">
+          <a class="btn pc-secondary-btn" href="{% url 'petty_cash_export' %}?format=pdf&cash_period={{ cash_period }}&cash_type={{ cash_type }}">PDF</a>
+          <a class="btn pc-secondary-btn" href="{% url 'petty_cash_export' %}?format=xlsx&cash_period={{ cash_period }}&cash_type={{ cash_type }}">XLSX</a>
+        </div>
+      </div>
+    </div>
     <div style="overflow-x:auto">
       <table class="ledger-table">
         <thead>
@@ -144,7 +241,7 @@
           </tr>
         </thead>
         <tbody>
-          {% for entry in entries %}
+          {% for entry in cashbook_entries %}
           <tr data-id="{{ entry.id }}"
               data-item="{{ entry.description|escapejs }}"
               data-category="{{ entry.category|escapejs }}"
@@ -185,9 +282,16 @@
             </td>
           </tr>
           {% empty %}
-          <tr><td colspan="7" style="text-align:center;padding:48px;color:var(--muted)">No transactions yet.</td></tr>
+          <tr><td colspan="7" style="text-align:center;padding:48px;color:var(--muted)">No transactions for this filter.</td></tr>
           {% endfor %}
         </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4"><strong>Total {{ cash_type }}</strong></td>
+            <td style="font-weight:700;color:#f2634d">৳{{ cashbook_total|floatformat:2 }}</td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
       </table>
     </div>
   </div>
@@ -291,6 +395,13 @@
           <tr><td colspan="6" style="text-align:center;padding:48px;color:var(--muted)">No fixed costs yet.</td></tr>
           {% endfor %}
         </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2"><strong>Total</strong></td>
+            <td style="font-weight:700;color:#f2634d">৳{{ fixed_cost_total|floatformat:2 }} / month</td>
+            <td colspan="3"></td>
+          </tr>
+        </tfoot>
       </table>
     </div>
   </div>
@@ -304,7 +415,7 @@
       <div class="bar-chart">
         {% for m in monthly_data %}
         <div class="bar-item" title="৳{{ m.total|floatformat:2 }}">
-          <div class="bar" style="height:{% widthratio m.total monthly_chart_max 100 %}%"></div>
+          <div class="bar" style="height:{{ m.bar_height_px }}px !important"></div>
           <div class="bar-label">{{ m.month|date:"M" }}</div>
         </div>
         {% empty %}
@@ -491,7 +602,7 @@
       tab.classList.add('active');
       document.querySelectorAll('.pc-panel').forEach(p => p.classList.remove('active'));
       document.getElementById('panel-' + t).classList.add('active');
-      const labels = {cashbook:'Cashbook', categories:'Categories', fixed:'Fixed Costs', analytics:'Analytics'};
+      const labels = {cashbook:'Cashbook', categories:'Categories', daily:'Daily Costs', fixed:'Fixed Costs', analytics:'Analytics'};
       document.getElementById('pc-breadcrumb').textContent = `Home · Finance · Petty Cash · ${labels[t]}`;
     });
   });

@@ -5205,6 +5205,18 @@ def petty_cash_export(request):
         return redirect("petty_cash")
 
     entries = PettyCashLedger.objects.select_related('created_by').order_by('-date', '-id')
+    daily_type = request.GET.get('daily_type', '').strip()
+    daily_period = request.GET.get('daily_period', 'all').strip()
+    cash_type = request.GET.get('cash_type', '').strip()
+    cash_period = request.GET.get('cash_period', '').strip()
+    if cash_type:
+        daily_type = cash_type
+    if cash_period:
+        daily_period = cash_period
+    if daily_type in {'Debit', 'Credit'}:
+        entries = entries.filter(entry_type=daily_type)
+    if daily_period.isdigit() and 1 <= int(daily_period) <= 12:
+        entries = entries.filter(date__month=int(daily_period))
     sections = [
         (
             'Petty Cash Ledger',
@@ -5238,14 +5250,17 @@ def petty_cash(request):
     entries = PettyCashLedger.objects.select_related('created_by').order_by('-date', '-id')
     categories = ExpenseCategory.objects.all()
     fixed_costs = FixedCost.objects.all()
+    fixed_cost_total = fixed_costs.aggregate(s=Sum('amount'))['s'] or 0
 
     total_credit = entries.filter(entry_type='Credit').aggregate(s=Sum('amount'))['s'] or 0
     total_debit  = entries.filter(entry_type='Debit').aggregate(s=Sum('amount'))['s'] or 0
     balance = total_credit - total_debit
     active_fixed_total = fixed_costs.filter(status='Active').aggregate(s=Sum('amount'))['s'] or 0
 
-    # Analytics data
+    # ===== Analytics data =====
     from django.db.models.functions import TruncMonth
+
+    # Spend charts use debits; fall back to all activity only when no debits exist.
     debit_entries = entries.filter(entry_type__iexact='Debit')
     analytics_entries = debit_entries if debit_entries.exists() else entries
     analytics_label = 'Spend' if debit_entries.exists() else 'Cash Activity'
@@ -5257,29 +5272,60 @@ def petty_cash(request):
         .annotate(total=Sum('amount'))
         .order_by('month')
     )
+
     cat_spend = (
         analytics_entries
         .values('category')
         .annotate(total=Sum('amount'))
         .order_by('-total')
     )
+
     total_spend = sum(c['total'] for c in cat_spend) or 1
     monthly_data = list(monthly)
     monthly_chart_max = max((row['total'] for row in monthly_data), default=1)
+    for row in monthly_data:
+        row['bar_height'] = max(
+            8,
+            round(float(row['total']) / float(monthly_chart_max) * 100, 2),
+        )
+        row['bar_height_px'] = max(
+            12,
+            round(float(row['total']) / float(monthly_chart_max) * 190),
+        )
 
-    # Show the real ledger total for each saved category.
+    # Real spent amount per category (only Debit)
     category_totals = {}
     for cat in categories:
         total = entries.filter(
-            category__iexact=cat.name
+            category__iexact=cat.name,
+            entry_type__iexact='Debit'
         ).aggregate(s=Sum('amount'))['s'] or 0
         category_totals[cat.name.lower()] = total
+
+    daily_period = request.GET.get('daily_period', 'all')
+    daily_type = request.GET.get('daily_type', 'All')
+    daily_entries = entries
+    if daily_type in {'Debit', 'Credit'}:
+        daily_entries = daily_entries.filter(entry_type=daily_type)
+    if daily_period.isdigit() and 1 <= int(daily_period) <= 12:
+        daily_entries = daily_entries.filter(date__month=int(daily_period))
+    daily_total = daily_entries.aggregate(s=Sum('amount'))['s'] or 0
+
+    cash_period = request.GET.get('cash_period', 'all')
+    cash_type = request.GET.get('cash_type', 'All')
+    cashbook_entries = entries
+    if cash_type in {'Debit', 'Credit'}:
+        cashbook_entries = cashbook_entries.filter(entry_type=cash_type)
+    if cash_period.isdigit() and 1 <= int(cash_period) <= 12:
+        cashbook_entries = cashbook_entries.filter(date__month=int(cash_period))
+    cashbook_total = cashbook_entries.aggregate(s=Sum('amount'))['s'] or 0
 
     return render(request, 'hrm/petty_cash.html', _ctx(
         request,
         entries=entries,
         categories=categories,
         fixed_costs=fixed_costs,
+        fixed_cost_total=fixed_cost_total,
         total_credit=total_credit,
         total_debit=total_debit,
         balance=balance,
@@ -5289,9 +5335,16 @@ def petty_cash(request):
         cat_spend=list(cat_spend),
         total_spend=total_spend,
         analytics_label=analytics_label,
-        category_totals=category_totals,   # ← this is important
+        category_totals=category_totals,
+        daily_entries=daily_entries,
+        daily_period=daily_period,
+        daily_type=daily_type,
+        daily_total=daily_total,
+        cashbook_entries=cashbook_entries,
+        cash_period=cash_period,
+        cash_type=cash_type,
+        cashbook_total=cashbook_total,
     ))
-
 # ─── CASH BOOK CRUD (already existed – keep / slight polish) ─────────────────
 @admin_required
 def petty_cash_add(request):
