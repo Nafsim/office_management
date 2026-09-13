@@ -1,100 +1,442 @@
-{% extends 'hrm/base.html' %}
-{% block title %}Roles & Permissions — Luminous HRM{% endblock %}
+{% extends "hrm/base.html" %}
+
 {% block content %}
-<div class="page-head">
-  <div><h1>Roles & Permissions</h1><div class="crumb">Manage user roles and access permissions</div></div>
+
+<style>
+    .permissions-page {
+        width: 100%;
+    }
+
+    /* PAGE HEADER */
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 28px;
+        flex-wrap: wrap;
+        gap: 14px;
+    }
+
+    .page-title {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .breadcrumb {
+        font-size: 13px;
+        color: #8a94a6;
+        margin-top: 6px;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .back-btn, .settings-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 15px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: #fff;
+        color: #4b5563;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .back-btn:hover, .settings-btn:hover {
+        background: #f9fafb;
+        color: #374151;
+    }
+
+    /* ROLE CARDS ROW */
+    .role-cards-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin-bottom: 32px;
+    }
+
+    .role-card {
+        background: #fff;
+        border: 1px solid #edf0f4;
+        border-radius: 16px;
+        padding: 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: 0 3px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .role-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: #fff7ed;
+        color: #f97316;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .role-icon svg {
+        width: 28px;
+        height: 28px;
+    }
+
+    .role-info {
+        flex: 1;
+    }
+
+    .role-name {
+        margin: 0 0 4px;
+        font-size: 16px;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .role-desc {
+        margin: 0 0 6px;
+        font-size: 13px;
+        color: #64748b;
+    }
+
+    .role-users {
+        font-size: 12px;
+        color: #94a3b8;
+    }
+
+    /* TABLE CARD */
+    .table-card {
+        background: #fff;
+        border: 1px solid #edf0f4;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 3px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .card-header {
+        padding: 22px 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #edf0f4;
+    }
+
+    .card-title {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .save-btn {
+        background: #f97316;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .save-btn:hover {
+        background: #ea580c;
+    }
+
+    /* PERMISSION MATRIX TABLE */
+    .permissions-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .permissions-table th {
+        background: #fafbfc;
+        color: #7b8494;
+        font-size: 12px;
+        font-weight: 700;
+        text-align: left;
+        padding: 16px 24px;
+        border-bottom: 1px solid #edf0f4;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+    }
+
+    .permissions-table th:not(:first-child) {
+        text-align: center;
+    }
+
+    .permissions-table td {
+        padding: 16px 24px;
+        border-bottom: 1px solid #f1f3f5;
+        font-size: 14px;
+        color: #4b5563;
+        vertical-align: middle;
+    }
+
+    .permissions-table td:not(:first-child) {
+        text-align: center;
+    }
+
+    .permissions-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .permissions-table tbody tr:hover {
+        background: #fcfcfd;
+    }
+
+    .permission-name {
+        font-weight: 500;
+        color: #1e293b;
+    }
+
+    /* CHECKBOX STYLING */
+    .checkbox-cell input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        accent-color: #f97316;
+        cursor: pointer;
+    }
+
+    /* TABLE FOOTER */
+    .table-footer {
+        padding: 16px 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-top: 1px solid #edf0f4;
+        background: #fafbfc;
+    }
+
+    .pagination-info {
+        font-size: 13px;
+        color: #64748b;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 6px;
+    }
+
+    .page-link {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: #fff;
+        color: #4b5563;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+    }
+
+    .page-link:hover {
+        background: #f9fafb;
+    }
+
+    .page-link.active {
+        background: #f97316;
+        border-color: #f97316;
+        color: #fff;
+    }
+
+    .tip-text {
+        margin-top: 16px;
+        font-size: 13px;
+        color: #64748b;
+        font-style: italic;
+    }
+
+    @media (max-width: 900px) {
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .role-cards-row {
+            grid-template-columns: 1fr;
+        }
+
+        .table-footer {
+            flex-direction: column;
+            gap: 12px;
+        }
+    }
+</style>
+
+
+<div class="permissions-page">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Roles & Permissions</h1>
+            <div class="breadcrumb">
+                Home · Configuration · Roles & Permissions
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <a href="{% url 'dashboard' %}" class="back-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5"></path>
+                    <path d="M12 19l-7-7 7-7"></path>
+                </svg>
+                Back
+            </a>
+            <a href="{% url 'config' %}" class="settings-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.09a2 2 0 01-1-1.74v-.47a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.39a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+                All Settings
+            </a>
+        </div>
+    </div>
+
+
+    <!-- ROLE CARDS ROW -->
+    <div class="role-cards-row">
+
+        <!-- SUPER ADMIN -->
+        <div class="role-card">
+            <div class="role-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z"/>
+                </svg>
+            </div>
+            <div class="role-info">
+                <h3 class="role-name">Super Admin</h3>
+                <p class="role-desc">Full system access</p>
+                <p class="role-users">{{ role_counts.super_admin|default:0 }} user{{ role_counts.super_admin|default:0|pluralize }}</p>
+            </div>
+        </div>
+
+
+        <!-- MANAGER -->
+        <div class="role-card">
+            <div class="role-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z"/>
+                </svg>
+            </div>
+            <div class="role-info">
+                <h3 class="role-name">Manager</h3>
+                <p class="role-desc">Team & approvals</p>
+                <p class="role-users">{{ role_counts.manager|default:0 }} user{{ role_counts.manager|default:0|pluralize }}</p>
+            </div>
+        </div>
+
+
+        <!-- EMPLOYEE -->
+        <div class="role-card">
+            <div class="role-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z"/>
+                </svg>
+            </div>
+            <div class="role-info">
+                <h3 class="role-name">Employee</h3>
+                <p class="role-desc">Self-service</p>
+                <p class="role-users">{{ role_counts.employee|default:0 }} user{{ role_counts.employee|default:0|pluralize }}</p>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- PERMISSION MATRIX TABLE -->
+    <div class="table-card">
+
+        <div class="card-header">
+            <h2 class="card-title">Permission Matrix</h2>
+            <button type="submit" class="save-btn" form="permissions-form">Save</button>
+        </div>
+
+        <form id="permissions-form" method="POST">
+            {% csrf_token %}
+
+            <table class="permissions-table">
+
+                <thead>
+                    <tr>
+                        <th>Permission / Capability</th>
+                        <th>Super Admin</th>
+                        <th>Manager</th>
+                        <th>Employee</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for perm in permissions %}
+
+                    <tr>
+                        <td>
+                            <span class="permission-name">
+                                {{ perm.name }}
+                            </span>
+                        </td>
+                        <td class="checkbox-cell">
+                            <input type="checkbox"
+                                   name="perm_{{ forloop.counter }}_admin"
+                                   {% if perm.super_admin %}checked{% endif %}>
+                        </td>
+                        <td class="checkbox-cell">
+                            <input type="checkbox"
+                                   name="perm_{{ forloop.counter }}_manager"
+                                   {% if perm.manager %}checked{% endif %}>
+                        </td>
+                        <td class="checkbox-cell">
+                            <input type="checkbox"
+                                   name="perm_{{ forloop.counter }}_employee"
+                                   {% if perm.employee %}checked{% endif %}>
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </form>
+
+        <div class="table-footer">
+            <div class="pagination-info">
+                Page 1 of 1 · {{ permissions|length }} records
+            </div>
+            <div class="pagination">
+                <a href="#" class="page-link disabled">‹ Prev</a>
+                <a href="#" class="page-link active">1</a>
+                <a href="#" class="page-link disabled">Next ›</a>
+            </div>
+        </div>
+
+    </div>
+
+    <p class="tip-text">
+        Tip: switch the role at the top of the sidebar to experience each access level live.
+    </p>
+
 </div>
 
-<div class="grid cols-3">
-  <div class="card pad">
-    <div style="text-align:center;margin-bottom:16px">
-      <div style="width:60px;height:60px;background:var(--brand-l);border-radius:50%;display:grid;place-items:center;margin:0 auto 12px">
-        <svg class="ico" style="width:30px;height:30px;color:var(--brand)" viewBox="0 0 24 24"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z"/></svg>
-      </div>
-      <h3>Super Admin</h3>
-      <p class="sub">Full system access</p>
-    </div>
-    <div class="section-title">Permissions</div>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <div class="flex"><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Manage all users</div>
-      <div class="flex"><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Configure system</div>
-      <div class="flex"><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Manage payroll</div>
-      <div class="flex"><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Full reports access</div>
-    </div>
-  </div>
-
-  <div class="card pad">
-    <div style="text-align:center;margin-bottom:16px">
-      <div style="width:60px;height:60px;background:#dbeafe;border-radius:50%;display:grid;place-items:center;margin:0 auto 12px">
-        <svg class="ico" style="width:30px;height:30px;color:var(--blue)" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      </div>
-      <h3>Manager</h3>
-      <p class="sub">Team management</p>
-    </div>
-    <div class="section-title">Permissions</div>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <div class="flex"><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> View team members</div>
-      <div class="flex"><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Approve leaves</div>
-      <div class="flex"><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Review attendance</div>
-      <div class="flex"><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Assign tasks</div>
-    </div>
-  </div>
-
-  <div class="card pad">
-    <div style="text-align:center;margin-bottom:16px">
-      <div style="width:60px;height:60px;background:#eef1f6;border-radius:50%;display:grid;place-items:center;margin:0 auto 12px">
-        <svg class="ico" style="width:30px;height:30px;color:var(--muted)" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      </div>
-      <h3>Employee</h3>
-      <p class="sub">Self-service access</p>
-    </div>
-    <div class="section-title">Permissions</div>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <div class="flex"><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> View own profile</div>
-      <div class="flex"><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Apply for leave</div>
-      <div class="flex"><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> View own attendance</div>
-      <div class="flex"><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> View assigned tasks</div>
-    </div>
-  </div>
-</div>
-
-{% if user.role == 'super_admin' %}
-<div class="card pad" style="margin-top:18px">
-  <div class="section-title">Custom Permission Rules</div>
-  <table>
-    <thead>
-      <tr>
-        <th>Rule Name</th>
-        <th>Event</th>
-        <th>Channels</th>
-        <th>Recipients</th>
-        <th>Status</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for rule in notification_rules %}
-      <tr>
-        <td><b>{{ rule.name }}</b></td>
-        <td>{{ rule.event }}</td>
-        <td>{{ rule.channels }}</td>
-        <td>{{ rule.recipients }}</td>
-        <td>
-          {% if rule.is_active %}
-          <span class="tag t-green">Active</span>
-          {% else %}
-          <span class="tag t-gray">Inactive</span>
-          {% endif %}
-        </td>
-        <td>
-          <a href="{% url 'notif_rule_toggle' rule.pk %}" class="btn ghost sm">Toggle</a>
-        </td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px">No custom rules configured.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% endif %}
 {% endblock %}

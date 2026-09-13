@@ -1,0 +1,519 @@
+{% extends "hrm/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<style>
+    .org-calendar-page {
+        padding: 28px;
+    }
+
+    .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+    }
+
+    .page-title {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .breadcrumb {
+        margin-top: 6px;
+        color: #8a94a6;
+        font-size: 13px;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .back-btn, .settings-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 15px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: #fff;
+        color: #4b5563;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .back-btn:hover, .settings-btn:hover {
+        background: #f9fafb;
+        color: #374151;
+    }
+
+    /* SUMMARY CARDS */
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+        margin-bottom: 28px;
+    }
+
+    .summary-card {
+        background: #fff;
+        border: 1px solid #edf0f4;
+        border-radius: 16px;
+        padding: 28px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        box-shadow: 0 3px 16px rgba(0, 0, 0, 0.08);
+        min-height: 100px;
+    }
+
+    .summary-icon {
+        width: 72px;
+        height: 72px;
+        min-width: 72px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* LIGHT RED */
+    .icon-red {
+        background: #fef2f2;
+        color: #dc2626;
+    }
+
+    /* LIGHT YELLOW */
+    .icon-yellow {
+        background: #fefce8;
+        color: #ca8a04;
+    }
+
+    /* LIGHT GREEN */
+    .icon-green {
+        background: #f0fdf4;
+        color: #16a34a;
+    }
+
+    .summary-content {
+        min-width: 0;
+    }
+
+    .summary-label {
+        color: #64748b;
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .summary-value {
+        color: #1e293b;
+        font-size: 36px;
+        font-weight: 800;
+        line-height: 1.1;
+    }
+
+    /* HOLIDAY SECTION */
+    .holiday-card {
+        background: #fff;
+        border: 1px solid #edf0f4;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 3px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .holiday-header {
+        padding: 22px 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #edf0f4;
+    }
+
+    .holiday-title {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .header-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .add-holiday-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #fff7ed;
+        color: #f97316;
+        border: 1px solid #fed7aa;
+        padding: 10px 16px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .add-holiday-btn:hover {
+        background: #ffedd5;
+        color: #ea580c;
+    }
+
+    /* TABLE */
+    .holiday-table-wrapper {
+        overflow-x: auto;
+    }
+
+    .holiday-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .holiday-table th {
+        padding: 18px 28px;
+        background: #fafbfc;
+        color: #7b8494;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+        border-bottom: 1px solid #edf0f4;
+        text-align: left;
+    }
+
+    .holiday-table td {
+        padding: 18px 28px;
+        color: #4b5563;
+        font-size: 14px;
+        border-bottom: 1px solid #f1f3f5;
+        vertical-align: middle;
+    }
+
+    .holiday-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .holiday-table tbody tr:hover {
+        background: #fcfcfd;
+    }
+
+    .holiday-date {
+        color: #374151;
+        font-weight: 700;
+    }
+
+    .holiday-name {
+        color: #374151;
+        font-weight: 600;
+    }
+
+    /* TYPE BADGES */
+    .type-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .type-public {
+        background: #fff1f2;
+        color: #ef4444;
+    }
+
+    .type-religious {
+        background: #fffbeb;
+        color: #d97706;
+    }
+
+    .type-optional {
+        background: #ecfdf5;
+        color: #16a34a;
+    }
+
+    /* DELETE */
+    .delete-btn {
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #fee2e2;
+        border-radius: 8px;
+        background: #fff5f5;
+        color: #ef4444;
+        text-decoration: none;
+    }
+
+    .delete-btn:hover {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+    .empty-row {
+        text-align: center !important;
+        padding: 35px 20px !important;
+        color: #9ca3af !important;
+    }
+
+    /* YEAR FILTER */
+    .year-filter {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .year-select {
+        height: 36px;
+        padding: 0 10px;
+        border: 1px solid #e5e7eb;
+        border-radius: 7px;
+        background: #fff;
+        color: #374151;
+        font-size: 13px;
+        outline: none;
+    }
+
+    .year-select:focus {
+        border-color: #f59e0b;
+    }
+
+    @media (max-width: 900px) {
+        .summary-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 14px;
+        }
+
+        .holiday-header {
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+    }
+</style>
+
+<div class="org-calendar-page">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Org Calendar</h1>
+            <div class="breadcrumb">
+                Home&nbsp; · &nbsp;Configuration&nbsp; · &nbsp;Org Calendar
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <a href="{% url 'dashboard' %}" class="back-btn">
+                <!-- Back SVG -->
+                <svg width="16" height="16" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5"></path>
+                    <path d="M12 19l-7-7 7-7"></path>
+                </svg>
+                Back
+            </a>
+            <a href="{% url 'config' %}" class="settings-btn">
+                <!-- Settings SVG -->
+                <svg width="16" height="16" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.09a2 2 0 01-1-1.74v-.47a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.39a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+                All Settings
+            </a>
+        </div>
+    </div>
+
+
+    <!-- SUMMARY CARDS -->
+    <div class="summary-grid">
+
+        <!-- PUBLIC HOLIDAYS -->
+        <div class="summary-card">
+            <div class="summary-icon icon-red">
+                <svg width="36" height="36"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="1.5"
+                     stroke-linecap="round"
+                     stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+            </div>
+            <div class="summary-content">
+                <div class="summary-label">Public Holidays</div>
+                <div class="summary-value">{{ public_count }}</div>
+            </div>
+        </div>
+
+
+        <!-- RELIGIOUS HOLIDAYS -->
+        <div class="summary-card">
+            <div class="summary-icon icon-yellow">
+                <svg width="36" height="36"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="1.5"
+                     stroke-linecap="round"
+                     stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M12 6v6l4 2"></path>
+                </svg>
+            </div>
+            <div class="summary-content">
+                <div class="summary-label">Religious Holidays</div>
+                <div class="summary-value">{{ religious_count }}</div>
+            </div>
+        </div>
+
+
+        <!-- WORKING DAYS -->
+        <div class="summary-card">
+            <div class="summary-icon icon-green">
+                <svg width="36" height="36"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="1.5"
+                     stroke-linecap="round"
+                     stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+            </div>
+            <div class="summary-content">
+                <div class="summary-label">Working Days {{ year }}</div>
+                <div class="summary-value">{{ working_days }}</div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- HOLIDAY CARD -->
+    <div class="holiday-card">
+
+        <div class="holiday-header">
+            <h2 class="holiday-title">
+                Holidays — {{ year }}
+            </h2>
+
+            <div class="header-right">
+                <!-- DYNAMIC YEAR -->
+                <form method="get" class="year-filter">
+                    <select name="year"
+                            class="year-select"
+                            onchange="this.form.submit()">
+                        {% for y in years %}
+                            <option value="{{ y }}"
+                                {% if y == year %}selected{% endif %}>
+                                {{ y }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </form>
+
+                <!-- ADD HOLIDAY -->
+                {% if can_create %}
+                    <a href="{% url 'holiday_create' %}" class="add-holiday-btn">
+                        <svg width="18" height="18"
+                             viewBox="0 0 24 24"
+                             fill="none"
+                             stroke="currentColor"
+                             stroke-width="2"
+                             stroke-linecap="round"
+                             stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add Holiday
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- TABLE -->
+        <div class="holiday-table-wrapper">
+            <table class="holiday-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Holiday</th>
+                        <th>Type</th>
+                        <th style="text-align:right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for holiday in holidays %}
+                    <tr>
+                        <td class="holiday-date">
+                            {{ holiday.date|date:"Y-m-d" }}
+                        </td>
+                        <td class="holiday-name">
+                            {{ holiday.name }}
+                        </td>
+                        <td>
+                            {% if holiday.htype == "Public" %}
+                                <span class="type-badge type-public">Public</span>
+                            {% elif holiday.htype == "Religious" %}
+                                <span class="type-badge type-religious">Religious</span>
+                            {% else %}
+                                <span class="type-badge type-optional">Optional</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align:right;">
+                            {% if can_delete %}
+                                <a href="{% url 'holiday_delete' holiday.pk %}"
+                                   class="delete-btn"
+                                   title="Delete Holiday"
+                                   onclick="return confirm('Delete this holiday?');">
+                                    <svg width="16" height="16" viewBox="0 0 24 24"
+                                         fill="none" stroke="currentColor" stroke-width="2"
+                                         stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6l-1 14H6L5 6"></path>
+                                        <path d="M10 11v6"></path>
+                                        <path d="M14 11v6"></path>
+                                        <path d="M9 6V4h6v2"></path>
+                                    </svg>
+                                </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="empty-row">
+                            No holidays found for {{ year }}.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

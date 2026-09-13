@@ -26,6 +26,10 @@ urlpatterns = [
 
 
 
+    path('accounts/login/', views.login_view, name='accounts_login'),
+
+
+
     path('logout/',     views.logout_view, name='logout'),
 
 
@@ -582,9 +586,35 @@ path('config/notif/<int:pk>/toggle/',        views.notif_rule_toggle,    name='n
 
 # Bank
 path('config/banks/',                        views.bank_list,            name='bank_list'),
-
+path('config/banks/create/', views.bank_create, name='bank_create'),
+path('config/banks/<int:pk>/edit/', views.bank_edit, name='bank_edit'),
 # Permissions
 path('permissions/',                         views.permissions_view,     name='permissions_view'),
+
+path(
+    "upload-center/",
+    views.upload_center,
+    name="upload_center"
+),
+
+path(
+    "upload-center/<int:pk>/view/",
+    views.upload_file_view,
+    name="upload_file_view"
+),
+
+path(
+    "upload-center/<int:pk>/edit/",
+    views.upload_file_edit,
+    name="upload_file_edit"
+),
+
+path(
+    "upload-center/<int:pk>/delete/",
+    views.upload_file_delete,
+    name="upload_file_delete"
+),
+
      
 path('calendar/', views.calendar_view, name='calendar_view'),
 

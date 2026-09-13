@@ -1021,3 +1021,49 @@ class SiteSettings(models.Model):
 
     def __str__(self):
         return self.company_name
+
+
+
+class BankAccount(models.Model):
+    bank_name = models.CharField(max_length=150)
+    branch_name = models.CharField(max_length=150)
+    account_number = models.CharField(max_length=100, unique=True)
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['bank_name']
+
+    def __str__(self):
+        return f"{self.bank_name} - {self.account_number}"    
+
+class UploadedFile(models.Model):
+    STATUS_CHOICES = [
+        ("processing", "Processing"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
+    ]
+
+    file = models.FileField(upload_to="uploads/")
+    original_name = models.CharField(max_length=255)
+    uploaded_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="uploaded_files"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="processing"
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.original_name
+    
+
+    

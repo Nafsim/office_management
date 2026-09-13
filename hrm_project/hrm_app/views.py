@@ -60,6 +60,7 @@ from .forms import (
     AssetForm, SiteSettingsForm, TaskForm, PettyCashForm, DocumentForm, SalaryStructureForm,
 
     DepartmentForm, DesignationForm, ShiftForm, HolidayForm, NotificationRuleForm,
+    EmailTemplateForm,
 
 )
 
@@ -69,6 +70,8 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import SiteSettings
 from .forms import SiteSettingsForm
 from django.core.paginator import Paginator
+from .models import BankAccount
+from .models import UploadedFile
 # ─────────────────────────────────────────────
 # PERMISSION HELPER
 # ─────────────────────────────────────────────
@@ -6217,13 +6220,20 @@ def org_calendar(request):
     # Approximate working days (you can improve this later)
     working_days = 365 - public_count - religious_count - 104  # rough weekend calculation
 
+    # Generate years for dropdown (current year ± 5)
+    current_year = timezone.now().year
+    years = list(range(current_year - 5, current_year + 6))
+
     return render(request, 'hrm/org_calendar.html', _ctx(
         request,
         holidays=holidays,
         year=year,
+        years=years,
         public_count=public_count,
         religious_count=religious_count,
-        working_days=working_days
+        working_days=working_days,
+        can_create=has_permission(request.user, "configuration", "create"),
+        can_delete=has_permission(request.user, "configuration", "delete")
     ))
 
 
@@ -6273,17 +6283,127 @@ def email_template_list(request):
     ))
 
 
+@login_required
+def email_template_create(request):
+    if not has_permission(request.user, "configuration", "create"):
+        messages.error(request, "Permission denied.")
+        return redirect("email_template_list")
+
+    if request.method == "POST":
+        form = EmailTemplateForm(request.POST)
+        if form.is_valid():
+            template = form.save()
+            messages.success(request, f'Email template "{template.name}" created successfully.')
+            return redirect("email_template_list")
+    else:
+        form = EmailTemplateForm()
+
+    return render(request, 'hrm/email_template_form.html', _ctx(
+        request, form=form, title="Create Email Template"
+    ))
+
+
+@login_required
+def email_template_detail(request, pk):
+    if not has_permission(request.user, "configuration", "view"):
+        messages.error(request, "Permission denied.")
+        return redirect("email_template_list")
+
+    template = get_object_or_404(EmailTemplate, pk=pk)
+    try:
+        from django.template.loader import get_template
+        get_template('hrm/email_template_detail.html')
+        return render(request, 'hrm/email_template_detail.html', _ctx(
+            request, template=template
+        ))
+    except Exception:
+        form = EmailTemplateForm(instance=template)
+        return render(request, 'hrm/email_template_form.html', _ctx(
+            request, form=form, title="View Email Template", template=template
+        ))
+
+
+@login_required
+def email_template_edit(request, pk):
+    if not has_permission(request.user, "configuration", "edit"):
+        messages.error(request, "Permission denied.")
+        return redirect("email_template_list")
+
+    template = get_object_or_404(EmailTemplate, pk=pk)
+
+    if request.method == "POST":
+        form = EmailTemplateForm(request.POST, instance=template)
+        if form.is_valid():
+            template = form.save()
+            messages.success(request, f'Email template "{template.name}" updated successfully.')
+            return redirect("email_template_list")
+    else:
+        form = EmailTemplateForm(instance=template)
+
+    return render(request, 'hrm/email_template_form.html', _ctx(
+        request, form=form, title="Edit Email Template", object=template
+    ))
+
+
+@login_required
+def email_template_delete(request, pk):
+    if not has_permission(request.user, "configuration", "delete"):
+        messages.error(request, "Permission denied.")
+        return redirect("email_template_list")
+
+    template = get_object_or_404(EmailTemplate, pk=pk)
+    name = template.name
+    template.delete()
+    messages.success(request, f'Email template "{name}" deleted successfully.')
+    return redirect("email_template_list")
+
+
 # ───────────────────────────── NOTIFICATION RULES ─────────────────────────────
 @login_required
 def notification_rules(request):
+
     if not has_permission(request.user, "configuration", "view"):
         messages.error(request, "Permission denied.")
         return redirect("dashboard")
 
     rules = NotificationRule.objects.all().order_by('event')
-    return render(request, 'hrm/notification_rules.html', _ctx(
-        request, rules=rules
-    ))
+
+    return render(
+        request,
+        'hrm/notification_rules.html',
+        _ctx(
+            request,
+            rules=rules
+        )
+    )
+
+
+@login_required
+def notification_rule_create(request):
+    if not has_permission(request.user, "configuration", "edit"):
+        messages.error(request, "Permission denied.")
+        return redirect("notification_rules")
+
+    if request.method == "POST":
+        form = NotificationRuleForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(
+                request,
+                "Notification rule added successfully."
+            )
+            return redirect("notification_rules")
+    else:
+        form = NotificationRuleForm()
+
+    return render(
+        request,
+        'hrm/notification_rule_create.html',
+        _ctx(
+            request,
+            form=form
+        )
+    )
 
 
 @login_required
@@ -6307,16 +6427,134 @@ def bank_list(request):
         messages.error(request, "Permission denied.")
         return redirect("dashboard")
 
-    banks = BankAccount.objects.select_related('employee__user').order_by('bank_name')
-    return render(request, 'hrm/bank_list.html', _ctx(request, banks=banks))
+    banks = BankAccount.objects.all().order_by('bank_name')
 
+    return render(
+        request,
+        'hrm/bank_list.html',
+        _ctx(request, banks=banks)
+    )
+@login_required
+def bank_create(request):
+    if not has_permission(request.user, "configuration", "view"):
+        messages.error(request, "Permission denied.")
+        return redirect("dashboard")
 
-# ───────────────────────────── ROLES & PERMISSIONS (already exists) ─────────────────────────────
-@admin_required
+    if request.method == "POST":
+        bank_name = request.POST.get("bank_name", "").strip()
+        branch_name = request.POST.get("branch_name", "").strip()
+        account_number = request.POST.get("account_number", "").strip()
+        is_active = request.POST.get("is_active") == "on"
+
+        if not bank_name or not branch_name or not account_number:
+            messages.error(request, "Please fill in all required fields.")
+        elif BankAccount.objects.filter(
+            account_number=account_number
+        ).exists():
+            messages.error(request, "This account number already exists.")
+        else:
+            BankAccount.objects.create(
+                bank_name=bank_name,
+                branch_name=branch_name,
+                account_number=account_number,
+                is_active=is_active,
+            )
+
+            messages.success(
+                request,
+                "Bank account added successfully."
+            )
+
+            return redirect("bank_list")
+
+    return render(
+        request,
+        "hrm/bank_form.html",
+        _ctx(
+            request,
+            page_title="Add Bank Account",
+            form_action="Add Account",
+        )
+    )
+@login_required
+def bank_edit(request, pk):
+    if not has_permission(request.user, "configuration", "view"):
+        messages.error(request, "Permission denied.")
+        return redirect("dashboard")
+
+    bank = get_object_or_404(BankAccount, pk=pk)
+
+    if request.method == "POST":
+        bank_name = request.POST.get("bank_name", "").strip()
+        branch_name = request.POST.get("branch_name", "").strip()
+        account_number = request.POST.get("account_number", "").strip()
+        is_active = request.POST.get("is_active") == "on"
+
+        if not bank_name or not branch_name or not account_number:
+            messages.error(request, "Please fill in all required fields.")
+        elif BankAccount.objects.filter(
+            account_number=account_number
+        ).exclude(pk=bank.pk).exists():
+            messages.error(request, "This account number already exists.")
+        else:
+            bank.bank_name = bank_name
+            bank.branch_name = branch_name
+            bank.account_number = account_number
+            bank.is_active = is_active
+            bank.save()
+
+            messages.success(
+                request,
+                "Bank account updated successfully."
+            )
+
+            return redirect("bank_list")
+
+    return render(
+        request,
+        "hrm/bank_form.html",
+        _ctx(
+            request,
+            bank=bank,
+            page_title="Edit Bank Account",
+            form_action="Update Account",
+        )
+    )
+# ───────────────────────────── ROLES & PERMISSIONS ─────────────────────────────
+@login_required
 def permissions_view(request):
-    modules = UserPermission.MODULE_CHOICES
-    permissions = [{"module": k, "name": v} for k, v in modules]
-    return render(request, "hrm/permissions.html", _ctx(request, permissions=permissions))
+    if not has_permission(request.user, "configuration", "view"):
+        messages.error(request, "Permission denied.")
+        return redirect("dashboard")
+
+    # Get role counts
+    from django.db.models import Count
+    role_counts = User.objects.values('role').annotate(count=Count('id')).order_by('role')
+    role_dict = {r['role']: r['count'] for r in role_counts}
+
+    # Define permissions matrix
+    permissions = [
+        {'name': 'View Dashboard', 'super_admin': True, 'manager': True, 'employee': True},
+        {'name': 'Manage Employees', 'super_admin': True, 'manager': False, 'employee': False},
+        {'name': 'Onboarding & NDA', 'super_admin': True, 'manager': False, 'employee': False},
+        {'name': 'Approve Leave', 'super_admin': True, 'manager': True, 'employee': False},
+        {'name': 'Apply for Leave', 'super_admin': True, 'manager': True, 'employee': True},
+        {'name': 'Run Payroll', 'super_admin': True, 'manager': False, 'employee': False},
+        {'name': 'View Attendance', 'super_admin': True, 'manager': True, 'employee': True},
+        {'name': 'Manage Assets', 'super_admin': True, 'manager': True, 'employee': False},
+        {'name': 'View Tasks', 'super_admin': True, 'manager': True, 'employee': True},
+        {'name': 'Manage Documents', 'super_admin': True, 'manager': True, 'employee': False},
+        {'name': 'View Reports', 'super_admin': True, 'manager': True, 'employee': False},
+        {'name': 'Site Settings', 'super_admin': True, 'manager': False, 'employee': False},
+        {'name': 'Manage Petty Cash', 'super_admin': True, 'manager': True, 'employee': False},
+        {'name': 'Calendar View', 'super_admin': True, 'manager': True, 'employee': True},
+    ]
+
+    return render(request, "hrm/permissions.html", _ctx(
+        request,
+        role_counts=role_dict,
+        permissions=permissions
+    ))
 
 
 from datetime import date
@@ -6371,4 +6609,118 @@ def calendar_view(request):
 def contact_support(request):
     return render(request, 'hrm/contact_support.html', _ctx(request))
 
+@login_required
+def upload_center(request):
+    if request.method == "POST":
 
+        files = request.FILES.getlist("file")
+
+        for uploaded_file in files:
+
+            # 25 MB limit
+            if uploaded_file.size > 25 * 1024 * 1024:
+                messages.error(
+                    request,
+                    f"{uploaded_file.name} is larger than 25 MB."
+                )
+                continue
+
+            UploadedFile.objects.create(
+                file=uploaded_file,
+                original_name=uploaded_file.name,
+                uploaded_by=request.user,
+                status="processing",
+            )
+
+        if files:
+            messages.success(request, "File uploaded successfully.")
+
+        return redirect("upload_center")
+
+    uploads = UploadedFile.objects.all().order_by("-uploaded_at")
+
+    total_uploads = uploads.count()
+
+    approved_uploads = uploads.filter(
+        status="approved"
+    ).count()
+
+    total_size = sum(
+        upload.file.size for upload in uploads
+        if upload.file
+    )
+
+    total_size_mb = round(
+        total_size / (1024 * 1024),
+        2
+    )
+
+    return render(
+        request,
+        "hrm/upload_center.html",
+        {
+            "uploads": uploads,
+            "total_uploads": total_uploads,
+            "approved_uploads": approved_uploads,
+            "total_size_mb": total_size_mb,
+        }
+    )
+@login_required
+def upload_file_view(request, pk):
+    uploaded_file = get_object_or_404(
+        UploadedFile,
+        pk=pk
+    )
+
+    return redirect(uploaded_file.file.url)
+@login_required
+def upload_file_delete(request, pk):
+
+    uploaded_file = get_object_or_404(
+        UploadedFile,
+        pk=pk
+    )
+
+    if request.method == "POST":
+
+        if uploaded_file.file:
+            uploaded_file.file.delete(save=False)
+
+        uploaded_file.delete()
+
+        messages.success(
+            request,
+            "File deleted successfully."
+        )
+
+    return redirect("upload_center")
+@login_required
+def upload_file_edit(request, pk):
+
+    uploaded_file = get_object_or_404(
+        UploadedFile,
+        pk=pk
+    )
+
+    if request.method == "POST":
+
+        new_name = request.POST.get("original_name", "").strip()
+
+        if new_name:
+            uploaded_file.original_name = new_name
+            uploaded_file.save()
+
+            messages.success(
+                request,
+                "File name updated successfully."
+            )
+
+        return redirect("upload_center")
+
+    return render(
+        request,
+        "hrm/upload_file_edit.html",
+        {
+            "uploaded_file": uploaded_file
+        }
+    )

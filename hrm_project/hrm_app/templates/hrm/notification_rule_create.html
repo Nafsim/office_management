@@ -1,0 +1,307 @@
+{% extends "hrm/base.html" %}
+
+{% block content %}
+
+<style>
+    .page-container {
+        width: 100%;
+    }
+
+    /* PAGE HEADER */
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 28px;
+        flex-wrap: wrap;
+        gap: 14px;
+    }
+
+    .page-title {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .breadcrumb {
+        font-size: 13px;
+        color: #8a94a6;
+        margin-top: 6px;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .back-btn, .settings-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 15px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: #fff;
+        color: #4b5563;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .back-btn:hover, .settings-btn:hover {
+        background: #f9fafb;
+        color: #374151;
+    }
+
+    /* FORM CARD */
+    .form-card {
+        background: #fff;
+        border: 1px solid #edf0f4;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 3px 16px rgba(0, 0, 0, 0.08);
+        max-width: 700px;
+    }
+
+    .form-header {
+        padding: 22px 28px;
+        border-bottom: 1px solid #edf0f4;
+    }
+
+    .form-title {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .form-body {
+        padding: 28px;
+    }
+
+    .form-field {
+        margin-bottom: 24px;
+    }
+
+    .form-field label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+    }
+
+    .form-field input[type="text"],
+    .form-field select,
+    .form-field textarea {
+        width: 100%;
+        height: 44px;
+        border: 1px solid #d9dee7;
+        border-radius: 8px;
+        padding: 0 14px;
+        font-size: 14px;
+        outline: none;
+        box-sizing: border-box;
+        background: #fff;
+        color: #374151;
+    }
+
+    .form-field input[type="text"]:focus,
+    .form-field select:focus,
+    .form-field textarea:focus {
+        border-color: #f97316;
+    }
+
+    .form-field textarea {
+        height: 100px;
+        padding: 12px 14px;
+        resize: vertical;
+    }
+
+    .checkbox-field {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 24px;
+    }
+
+    .checkbox-field input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: #f97316;
+    }
+
+    .checkbox-field label {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 500;
+        color: #374151;
+    }
+
+    .form-footer {
+        padding: 22px 28px;
+        border-top: 1px solid #edf0f4;
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+    }
+
+    .btn {
+        height: 42px;
+        padding: 0 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-primary {
+        background: #f97316;
+        color: #fff;
+    }
+
+    .btn-primary:hover {
+        background: #ea580c;
+    }
+
+    .btn-secondary {
+        background: #fff;
+        color: #6b7280;
+        border: 1px solid #d1d5db;
+    }
+
+    .btn-secondary:hover {
+        background: #f3f4f6;
+    }
+
+    .error-message {
+        color: #ef4444;
+        font-size: 12px;
+        margin-top: 6px;
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .form-card {
+            max-width: 100%;
+        }
+
+        .form-body {
+            padding: 20px;
+        }
+
+        .form-footer {
+            padding: 20px;
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+        }
+    }
+</style>
+
+
+<div class="page-container">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Add Notification Rule</h1>
+            <div class="breadcrumb">
+                Home · Configuration · Notification Rules · Add Rule
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <a href="{% url 'dashboard' %}" class="back-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5"></path>
+                    <path d="M12 19l-7-7 7-7"></path>
+                </svg>
+                Back
+            </a>
+            <a href="{% url 'config' %}" class="settings-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.09a2 2 0 01-1-1.74v-.47a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.39a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+                All Settings
+            </a>
+        </div>
+    </div>
+
+
+    <!-- FORM CARD -->
+    <div class="form-card">
+
+        <div class="form-header">
+            <h2 class="form-title">Add Notification Rule</h2>
+        </div>
+
+        <form method="POST">
+
+            {% csrf_token %}
+
+            <div class="form-body">
+
+                <!-- EVENT -->
+                <div class="form-field">
+                    <label for="{{ form.event.id_for_label }}">Event</label>
+                    {{ form.event }}
+                    {% if form.event.errors %}
+                        <div class="error-message">{{ form.event.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- CHANNEL -->
+                <div class="form-field">
+                    <label for="{{ form.channels.id_for_label }}">Channel</label>
+                    {{ form.channels }}
+                    {% if form.channels.errors %}
+                        <div class="error-message">{{ form.channels.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- RECIPIENTS -->
+                <div class="form-field">
+                    <label for="{{ form.recipients.id_for_label }}">Recipients</label>
+                    {{ form.recipients }}
+                    {% if form.recipients.errors %}
+                        <div class="error-message">{{ form.recipients.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- ENABLED -->
+                <div class="checkbox-field">
+                    {{ form.is_active }}
+                    <label for="{{ form.is_active.id_for_label }}">Enabled</label>
+                </div>
+
+            </div>
+
+            <div class="form-footer">
+                <a href="{% url 'notification_rules' %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">Save Rule</button>
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}

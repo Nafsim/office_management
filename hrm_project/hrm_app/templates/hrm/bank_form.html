@@ -1,0 +1,328 @@
+{% extends "hrm/base.html" %}
+
+{% block content %}
+
+<style>
+    .bank-form-page {
+        padding: 10px 28px 24px;
+    }
+
+    .bank-form-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 16px;
+    }
+
+    .bank-form-header h1 {
+        margin: 0 0 7px;
+        font-size: 25px;
+        font-weight: 700;
+        color: #172033;
+    }
+
+    .bank-breadcrumb {
+        font-size: 13px;
+        color: #7b8494;
+    }
+
+    .bank-breadcrumb span {
+        color: #b0b6c1;
+        margin: 0 6px;
+    }
+
+    .back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        height: 38px;
+        padding: 0 14px;
+        border: 1px solid #dfe3e8;
+        border-radius: 7px;
+        background: #fff;
+        color: #374151;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .back-btn:hover {
+        background: #f8f9fb;
+    }
+
+    .back-btn svg {
+        width: 17px;
+        height: 17px;
+        stroke: currentColor;
+    }
+
+    .bank-form-card {
+        max-width: 760px;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .bank-form-card-header {
+        padding: 17px 20px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .bank-form-card-header h2 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 700;
+        color: #172033;
+    }
+
+    .bank-form-body {
+        padding: 24px 20px;
+    }
+
+    .form-group {
+        margin-bottom: 18px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 7px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .form-group input[type="text"] {
+        width: 100%;
+        height: 42px;
+        padding: 0 12px;
+        border: 1px solid #dfe3e8;
+        border-radius: 6px;
+        outline: none;
+        font-size: 13px;
+        color: #374151;
+        box-sizing: border-box;
+    }
+
+    .form-group input[type="text"]:focus {
+        border-color: #ff6b00;
+        box-shadow: 0 0 0 2px rgba(255, 107, 0, 0.08);
+    }
+
+    .checkbox-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 4px;
+    }
+
+    .checkbox-row input {
+        width: 16px;
+        height: 16px;
+        accent-color: #ff6b00;
+    }
+
+    .checkbox-row label {
+        margin: 0;
+        font-size: 13px;
+        color: #374151;
+        cursor: pointer;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 9px;
+        padding-top: 5px;
+    }
+
+    .cancel-btn,
+    .save-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 38px;
+        padding: 0 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .cancel-btn {
+        border: 1px solid #dfe3e8;
+        background: #fff;
+        color: #374151;
+    }
+
+    .cancel-btn:hover {
+        background: #f8f9fb;
+    }
+
+    .save-btn {
+        border: none;
+        background: #ff6b00;
+        color: #fff;
+    }
+
+    .save-btn:hover {
+        background: #e85f00;
+    }
+
+    @media (max-width: 700px) {
+        .bank-form-page {
+            padding: 10px 18px 24px;
+        }
+
+        .bank-form-header {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .bank-form-card {
+            max-width: 100%;
+        }
+    }
+</style>
+
+
+
+<div class="bank-form-page">
+
+    <div class="bank-form-header">
+
+        <div>
+            <h1>
+                {{ page_title }}
+            </h1>
+
+            <div class="bank-breadcrumb">
+                Home
+                <span>·</span>
+                Configuration
+                <span>·</span>
+                Bank Information
+                <span>·</span>
+                {{ page_title }}
+            </div>
+        </div>
+
+        <a href="{% url 'bank_list' %}" class="back-btn">
+
+            <svg viewBox="0 0 24 24" fill="none"
+                 stroke-width="2"
+                 stroke-linecap="round"
+                 stroke-linejoin="round">
+                <path d="M19 12H5"></path>
+                <path d="M12 19l-7-7 7-7"></path>
+            </svg>
+
+            Back
+
+        </a>
+
+    </div>
+
+
+    <div class="bank-form-card">
+
+        <div class="bank-form-card-header">
+            <h2>
+                {{ page_title }}
+            </h2>
+        </div>
+
+
+        <form method="post">
+
+            {% csrf_token %}
+
+            <div class="bank-form-body">
+
+                <div class="form-group">
+                    <label for="bank_name">Bank Name</label>
+
+                    <input
+                        type="text"
+                        id="bank_name"
+                        name="bank_name"
+                        value="{{ bank.bank_name|default:'' }}"
+                        placeholder="Enter bank name"
+                        required
+                    >
+                </div>
+
+
+                <div class="form-group">
+                    <label for="branch_name">Branch</label>
+
+                    <input
+                        type="text"
+                        id="branch_name"
+                        name="branch_name"
+                        value="{{ bank.branch_name|default:'' }}"
+                        placeholder="Enter branch name"
+                        required
+                    >
+                </div>
+
+
+                <div class="form-group">
+                    <label for="account_number">Account Number</label>
+
+                    <input
+                        type="text"
+                        id="account_number"
+                        name="account_number"
+                        value="{{ bank.account_number|default:'' }}"
+                        placeholder="Enter account number"
+                        required
+                    >
+                </div>
+
+
+                <div class="form-group">
+
+                    <div class="checkbox-row">
+
+                        <input
+                            type="checkbox"
+                            id="is_active"
+                            name="is_active"
+                            {% if bank.is_active or not bank %}checked{% endif %}
+                        >
+
+                        <label for="is_active">
+                            Active Account
+                        </label>
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-actions">
+
+                    <a href="{% url 'bank_list' %}" class="cancel-btn">
+                        Cancel
+                    </a>
+
+                    <button type="submit" class="save-btn">
+                        {{ form_action }}
+                    </button>
+
+                </div>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+

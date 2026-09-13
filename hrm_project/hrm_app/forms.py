@@ -188,11 +188,28 @@ class HolidayForm(forms.ModelForm):
 
 
 class NotificationRuleForm(forms.ModelForm):
+
     class Meta:
-        model  = NotificationRule
-        fields = ['event', 'channels', 'recipients', 'is_active']
+        model = NotificationRule
+        fields = [
+            'event',
+            'channels',
+            'recipients',
+            'is_active',
+        ]
 
-
+        widgets = {
+            'event': forms.TextInput(attrs={
+                'placeholder': 'e.g. New leave request',
+            }),
+            'channels': forms.TextInput(attrs={
+                'placeholder': 'e.g. In-app + Email',
+            }),
+            'recipients': forms.TextInput(attrs={
+                'placeholder': 'e.g. Managers, HR',
+            }),
+            'is_active': forms.CheckboxInput(),
+        }
 
 
 class SiteSettingsForm(forms.ModelForm):

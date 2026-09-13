@@ -1,0 +1,343 @@
+{% extends "hrm/base.html" %}
+
+{% block content %}
+
+<style>
+    .notification-page {
+        width: 100%;
+    }
+
+    /* PAGE HEADER */
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 28px;
+        flex-wrap: wrap;
+        gap: 14px;
+    }
+
+    .page-title {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .breadcrumb {
+        font-size: 13px;
+        color: #8a94a6;
+        margin-top: 6px;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .back-btn, .settings-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 15px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: #fff;
+        color: #4b5563;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .back-btn:hover, .settings-btn:hover {
+        background: #f9fafb;
+        color: #374151;
+    }
+
+    /* TABLE CARD */
+    .table-card {
+        background: #fff;
+        border: 1px solid #edf0f4;
+        border-radius: 16px;
+        overflow: visible;
+        box-shadow: 0 3px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .card-header {
+        padding: 22px 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #edf0f4;
+    }
+
+    .card-title {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .add-rule-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #fff7ed;
+        color: #f97316;
+        border: 1px solid #fed7aa;
+        padding: 10px 16px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        position: relative;
+        z-index: 1;
+    }
+
+    .add-rule-btn:hover {
+        background: #ffedd5;
+        color: #ea580c;
+    }
+
+    /* TABLE */
+    .rules-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+
+    .rules-table th {
+        background: #fafbfc;
+        color: #7b8494;
+        font-size: 12px;
+        font-weight: 700;
+        text-align: left;
+        padding: 18px 28px;
+        border-bottom: 1px solid #edf0f4;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+    }
+
+    .rules-table td {
+        padding: 18px 28px;
+        border-bottom: 1px solid #f1f3f5;
+        font-size: 14px;
+        color: #4b5563;
+        vertical-align: middle;
+    }
+
+    .rules-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .rules-table tbody tr:hover {
+        background: #fcfcfd;
+    }
+
+    .rules-table th:nth-child(1),
+    .rules-table td:nth-child(1) {
+        width: 32%;
+    }
+
+    .rules-table th:nth-child(2),
+    .rules-table td:nth-child(2) {
+        width: 23%;
+    }
+
+    .rules-table th:nth-child(3),
+    .rules-table td:nth-child(3) {
+        width: 30%;
+    }
+
+    .rules-table th:nth-child(4),
+    .rules-table td:nth-child(4) {
+        width: 15%;
+    }
+
+    .event-name {
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    /* STATUS */
+    .status-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 78px;
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s;
+    }
+
+    .status-button.enabled {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+
+    .status-button.enabled:hover {
+        background: #bbf7d0;
+    }
+
+    .status-button.disabled {
+        background: #f3f4f6;
+        color: #6b7280;
+    }
+
+    .status-button.disabled:hover {
+        background: #e5e7eb;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 48px;
+        color: #94a3b8;
+        font-size: 14px;
+    }
+
+    @media (max-width: 900px) {
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+</style>
+
+
+<div class="notification-page">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Notification Rules</h1>
+            <div class="breadcrumb">
+                Home · Configuration · Notification Rules
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <a href="{% url 'dashboard' %}" class="back-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5"></path>
+                    <path d="M12 19l-7-7 7-7"></path>
+                </svg>
+                Back
+            </a>
+            <a href="{% url 'config' %}" class="settings-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.09a2 2 0 01-1-1.74v-.47a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.39a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+                All Settings
+            </a>
+        </div>
+    </div>
+
+
+    <!-- TABLE CARD -->
+    <div class="table-card">
+
+        <!-- CARD HEADER -->
+        <div class="card-header">
+            <h2 class="card-title">Notification Rules</h2>
+            <button type="button" class="add-rule-btn" onclick="openRuleForm()">
+                <svg width="18" height="18" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Add Rule
+            </button>
+        </div>
+
+
+        <!-- TABLE -->
+        <table class="rules-table">
+
+            <thead>
+                <tr>
+                    <th>Event</th>
+                    <th>Channel</th>
+                    <th>Recipients</th>
+                    <th>Enabled</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for rule in rules %}
+
+                <tr>
+
+                    <td>
+                        <span class="event-name">
+                            {{ rule.event }}
+                        </span>
+                    </td>
+
+                    <td>
+                        {{ rule.channels }}
+                    </td>
+
+                    <td>
+                        {{ rule.recipients }}
+                    </td>
+
+                    <td>
+
+                        <form method="POST"
+                              action="{% url 'notif_rule_toggle' rule.pk %}">
+
+                            {% csrf_token %}
+
+                            {% if rule.is_active %}
+
+                                <button type="submit"
+                                        class="status-button enabled">
+                                    Enabled
+                                </button>
+
+                            {% else %}
+
+                                <button type="submit"
+                                        class="status-button disabled">
+                                    Disabled
+                                </button>
+
+                            {% endif %}
+
+                        </form>
+
+                    </td>
+
+                </tr>
+
+                {% empty %}
+
+                <tr>
+                    <td colspan="4" class="empty-state">
+                        No notification rules found.
+                    </td>
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}

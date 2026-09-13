@@ -7,18 +7,90 @@
 <style>
   .page-actions { display: flex; gap: 10px; }
 
+  .back-btn, .settings-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 15px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #fff;
+    color: #4b5563;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .back-btn:hover, .settings-btn:hover {
+    background: #f9fafb;
+    color: #374151;
+  }
+
+  .dept-card {
+    background: #fff;
+    border: 1px solid #edf0f4;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 3px 16px rgba(0, 0, 0, 0.08);
+  }
+
+  .dept-header {
+    padding: 22px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #edf0f4;
+  }
+
+  .dept-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1e293b;
+  }
+
+  .add-dept-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff7ed;
+    color: #f97316;
+    border: 1px solid #fed7aa;
+    padding: 10px 16px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .add-dept-btn:hover {
+    background: #ffedd5;
+    color: #ea580c;
+  }
+
   .dept-table th {
     font-size: 12px;
     letter-spacing: 0.5px;
-    color: #94a3b8;
-    font-weight: 600;
-    padding: 13px 16px !important;
-    background: #f8fafc;
+    color: #7b8494;
+    font-weight: 700;
+    padding: 18px 28px !important;
+    background: #fafbfc;
+    text-transform: uppercase;
+    border-bottom: 1px solid #edf0f4;
   }
   .dept-table td {
-    padding: 13px 16px !important;
+    padding: 18px 28px !important;
     vertical-align: middle;
     font-size: 14px;
+    border-bottom: 1px solid #f1f3f5;
+  }
+
+  .dept-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .dept-table tbody tr:hover {
+    background: #fcfcfd;
   }
 
   .avatar-circle {
@@ -42,11 +114,11 @@
 
   .action-btns {
     display: flex;
-    gap: 6px;
+    gap: 8px;
   }
   .btn-icon {
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
     border-radius: 8px;
     border: 1px solid #e2e8f0;
     background: white;
@@ -74,16 +146,38 @@
     <div class="crumb">Home · Configuration · Departments</div>
   </div>
   <div class="page-actions">
-    <a href="{% url 'config' %}" class="btn ghost">← Back</a>
-    <a href="{% url 'config' %}" class="btn ghost">← All Settings</a>
+    <a href="{% url 'dashboard' %}" class="back-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5"></path>
+        <path d="M12 19l-7-7 7-7"></path>
+      </svg>
+      Back
+    </a>
+    <a href="{% url 'config' %}" class="settings-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.09a2 2 0 01-1-1.74v-.47a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.39a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+      All Settings
+    </a>
   </div>
 </div>
 
-<div class="card" style="padding: 0; overflow: hidden; border-radius: 14px;">
-  <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #f1f5f9;">
-    <h3 style="margin: 0; font-size: 15.5px; font-weight: 600;">All Departments</h3>
-    <a href="{% url 'dept_create' %}" class="btn" style="background: #f97316; border: none; padding: 8px 16px; font-size: 13.5px;">
-      + Add Department
+<div class="dept-card">
+  <div class="dept-header">
+    <h3 class="dept-title">All Departments</h3>
+    <a href="{% url 'dept_create' %}" class="add-dept-btn">
+      <svg width="18" height="18" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Add Department
     </a>
   </div>
 
@@ -91,7 +185,7 @@
     <table class="table dept-table" style="margin: 0;">
       <thead>
         <tr>
-          <th style="padding-left: 20px !important;">DEPARTMENT</th>
+          <th style="padding-left: 28px !important;">DEPARTMENT</th>
           <th>HEAD</th>
           <th>EMPLOYEES</th>
           <th>SECTIONS</th>
@@ -101,7 +195,7 @@
       <tbody>
         {% for dept in departments %}
         <tr>
-          <td style="padding-left: 20px !important;">
+          <td style="padding-left: 28px !important;">
             <strong style="color: #1e293b;">{{ dept.name }}</strong>
           </td>
 
@@ -138,14 +232,14 @@
           <td style="text-align: center;">
             <div class="action-btns" style="justify-content: center;">
               <a href="{% url 'dept_edit' dept.pk %}" class="btn-icon" title="Edit">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                   <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
                 </svg>
               </a>
               <button type="button" class="btn-icon danger"
                       onclick="confirmDelete('{% url 'dept_delete' dept.pk %}', '{{ dept.name|escapejs }}')">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <polyline points="3 6 5 6 21 6"/>
                   <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
                 </svg>
