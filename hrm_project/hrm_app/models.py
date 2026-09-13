@@ -927,11 +927,21 @@ class OnboardingRecord(models.Model):
 #  FILES & CREDENTIALS (secure vault)
 # ─────────────────────────────────────────────
 class SecureFile(models.Model):
-    name       = models.CharField(max_length=200)
-    file       = models.FileField(upload_to='secure/')
-    owner      = models.ForeignKey(User, on_delete=models.CASCADE, related_name='secure_files')
-    note       = models.TextField(blank=True)
-    uploaded_at = models.DateTimeField(auto_now_add=True)
+    TYPE_CHOICES = [
+        ('Cloud', 'Cloud'),
+        ('SSH / Root', 'SSH / Root'),
+        ('Email', 'Email'),
+        ('Web', 'Web'),
+        ('Other', 'Other'),
+    ]
+
+    name          = models.CharField(max_length=200)
+    file          = models.FileField(upload_to='secure/', blank=True, null=True)
+    owner         = models.ForeignKey(User, on_delete=models.CASCADE, related_name='secure_files')
+    note          = models.TextField(blank=True)          # stores the secret
+    type          = models.CharField(max_length=30, choices=TYPE_CHOICES, default='Cloud')
+    access_group  = models.CharField(max_length=50, default='Engineering')
+    uploaded_at   = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
@@ -990,36 +1000,24 @@ class NotificationRule(models.Model):
 # ─────────────────────────────────────────────
 # SITE SETTINGS
 # ─────────────────────────────────────────────
+
+
 class SiteSettings(models.Model):
-    company_name = models.CharField(max_length=150)
-    company_email = models.EmailField()
-    phone = models.CharField(max_length=30)
-    address = models.TextField()
+    company_name = models.CharField(max_length=200, default="Luminous Labs")
+    company_email = models.EmailField(blank=True, null=True)
+    phone = models.CharField(max_length=30, blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+    
+    timezone = models.CharField(max_length=50, default="Asia/Dhaka")
+    currency = models.CharField(max_length=10, default="BDT")
+    date_format = models.CharField(max_length=20, default="DD-MM-YYYY")
+    
+    logo = models.ImageField(upload_to='company/', blank=True, null=True)
+    maintenance_mode = models.BooleanField(default=False)
 
-    timezone = models.CharField(
-        max_length=50,
-        default="Asia/Dhaka"
-    )
-
-    currency = models.CharField(
-        max_length=10,
-        default="BDT"
-    )
-
-    date_format = models.CharField(
-        max_length=20,
-        default="DD-MM-YYYY"
-    )
-
-    company_logo = models.ImageField(
-        upload_to="company_logo/",
-        blank=True,
-        null=True
-    )
-
-    maintenance_mode = models.BooleanField(
-        default=False
-    )
+    class Meta:
+        verbose_name = "Site Settings"
+        verbose_name_plural = "Site Settings"
 
     def __str__(self):
         return self.company_name

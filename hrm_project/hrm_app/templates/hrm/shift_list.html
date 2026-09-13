@@ -1,0 +1,665 @@
+{% extends 'hrm/base.html' %}
+
+{% block title %}Shift Management — Luminous HRM{% endblock %}
+
+{% block content %}
+
+<style>
+  /* ================================
+     PAGE
+  ================================= */
+
+  .shift-page {
+    width: 100%;
+  }
+
+  .shift-page .page-head {
+    margin-bottom: 28px;
+  }
+
+  .shift-page .page-head h1 {
+    margin: 0 0 6px;
+    font-size: 34px;
+    line-height: 1.15;
+    font-weight: 700;
+    color: #203b5b;
+  }
+
+  .shift-page .crumb {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 400;
+    color: #71839b;
+  }
+
+
+  /* ================================
+     HEADER BUTTONS
+  ================================= */
+
+  .shift-top-actions {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .shift-top-btn {
+    height: 44px;
+    padding: 0 18px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid #e1e7ee;
+    border-radius: 14px;
+
+    background: #fff;
+    color: #203b5b;
+
+    text-decoration: none;
+
+    font-size: 14px;
+    font-weight: 500;
+
+    transition: .18s ease;
+  }
+
+  .shift-top-btn:hover {
+    background: #f8fafc;
+    border-color: #d5dde7;
+  }
+
+
+  /* ================================
+     MAIN CARD
+  ================================= */
+
+  .shift-card {
+    background: #fff;
+
+    border: 1px solid #e2e7ed;
+    border-radius: 18px;
+
+    overflow: hidden;
+
+    box-shadow: 0 3px 12px rgba(15, 23, 42, .035);
+  }
+
+
+  /* ================================
+     CARD TOP
+  ================================= */
+
+  .shift-card-head {
+    min-height: 92px;
+
+    padding: 0 30px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .shift-card-head h2 {
+    margin: 0;
+
+    font-size: 22px;
+    font-weight: 600;
+
+    color: #203b5b;
+  }
+
+
+  /* ================================
+     ADD SHIFT
+  ================================= */
+
+  .add-shift-btn {
+    height: 44px;
+
+    padding: 0 20px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    border: 0;
+    border-radius: 14px;
+
+    background: #f46b55;
+    color: #fff;
+
+    text-decoration: none;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    transition: .18s ease;
+  }
+
+  .add-shift-btn:hover {
+    background: #ea604b;
+  }
+
+  .add-shift-btn .plus {
+    font-size: 22px;
+    line-height: 1;
+    font-weight: 300;
+  }
+
+
+  /* ================================
+     TABLE
+  ================================= */
+
+  .shift-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .shift-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+
+  /* TABLE HEADER */
+
+  .shift-table thead th {
+    height: 58px;
+
+    padding: 0 20px;
+
+    text-align: left;
+
+    background: #fff;
+
+    border-top: 1px solid #edf0f3;
+    border-bottom: 1px solid #e1e6ec;
+
+    color: #71839b;
+
+    font-size: 13px;
+    line-height: 1.2;
+
+    font-weight: 600;
+
+    text-transform: uppercase;
+    letter-spacing: .01em;
+  }
+
+
+  /* COLUMN WIDTH */
+
+  .shift-table th:nth-child(1),
+  .shift-table td:nth-child(1) {
+    width: 21%;
+  }
+
+  .shift-table th:nth-child(2),
+  .shift-table td:nth-child(2) {
+    width: 17%;
+  }
+
+  .shift-table th:nth-child(3),
+  .shift-table td:nth-child(3) {
+    width: 15%;
+  }
+
+  .shift-table th:nth-child(4),
+  .shift-table td:nth-child(4) {
+    width: 15%;
+  }
+
+  .shift-table th:nth-child(5),
+  .shift-table td:nth-child(5) {
+    width: 17%;
+  }
+
+  .shift-table th:nth-child(6),
+  .shift-table td:nth-child(6) {
+    width: 15%;
+  }
+
+
+  /* TABLE BODY */
+
+  .shift-table tbody tr {
+    border-bottom: 1px solid #e7ebef;
+    transition: background .15s ease;
+  }
+
+  .shift-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .shift-table tbody tr:hover {
+    background: #fffaf8;
+  }
+
+
+  .shift-table td {
+    height: 86px;
+
+    padding: 0 20px;
+
+    vertical-align: middle;
+
+    color: #304968;
+
+    font-size: 14px;
+    font-weight: 400;
+  }
+
+
+  /* SHIFT NAME */
+
+  .shift-name {
+    color: #203b5b;
+
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+
+  /* NORMAL TEXT */
+
+  .shift-normal {
+    color: #304968;
+
+    font-size: 14px;
+    font-weight: 400;
+  }
+
+
+  /* ================================
+     LOCATION BADGE
+  ================================= */
+
+  .shift-location {
+    display: inline-flex;
+    align-items: center;
+
+    min-height: 32px;
+
+    padding: 0 14px;
+
+    border-radius: 18px;
+
+    background: #eef1f5;
+
+    color: #64758b;
+
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+
+  /* ================================
+     ACTION BUTTONS
+  ================================= */
+
+  .shift-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .shift-action-btn {
+    width: 48px;
+    height: 48px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid #dfe6ee;
+    border-radius: 13px;
+
+    background: #fff;
+
+    color: #263d5a;
+
+    text-decoration: none;
+
+    cursor: pointer;
+
+    transition: .18s ease;
+  }
+
+  .shift-action-btn:hover {
+    background: #f8fafc;
+    border-color: #cfd8e3;
+  }
+
+  .shift-action-btn svg {
+    width: 22px;
+    height: 22px;
+
+    stroke: currentColor;
+
+    stroke-width: 1.8;
+  }
+
+
+  /* DELETE */
+
+  .shift-delete-btn:hover {
+    color: #dc2626;
+    border-color: #fecaca;
+    background: #fff7f7;
+  }
+
+
+  /* ================================
+     EMPTY
+  ================================= */
+
+  .shift-empty {
+    padding: 55px 20px;
+
+    text-align: center;
+
+    color: #8a99aa;
+
+    font-size: 14px;
+    font-weight: 400;
+  }
+
+
+  /* ================================
+     RESPONSIVE
+  ================================= */
+
+  @media (max-width: 900px) {
+
+    .shift-card-head {
+      padding: 20px;
+    }
+
+    .shift-table {
+      min-width: 900px;
+    }
+
+  }
+
+</style>
+
+
+<div class="shift-page">
+
+
+  <!-- PAGE HEADER -->
+
+  <div class="page-head">
+
+    <div>
+      <h1>Shift Management</h1>
+
+      <div class="crumb">
+        Home · Configuration · Shift Management
+      </div>
+    </div>
+
+
+    <div class="shift-top-actions">
+
+      <a
+        href="javascript:history.back()"
+        class="shift-top-btn"
+      >
+        ← Back
+      </a>
+
+      <a
+        href="{% url 'config' %}"
+        class="shift-top-btn"
+      >
+        ← All Settings
+      </a>
+
+    </div>
+
+  </div>
+
+
+  <!-- MAIN CARD -->
+
+  <div class="shift-card">
+
+
+    <!-- CARD HEADER -->
+
+    <div class="shift-card-head">
+
+      <h2>Shifts &amp; Duty Locations</h2>
+
+      <a
+        href="{% url 'shift_create' %}"
+        class="add-shift-btn"
+      >
+        <span class="plus">+</span>
+        Add Shift
+      </a>
+
+    </div>
+
+
+    <!-- TABLE -->
+
+    <div class="shift-table-wrap">
+
+      <table class="shift-table">
+
+        <thead>
+
+          <tr>
+
+            <th>Shift</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Team</th>
+            <th>Location</th>
+            <th>Action</th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          {% for shift in shifts %}
+
+          <tr>
+
+            <!-- SHIFT -->
+
+            <td>
+              <span class="shift-name">
+                {{ shift.name }}
+              </span>
+            </td>
+
+
+            <!-- START -->
+
+            <td>
+              <span class="shift-normal">
+                {{ shift.start_time|time:"h:i A" }}
+              </span>
+            </td>
+
+
+            <!-- END -->
+
+            <td>
+              <span class="shift-normal">
+                {{ shift.end_time|time:"h:i A" }}
+              </span>
+            </td>
+
+
+            <!-- TEAM -->
+
+            <td>
+              <span class="shift-normal">
+                {{ shift.team|default:"—" }}
+              </span>
+            </td>
+
+
+            <!-- LOCATION -->
+
+            <td>
+
+              {% if shift.location %}
+
+                <span class="shift-location">
+                  {{ shift.location }}
+                </span>
+
+              {% else %}
+
+                <span class="shift-normal">—</span>
+
+              {% endif %}
+
+            </td>
+
+
+            <!-- ACTION -->
+
+            <td>
+
+              <div class="shift-actions">
+
+                <!-- EDIT -->
+
+                <a
+                  href="{% url 'shift_edit' shift.pk %}"
+                  class="shift-action-btn"
+                  title="Edit Shift"
+                >
+
+                  <svg
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M12 20h9"/>
+                    <path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                  </svg>
+
+                </a>
+
+
+                <!-- DELETE -->
+
+                <button
+                  type="button"
+                  class="shift-action-btn shift-delete-btn"
+                  title="Delete Shift"
+                  onclick="deleteShift(
+                    '{% url 'shift_delete' shift.pk %}',
+                    '{{ shift.name|escapejs }}'
+                  )"
+                >
+
+                  <svg
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M3 6h18"/>
+                    <path d="M8 6V4h8v2"/>
+                    <path d="M19 6l-1 15H6L5 6"/>
+                    <path d="M10 11v6"/>
+                    <path d="M14 11v6"/>
+                  </svg>
+
+                </button>
+
+              </div>
+
+            </td>
+
+          </tr>
+
+          {% empty %}
+
+          <tr>
+
+            <td
+              colspan="6"
+              class="shift-empty"
+            >
+              No shifts found. Add your first shift.
+            </td>
+
+          </tr>
+
+          {% endfor %}
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ==========================================================
+     SWEETALERT DELETE
+=========================================================== -->
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+
+function deleteShift(deleteUrl, shiftName) {
+
+  Swal.fire({
+
+    title: 'Delete Shift?',
+
+    html:
+      'Are you sure you want to delete <strong>' +
+      shiftName +
+      '</strong>?',
+
+    icon: 'warning',
+
+    showCancelButton: true,
+
+    confirmButtonColor: '#f46b55',
+
+    cancelButtonColor: '#64748b',
+
+    confirmButtonText: 'Yes, delete it',
+
+    cancelButtonText: 'Cancel',
+
+    reverseButtons: true,
+
+    focusCancel: true
+
+  }).then((result) => {
+
+    if (result.isConfirmed) {
+
+      window.location.href = deleteUrl;
+
+    }
+
+  });
+
+}
+
+</script>
+
+{% endblock %}

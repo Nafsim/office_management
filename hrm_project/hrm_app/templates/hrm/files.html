@@ -11,11 +11,31 @@
     <div style="font-size:14px; color:var(--muted); margin-top:4px;">Home · System · Files & Credentials</div>
   </div>
 
-  <div style="display:flex; gap:10px;">
-    <button onclick="history.back()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">← Back</button>
-    <button type="button" data-export-url="{% url 'files_export' %}" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">Export</button>
+  <div style="display:flex; gap:10px; align-items:center;">
+    <button onclick="history.back()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">
+      ← Back
+    </button>
+
+    <!-- Export with download icon -->
+    <button type="button"
+            data-export-url="{% url 'files_export' %}"
+            class="btn"
+            style="background:white; color:var(--brand); border:1px solid var(--brand); display:inline-flex; align-items:center; gap:6px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      Export
+    </button>
+
     {% if user.role == 'super_admin' or user.role == 'manager' %}
-    <a href="{% url 'file_upload' %}" class="btn" style="background:#FF6B00; color:white;">+ Add Credential</a>
+    <button type="button"
+            onclick="document.getElementById('addCredentialModal').style.display='flex'"
+            class="btn"
+            style="background:#FF6B00; color:white; display:inline-flex; align-items:center; gap:6px;">
+      + Add Credential
+    </button>
     {% endif %}
   </div>
 </div>
@@ -23,7 +43,10 @@
 <!-- Orange Banner -->
 <div style="background:linear-gradient(90deg, #FF6B00, #FF8C3A); color:white; border-radius:12px; padding:16px 20px; margin-bottom:28px; display:flex; align-items:center; gap:16px;">
   <div style="background:rgba(255,255,255,0.25); width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-    🔐
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+    </svg>
   </div>
   <div>
     <strong style="font-size:16px;">Secure shared resources</strong><br>
@@ -31,46 +54,186 @@
   </div>
 </div>
 
-<!-- Stored Credentials -->
+<!-- Stored Credentials Card -->
 <div class="card">
   <div style="padding:18px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;">
-    <strong>Stored Credentials</strong>
+    <strong style="font-size:16px;">Stored Credentials</strong>
     <span style="font-size:14px; color:var(--muted);">{{ files|length }} items</span>
   </div>
-  
-  <table>
-    <thead>
-      <tr>
-        <th>Resource</th>
-        <th>Type</th>
-        <th>Access Group</th>
-        <th>Secret</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for file in files %}
-      <tr>
-        <td><b>{{ file.name }}</b></td>
-        <td><span class="tag t-gray">{{ file.file.name|slice:"-4:"|upper }}</span></td>
-        <td>Engineering / IT</td>
-        <td>
-          <span style="font-family:monospace; letter-spacing:2px;">••••••••</span>
-        </td>
-        <td>
-          <button onclick="this.textContent = this.textContent === 'Reveal' ? 'Hide' : 'Reveal'" 
-                  class="btn ghost sm">Reveal</button>
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="5" style="text-align:center; padding:60px 20px; color:var(--muted);">
-          No credentials stored yet.
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+
+  <div style="overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="background:#fafafa; text-align:left;">
+          <th style="padding:14px 20px; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px;">Resource</th>
+          <th style="padding:14px 20px; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px;">Type</th>
+          <th style="padding:14px 20px; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px;">Access Group</th>
+          <th style="padding:14px 20px; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px;">Secret</th>
+          <th style="padding:14px 20px; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for file in files %}
+        <tr style="border-top:1px solid var(--line);">
+          <td style="padding:16px 20px;">
+            <b style="color:var(--ink);">{{ file.name }}</b>
+          </td>
+
+          <!-- Type -->
+          <td style="padding:16px 20px;">
+            {% if file.type %}
+              <span style="background:#f1f5f9; color:#475569; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:500; display:inline-block;">
+                {{ file.type }}
+              </span>
+            {% else %}
+              <span style="background:#f1f5f9; color:#94a3b8; padding:4px 12px; border-radius:20px; font-size:12px;">
+                —
+              </span>
+            {% endif %}
+          </td>
+
+          <!-- Access Group -->
+          <td style="padding:16px 20px; color:var(--ink);">
+            {{ file.access_group|default:"Engineering / IT" }}
+          </td>
+
+          <!-- Secret -->
+          <td style="padding:16px 20px;">
+            <span class="secret-mask" data-secret="{{ file.note|default:'••••••••' }}"
+                  style="font-family:monospace; letter-spacing:2px; color:#64748b;">
+              ••••••••
+            </span>
+          </td>
+
+          <!-- Action -->
+          <td style="padding:16px 20px;">
+            <button type="button"
+                    class="btn ghost sm reveal-btn"
+                    onclick="toggleSecret(this)"
+                    style="display:inline-flex; align-items:center; gap:6px; background:white; border:1px solid #e2e8f0; color:#475569; padding:6px 12px; border-radius:8px; font-size:13px; cursor:pointer;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              Reveal
+            </button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" style="text-align:center; padding:60px 20px; color:var(--muted);">
+            No credentials stored yet.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
+
+<!-- Add Credential Modal -->
+<div id="addCredentialModal"
+     style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.45); z-index:1000; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:white; border-radius:16px; width:100%; max-width:480px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); overflow:hidden;">
+    
+    <div style="padding:20px 24px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+      <h2 style="margin:0; font-size:18px; font-weight:600; color:var(--ink);">Add Credential</h2>
+      <button type="button"
+              onclick="document.getElementById('addCredentialModal').style.display='none'"
+              style="background:none; border:none; font-size:22px; color:#94a3b8; cursor:pointer; line-height:1;">×</button>
+    </div>
+
+    <form method="post" action="{% url 'file_upload' %}" enctype="multipart/form-data" style="padding:24px;">
+      {% csrf_token %}
+
+      <div style="margin-bottom:20px;">
+        <label style="display:block; font-size:13px; font-weight:500; color:#475569; margin-bottom:6px;">Resource Name</label>
+        <input type="text" name="name" required
+               placeholder="e.g. Production Server"
+               style="width:100%; padding:10px 14px; border:1px solid #e2e8f0; border-radius:8px; font-size:14px; outline:none;"
+               onfocus="this.style.borderColor='#FF6B00'" onblur="this.style.borderColor='#e2e8f0'">
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <label style="display:block; font-size:13px; font-weight:500; color:#475569; margin-bottom:6px;">Type</label>
+        <select name="type"
+                style="width:100%; padding:10px 14px; border:1px solid #e2e8f0; border-radius:8px; font-size:14px; background:white; outline:none;">
+          <option value="Cloud">Cloud</option>
+          <option value="SSH / Root">SSH / Root</option>
+          <option value="Email">Email</option>
+          <option value="Web">Web</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <label style="display:block; font-size:13px; font-weight:500; color:#475569; margin-bottom:6px;">Access Group</label>
+        <select name="access_group"
+                style="width:100%; padding:10px 14px; border:1px solid #e2e8f0; border-radius:8px; font-size:14px; background:white; outline:none;">
+          <option value="Engineering">Engineering</option>
+          <option value="DevOps">DevOps</option>
+          <option value="IT">IT</option>
+          <option value="Management">Management</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom:24px;">
+        <label style="display:block; font-size:13px; font-weight:500; color:#475569; margin-bottom:6px;">Secret / Password</label>
+        <input type="password" name="note" required
+               placeholder="Enter secret value"
+               style="width:100%; padding:10px 14px; border:1px solid #e2e8f0; border-radius:8px; font-size:14px; outline:none;"
+               onfocus="this.style.borderColor='#FF6B00'" onblur="this.style.borderColor='#e2e8f0'">
+      </div>
+
+      <div style="margin-bottom:28px;">
+        <label style="display:block; font-size:13px; font-weight:500; color:#475569; margin-bottom:6px;">Attachment (optional)</label>
+        <input type="file" name="file" style="width:100%; font-size:13px; color:#64748b;">
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button"
+                onclick="document.getElementById('addCredentialModal').style.display='none'"
+                style="padding:9px 18px; border:1px solid #e2e8f0; background:white; border-radius:8px; font-size:14px; color:#475569; cursor:pointer;">
+          Cancel
+        </button>
+        <button type="submit"
+                style="padding:9px 22px; background:#FF6B00; color:white; border:none; border-radius:8px; font-size:14px; font-weight:500; cursor:pointer;">
+          Save
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Close modal on outside click
+  document.getElementById('addCredentialModal').addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
+  });
+
+  // Toggle Reveal / Hide
+  function toggleSecret(btn) {
+    const mask = btn.closest('tr').querySelector('.secret-mask');
+    const isHidden = mask.textContent.includes('•');
+
+    if (isHidden) {
+      mask.textContent = mask.dataset.secret || '••••••••';
+      btn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+          <line x1="1" y1="1" x2="23" y2="23"/>
+        </svg>
+        Hide`;
+    } else {
+      mask.textContent = '••••••••';
+      btn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+        Reveal`;
+    }
+  }
+</script>
 
 {% endblock %}

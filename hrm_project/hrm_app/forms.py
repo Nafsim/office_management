@@ -194,8 +194,80 @@ class NotificationRuleForm(forms.ModelForm):
 
 
 
-class SiteSettingsForm(forms.ModelForm):
 
+class SiteSettingsForm(forms.ModelForm):
     class Meta:
         model = SiteSettings
-        fields = "__all__"
+        fields = [
+            'company_name',
+            'company_email',
+            'phone',
+            'address',
+            'timezone',
+            'currency',
+            'date_format',
+            'logo',
+            'maintenance_mode',
+        ]
+        widgets = {
+            'company_name': forms.TextInput(attrs={
+                'class': 'form-input',
+                'placeholder': 'Company Name'
+            }),
+            'company_email': forms.EmailInput(attrs={
+                'class': 'form-input',
+                'placeholder': 'Email address'
+            }),
+            'phone': forms.TextInput(attrs={
+                'class': 'form-input',
+                'placeholder': '+880 1XXX-XXXXXX'
+            }),
+            'address': forms.Textarea(attrs={
+                'class': 'form-input',
+                'rows': 3,
+                'placeholder': 'Full address'
+            }),
+            'timezone': forms.Select(attrs={'class': 'form-input'}),
+            'currency': forms.Select(attrs={'class': 'form-input'}),
+            'date_format': forms.Select(attrs={'class': 'form-input'}),
+            'logo': forms.ClearableFileInput(attrs={'class': 'form-input'}),
+            'maintenance_mode': forms.CheckboxInput(),
+        }
+class EmailTemplateForm(forms.ModelForm):
+    class Meta:
+        model = EmailTemplate
+
+        fields = [
+            'name',
+            'category',
+            'subject',
+            'body',
+            'trigger',
+            'status',
+        ]
+
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'placeholder': 'e.g. Welcome Email'
+            }),
+
+            'category': forms.TextInput(attrs={
+                'placeholder': 'e.g. Onboarding'
+            }),
+
+            'subject': forms.TextInput(attrs={
+                'placeholder': 'Email subject'
+            }),
+
+            'body': forms.Textarea(attrs={
+                'rows': 8,
+                'placeholder': 'Write email content...'
+            }),
+
+            'trigger': forms.TextInput(attrs={
+                'placeholder': 'e.g. New employee joins'
+            }),
+
+            'status': forms.Select(),
+        }
+

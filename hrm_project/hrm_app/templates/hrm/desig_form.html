@@ -1,0 +1,278 @@
+{% extends 'hrm/base.html' %}
+
+{% block title %}{{ title }} — Luminous HRM{% endblock %}
+
+{% block content %}
+
+<style>
+  .desig-form-card {
+    max-width: 850px;
+    margin: 0 auto;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    padding: 30px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  }
+
+  .desig-form-header {
+    margin-bottom: 28px;
+  }
+
+  .desig-form-header h2 {
+    margin: 0 0 6px;
+    color: #183153;
+    font-size: 22px;
+  }
+
+  .desig-form-header p {
+    margin: 0;
+    color: #64748b;
+    font-size: 14px;
+  }
+
+  .desig-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+  }
+
+  .desig-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .desig-form-group.full {
+    grid-column: 1 / -1;
+  }
+
+  .desig-form-group label {
+    color: #334155;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .desig-form-group input,
+  .desig-form-group select {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 46px;
+    padding: 10px 13px;
+    border: 1px solid #dbe2ea;
+    border-radius: 10px;
+    background: #fff;
+    color: #1e293b;
+    font-size: 15px;
+    outline: none;
+  }
+
+  .desig-form-group input:focus,
+  .desig-form-group select:focus {
+    border-color: #f47a35;
+    box-shadow: 0 0 0 3px rgba(244, 122, 53, .10);
+  }
+
+  .desig-help {
+    color: #94a3b8;
+    font-size: 12px;
+  }
+
+  .desig-error {
+    color: #dc2626;
+    font-size: 13px;
+  }
+
+  .desig-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 30px;
+    padding-top: 22px;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .desig-save-btn {
+    border: none;
+    border-radius: 11px;
+    padding: 12px 20px;
+    background: #f46b55;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .desig-save-btn:hover {
+    background: #e85b45;
+  }
+
+  .desig-cancel-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #dbe2ea;
+    border-radius: 11px;
+    padding: 11px 20px;
+    color: #334155;
+    background: #fff;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .desig-cancel-btn:hover {
+    background: #f8fafc;
+  }
+
+  @media (max-width: 700px) {
+    .desig-form-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .desig-form-group.full {
+      grid-column: auto;
+    }
+
+    .desig-form-card {
+      padding: 20px;
+    }
+
+    .desig-form-actions {
+      flex-direction: column;
+    }
+  }
+</style>
+
+
+<!-- PAGE HEADER -->
+<div class="page-head">
+
+  <div>
+    <h1>{{ title }}</h1>
+
+    <div class="crumb">
+      Home · Configuration · Designations · {{ title }}
+    </div>
+  </div>
+
+  <a href="{% url 'designation_list' %}" class="btn ghost">
+    ← Back
+  </a>
+
+</div>
+
+
+<!-- FORM CARD -->
+<div class="desig-form-card">
+
+  <div class="desig-form-header">
+    <h2>{{ title }}</h2>
+
+    {% if object %}
+      <p>Update the designation information below.</p>
+    {% else %}
+      <p>Create a new job title and assign it to a department.</p>
+    {% endif %}
+  </div>
+
+
+  <form method="post">
+
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="desig-error">
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+
+    <div class="desig-form-grid">
+
+
+      <!-- TITLE -->
+      <div class="desig-form-group">
+
+        <label for="{{ form.title.id_for_label }}">
+          Designation
+        </label>
+
+        {{ form.title }}
+
+        {% if form.title.errors %}
+          <div class="desig-error">
+            {{ form.title.errors }}
+          </div>
+        {% endif %}
+
+      </div>
+
+
+      <!-- DEPARTMENT -->
+      <div class="desig-form-group">
+
+        <label for="{{ form.department.id_for_label }}">
+          Department
+        </label>
+
+        {{ form.department }}
+
+        {% if form.department.errors %}
+          <div class="desig-error">
+            {{ form.department.errors }}
+          </div>
+        {% endif %}
+
+      </div>
+
+
+      <!-- LEVEL -->
+      <div class="desig-form-group">
+
+        <label for="{{ form.level.id_for_label }}">
+          Grade Level
+        </label>
+
+        {{ form.level }}
+
+        <span class="desig-help">
+          Example: L1, L2, L3, L4
+        </span>
+
+        {% if form.level.errors %}
+          <div class="desig-error">
+            {{ form.level.errors }}
+          </div>
+        {% endif %}
+
+      </div>
+
+
+    </div>
+
+
+    <!-- BUTTONS -->
+    <div class="desig-form-actions">
+
+      <a
+        href="{% url 'designation_list' %}"
+        class="desig-cancel-btn"
+      >
+        Cancel
+      </a>
+
+      <button
+        type="submit"
+        class="desig-save-btn"
+      >
+        {{ submit_text }}
+      </button>
+
+    </div>
+
+  </form>
+
+</div>
+
+{% endblock %}

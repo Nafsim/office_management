@@ -66,6 +66,9 @@ from .forms import (
 from .decorators import admin_required, manager_or_admin, role_required
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
+from .models import SiteSettings
+from .forms import SiteSettingsForm
+from django.core.paginator import Paginator
 # ─────────────────────────────────────────────
 # PERMISSION HELPER
 # ─────────────────────────────────────────────
@@ -5710,15 +5713,12 @@ def asset_delete(request, pk):
 # ─── FILES & CREDENTIALS ──────────────────────────────────────────────────────
 
 @admin_required
-
 def files_list(request):
-
     if not has_permission(request.user, "files", "view"):
         messages.error(request, "You don't have permission to access files.")
         return redirect("dashboard")
 
-    files = SecureFile.objects.filter(owner=request.user)
-
+    files = SecureFile.objects.filter(owner=request.user).order_by('-uploaded_at')
     return render(request, 'hrm/files.html', _ctx(request, files=files))
 
 
@@ -5728,55 +5728,64 @@ def files_export(request):
         messages.error(request, "You don't have permission to export files.")
         return redirect("files_list")
 
-    files = SecureFile.objects.filter(owner=request.user)
+    files = SecureFile.objects.filter(owner=request.user).order_by('-uploaded_at')
 
     rows = [
         [
             file.name,
+            getattr(file, 'type', '') or '—',
+            getattr(file, 'access_group', '') or '—',
             file.owner.get_full_name() or file.owner.username,
             file.uploaded_at.strftime('%Y-%m-%d %H:%M') if file.uploaded_at else '',
-            file.note,
+            '••••••••',  # never export the real secret
         ]
         for file in files
     ]
 
     sections = [
-        ('Secure Files', ['Name', 'Owner', 'Uploaded At', 'Note'], rows),
+        ('Secure Credentials', 
+         ['Resource', 'Type', 'Access Group', 'Owner', 'Uploaded At', 'Secret'], 
+         rows),
     ]
 
-    return _export_tabular_response('Files Export', sections, 'Secure_Files', request.GET.get('format'))
-
-
-
+    return _export_tabular_response(
+        'Credentials Export', 
+        sections, 
+        'Secure_Credentials', 
+        request.GET.get('format')
+    )
 
 
 @admin_required
-
 def file_upload(request):
     if not has_permission(request.user, "files", "create"):
-        messages.error(request, "You don't have permission to upload files.")
+        messages.error(request, "You don't have permission to add credentials.")
         return redirect("files_list")
 
     if request.method == 'POST':
+        name         = request.POST.get('name', '').strip()
+        note         = request.POST.get('note', '').strip()
+        f            = request.FILES.get('file')
+        cred_type    = request.POST.get('type', 'Cloud')
+        access_group = request.POST.get('access_group', 'Engineering')
 
-        name = request.POST.get('name', '')
+        if not name or not note:
+            messages.error(request, "Resource name and secret are required.")
+            return redirect("files_list")
 
-        f    = request.FILES.get('file')
+        SecureFile.objects.create(
+            name=name,
+            file=f,
+            note=note,
+            owner=request.user,
+            type=cred_type,               # ← important
+            access_group=access_group,    # ← important
+        )
 
-        note = request.POST.get('note', '')
+        messages.success(request, "Credential saved securely.")
+        return redirect("files_list")
 
-        if f:
-
-            SecureFile.objects.create(name=name, file=f, note=note, owner=request.user)
-
-            messages.success(request, 'File uploaded securely.')
-
-        return redirect('files_list')
-
-    return render(request, 'hrm/file_upload.html', _ctx(request))
-
-
-
+    return redirect("files_list")
 
 # ─── ONBOARDING ───────────────────────────────────────────────────────────────
 
@@ -5861,255 +5870,474 @@ def onboarding_complete(request):
         )
 
     return redirect('onboarding_list')
+# ═══════════════════════════════════════════════════════════════
+# CONFIGURATION MODULE – FULL VIEWS
+# ═══════════════════════════════════════════════════════════════
 
-# ─── CONFIGURATION (admin only) ───────────────────────────────────────────────
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.db.models import Count
+from django.utils import timezone
 
+# ───────────────────────────── MAIN CONFIG (Card Menu) ─────────────────────────────
 @login_required
-
 def config(request):
     if not has_permission(request.user, "configuration", "view"):
         messages.error(request, "You don't have permission to access Configuration.")
         return redirect("dashboard")
-
-    departments = Department.objects.annotate(emp_count=Count('employee'))
-
-    designations = Designation.objects.select_related('department').all()
-
-    shifts       = Shift.objects.all()
-
-    holidays     = Holiday.objects.all()
-
-    email_tpls   = EmailTemplate.objects.all()
-
-    notif_rules  = NotificationRule.objects.all()
-
-    banks        = BankAccount.objects.select_related('employee__user').all()
+    return render(request, 'hrm/config.html', _ctx(request))
 
 
-
-    forms = {
-
-        'dept_form':  DepartmentForm(),
-
-        'desig_form': DesignationForm(),
-
-        'shift_form': ShiftForm(),
-
-        'hol_form':   HolidayForm(),
-
-        'notif_form': NotificationRuleForm(),
-
-    }
-
-    return render(request, 'hrm/config.html', _ctx(
-
-        request,
-
-        departments=departments, designations=designations, shifts=shifts,
-
-        holidays=holidays, email_tpls=email_tpls, notif_rules=notif_rules,
-
-        banks=banks, **forms,
-
-    ))
-@login_required
-def dept_create(request):
-    if not has_permission(request.user, "configuration", "create"):
-        messages.error(request, "You don't have permission to create department.")
-        return redirect("config")
-
-    if request.method == "POST":
-        form = DepartmentForm(request.POST)
-
-        if form.is_valid():
-            form.save()
-            messages.success(
-                request,
-                "Department created successfully"
-            )
-            return redirect('department_list')
-
-    else:
-        form = DepartmentForm()
-
-    return render(
-        request,
-        'hrm_app/dept_form.html',
-        {
-            'form': form
-        }
-    )
-
+# ───────────────────────────── SITE SETTINGS ─────────────────────────────
 @login_required
 def site_settings(request):
-
     if not has_permission(request.user, "configuration", "edit"):
         messages.error(request, "You don't have permission to update settings.")
         return redirect("dashboard")
 
-    settings, created = SiteSettings.objects.get_or_create(id=1)
+    settings_obj, _ = SiteSettings.objects.get_or_create(id=1)
 
     if request.method == "POST":
-
-        form = SiteSettingsForm(
-            request.POST,
-            request.FILES,
-            instance=settings
-        )
-
+        form = SiteSettingsForm(request.POST, request.FILES, instance=settings_obj)
         if form.is_valid():
             form.save()
             messages.success(request, "Site settings saved successfully.")
             return redirect("site_settings")
-
     else:
-        form = SiteSettingsForm(instance=settings)
+        form = SiteSettingsForm(instance=settings_obj)
+
+    return render(request, "hrm/site_settings.html", _ctx(
+        request, form=form, settings=settings_obj
+    ))
+
+
+# ───────────────────────────── DEPARTMENTS ─────────────────────────────
+@login_required
+def department_list(request):
+    if not has_permission(request.user, "configuration", "view"):
+        messages.error(request, "Permission denied.")
+        return redirect("dashboard")
+
+    departments = Department.objects.annotate(
+        emp_count=Count('employee')
+    ).select_related('head').order_by('name')
+
+    return render(request, 'hrm/department_list.html', _ctx(
+        request,
+        departments=departments
+    ))
+
+
+@login_required
+def dept_create(request):
+    if not has_permission(request.user, "configuration", "create"):
+        messages.error(request, "You don't have permission to create department.")
+        return redirect("department_list")
+
+    if request.method == "POST":
+        form = DepartmentForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Department created successfully.")
+            return redirect("department_list")
+    else:
+        form = DepartmentForm()
+
+    return render(request, 'hrm/dept_form.html', _ctx(
+        request, form=form, title="Add Department"
+    ))
+
+
+@login_required
+def dept_edit(request, pk):
+    if not has_permission(request.user, "configuration", "edit"):
+        messages.error(request, "Permission denied.")
+        return redirect("department_list")
+
+    dept = get_object_or_404(Department, pk=pk)
+
+    if request.method == "POST":
+        form = DepartmentForm(request.POST, instance=dept)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Department updated successfully.")
+            return redirect("department_list")
+    else:
+        form = DepartmentForm(instance=dept)
+
+    return render(request, 'hrm/dept_form.html', _ctx(
+        request, form=form, title="Edit Department", object=dept
+    ))
+
+
+@login_required
+def dept_delete(request, pk):
+    if not has_permission(request.user, "configuration", "delete"):
+        messages.error(request, "Permission denied.")
+        return redirect("department_list")
+
+    dept = get_object_or_404(Department, pk=pk)
+    name = dept.name
+    dept.delete()
+    messages.success(request, f'Department "{name}" deleted successfully.')
+    return redirect("department_list")
+
+
+# ─────────────────────────────────────────────
+#  DESIGNATIONS
+# ─────────────────────────────────────────────
+
+@login_required
+def designation_list(request):
+    if not has_permission(request.user, "configuration", "view"):
+        messages.error(request, "Permission denied.")
+        return redirect("dashboard")
+
+    designation_qs = (
+        Designation.objects
+        .select_related("department")
+        .order_by("department__name", "level", "title")
+    )
+
+    # 6 records per page
+    paginator = Paginator(designation_qs, 6)
+
+    page_number = request.GET.get("page", 1)
+    page_obj = paginator.get_page(page_number)
+
+    context = _ctx(
+        request,
+        designations=page_obj.object_list,
+        page_obj=page_obj,
+        paginator=paginator,
+
+        # Dynamic permissions
+        can_create=has_permission(
+            request.user, "configuration", "create"
+        ),
+        can_edit=has_permission(
+            request.user, "configuration", "edit"
+        ),
+        can_delete=has_permission(
+            request.user, "configuration", "delete"
+        ),
+    )
 
     return render(
         request,
-        "hrm/site_settings.html",
-        {
-            "form": form,
-            "settings": settings,
-        },
+        "hrm/designation_list.html",
+        context
     )
 
 
 @login_required
-
 def desig_create(request):
     if not has_permission(request.user, "configuration", "create"):
-        messages.error(request, "You don't have permission to create department.")
-        return redirect("config")
+        messages.error(request, "Permission denied.")
+        return redirect("designation_list")
 
-    form = DesignationForm(request.POST)
+    if request.method == "POST":
+        form = DesignationForm(request.POST)
 
-    if form.is_valid():
+        if form.is_valid():
+            designation = form.save()
 
-        form.save()
+            messages.success(
+                request,
+                f'Designation "{designation.title}" created successfully.'
+            )
 
-        messages.success(request, 'Designation added.')
+            return redirect("designation_list")
 
-    return redirect('config')
+    else:
+        form = DesignationForm()
+
+    return render(
+        request,
+        "hrm/desig_form.html",
+        _ctx(
+            request,
+            form=form,
+            title="Add Designation",
+            submit_text="Add Designation",
+        )
+    )
 
 
+@login_required
+def desig_edit(request, pk):
+    if not has_permission(request.user, "configuration", "edit"):
+        messages.error(request, "Permission denied.")
+        return redirect("designation_list")
+
+    designation = get_object_or_404(
+        Designation,
+        pk=pk
+    )
+
+    if request.method == "POST":
+
+        form = DesignationForm(
+            request.POST,
+            instance=designation
+        )
+
+        if form.is_valid():
+
+            designation = form.save()
+
+            messages.success(
+                request,
+                f'Designation "{designation.title}" updated successfully.'
+            )
+
+            return redirect("designation_list")
+
+    else:
+        form = DesignationForm(
+            instance=designation
+        )
+
+    return render(
+        request,
+        "hrm/desig_form.html",
+        _ctx(
+            request,
+            form=form,
+            title="Edit Designation",
+            submit_text="Save Changes",
+            object=designation,
+        )
+    )
 
 
+@login_required
+def desig_delete(request, pk):
+    if not has_permission(request.user, "configuration", "delete"):
+        messages.error(request, "Permission denied.")
+        return redirect("designation_list")
 
-@admin_required
+    designation = get_object_or_404(
+        Designation,
+        pk=pk
+    )
 
+    # Delete only through POST
+    if request.method == "POST":
+
+        title = designation.title
+
+        designation.delete()
+
+        messages.success(
+            request,
+            f'Designation "{title}" deleted successfully.'
+        )
+
+    return redirect("designation_list")
+# ───────────────────────────── SHIFTS ─────────────────────────────
+@login_required
+def shift_list(request):
+    if not has_permission(request.user, "configuration", "view"):
+        messages.error(request, "Permission denied.")
+        return redirect("dashboard")
+
+    shifts = Shift.objects.all().order_by('start_time')
+    return render(request, 'hrm/shift_list.html', _ctx(request, shifts=shifts))
+
+
+@login_required
 def shift_create(request):
     if not has_permission(request.user, "configuration", "create"):
-        messages.error(request, "You don't have permission to create shift.")
-        return redirect("config")
+        messages.error(request, "Permission denied.")
+        return redirect("shift_list")
 
-    form = ShiftForm(request.POST)
+    if request.method == "POST":
+        form = ShiftForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Shift created successfully.")
+            return redirect("shift_list")
+    else:
+        form = ShiftForm()
 
-    if form.is_valid():
-
-        form.save()
-
-        messages.success(request, 'Shift added.')
-
-    return redirect('config')
+    return render(request, 'hrm/shift_form.html', _ctx(
+        request, form=form, title="Add Shift"
+    ))
 
 
+@login_required
+def shift_edit(request, pk):
+    if not has_permission(request.user, "configuration", "edit"):
+        messages.error(request, "Permission denied.")
+        return redirect("shift_list")
+
+    shift = get_object_or_404(Shift, pk=pk)
+
+    if request.method == "POST":
+        form = ShiftForm(request.POST, instance=shift)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Shift updated successfully.")
+            return redirect("shift_list")
+    else:
+        form = ShiftForm(instance=shift)
+
+    return render(request, 'hrm/shift_form.html', _ctx(
+        request, form=form, title="Edit Shift", object=shift
+    ))
+
+
+@login_required
+def shift_delete(request, pk):
+    if not has_permission(request.user, "configuration", "delete"):
+        messages.error(request, "Permission denied.")
+        return redirect("shift_list")
+
+    shift = get_object_or_404(Shift, pk=pk)
+    name = shift.name
+    shift.delete()
+    messages.success(request, f'Shift "{name}" deleted successfully.')
+    return redirect("shift_list")
+
+
+# ───────────────────────────── ORG CALENDAR / HOLIDAYS ─────────────────────────────
+@login_required
+def org_calendar(request):
+    if not has_permission(request.user, "configuration", "view"):
+        messages.error(request, "Permission denied.")
+        return redirect("dashboard")
+
+    year = int(request.GET.get('year', timezone.now().year))
+    holidays = Holiday.objects.filter(date__year=year).order_by('date')
+
+    public_count = holidays.filter(htype='Public').count()
+    religious_count = holidays.filter(htype='Religious').count()
+    # Approximate working days (you can improve this later)
+    working_days = 365 - public_count - religious_count - 104  # rough weekend calculation
+
+    return render(request, 'hrm/org_calendar.html', _ctx(
+        request,
+        holidays=holidays,
+        year=year,
+        public_count=public_count,
+        religious_count=religious_count,
+        working_days=working_days
+    ))
 
 
 @login_required
 def holiday_create(request):
-
     if not has_permission(request.user, "configuration", "create"):
-        messages.error(request, "You don't have permission to create holiday.")
-        return redirect("config")
+        messages.error(request, "Permission denied.")
+        return redirect("org_calendar")
 
-    form = HolidayForm(request.POST)
+    if request.method == "POST":
+        form = HolidayForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Holiday added successfully.")
+            return redirect("org_calendar")
+    else:
+        form = HolidayForm()
 
-    if form.is_valid():
-
-        form.save()
-
-        messages.success(request, 'Holiday added.')
-
-    return redirect('config')
-
-    form = HolidayForm(request.POST)
-
-    if form.is_valid():
-
-        form.save()
-
-        messages.success(request, 'Holiday added.')
-
-    return redirect('config')
+    return render(request, 'hrm/holiday_form.html', _ctx(
+        request, form=form, title="Add Holiday"
+    ))
 
 
+@login_required
+def holiday_delete(request, pk):
+    if not has_permission(request.user, "configuration", "delete"):
+        messages.error(request, "Permission denied.")
+        return redirect("org_calendar")
+
+    holiday = get_object_or_404(Holiday, pk=pk)
+    name = holiday.name
+    holiday.delete()
+    messages.success(request, f'Holiday "{name}" deleted successfully.')
+    return redirect("org_calendar")
 
 
+# ───────────────────────────── EMAIL TEMPLATES ─────────────────────────────
+@login_required
+def email_template_list(request):
+    if not has_permission(request.user, "configuration", "view"):
+        messages.error(request, "Permission denied.")
+        return redirect("dashboard")
 
-@admin_required
+    templates = EmailTemplate.objects.all().order_by('category', 'name')
+    return render(request, 'hrm/email_template_list.html', _ctx(
+        request, templates=templates
+    ))
 
+
+# ───────────────────────────── NOTIFICATION RULES ─────────────────────────────
+@login_required
+def notification_rules(request):
+    if not has_permission(request.user, "configuration", "view"):
+        messages.error(request, "Permission denied.")
+        return redirect("dashboard")
+
+    rules = NotificationRule.objects.all().order_by('event')
+    return render(request, 'hrm/notification_rules.html', _ctx(
+        request, rules=rules
+    ))
+
+
+@login_required
 def notif_rule_toggle(request, pk):
     if not has_permission(request.user, "configuration", "edit"):
-        messages.error(request, "You don't have permission to edit notification rules.")
-        return redirect("config")
-
+        messages.error(request, "Permission denied.")
+        return redirect("notification_rules")
 
     rule = get_object_or_404(NotificationRule, pk=pk)
-
     rule.is_active = not rule.is_active
-
     rule.save()
-
-    messages.success(request, f'Notification rule {"enabled" if rule.is_active else "disabled"}.')
-
-    return redirect('config')
-
+    status = "enabled" if rule.is_active else "disabled"
+    messages.success(request, f'Notification rule "{rule.event}" {status}.')
+    return redirect("notification_rules")
 
 
+# ───────────────────────────── BANK INFORMATION ─────────────────────────────
+@login_required
+def bank_list(request):
+    if not has_permission(request.user, "configuration", "view"):
+        messages.error(request, "Permission denied.")
+        return redirect("dashboard")
+
+    banks = BankAccount.objects.select_related('employee__user').order_by('bank_name')
+    return render(request, 'hrm/bank_list.html', _ctx(request, banks=banks))
 
 
-# ─── PERMISSIONS PAGE ─────────────────────────────────────────────────────────
+# ───────────────────────────── ROLES & PERMISSIONS (already exists) ─────────────────────────────
 @admin_required
 def permissions_view(request):
-
     modules = UserPermission.MODULE_CHOICES
+    permissions = [{"module": k, "name": v} for k, v in modules]
+    return render(request, "hrm/permissions.html", _ctx(request, permissions=permissions))
 
-    permissions = []
 
-    for module_key, module_name in modules:
-        permissions.append({
-            "module": module_key,
-            "name": module_name,
-        })
-
-    return render(
-        request,
-        "hrm/permissions.html",
-        _ctx(
-            request,
-            permissions=permissions
-        )
-    )
-
+from datetime import date
+import calendar
 
 @login_required
 def calendar_view(request):
     if not has_permission(request.user, "calendar", "view"):
         messages.error(request, "You don't have permission to access Calendar.")
         return redirect("dashboard")
+
     today = date.today()
     month = int(request.GET.get('month', today.month))
     year  = int(request.GET.get('year', today.year))
 
-    # Get approved leaves for the month
     leaves = LeaveRequest.objects.filter(
         status='Approved',
         from_date__year=year,
         from_date__month=month
     ).select_related('employee__user')
 
-    # Get holidays
     holidays = Holiday.objects.filter(date__year=year, date__month=month)
 
     cal = calendar.Calendar(firstweekday=6)
@@ -6135,8 +6363,6 @@ def calendar_view(request):
         month_name=calendar.month_name[month],
         month_days=month_days,
     ))
-
-
 # ─── SUPPORT PAGES ─────────────────────────────────────────────────────────────
 
 

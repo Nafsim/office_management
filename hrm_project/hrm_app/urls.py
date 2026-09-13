@@ -453,7 +453,7 @@ path('petty-cash/fixed-costs/<int:pk>/delete/', views.fixedcost_delete, name='fi
 
 
 
-    # Files
+    # Files & credentials
 
 
 
@@ -518,42 +518,76 @@ path('petty-cash/fixed-costs/<int:pk>/delete/', views.fixedcost_delete, name='fi
 ),
 
 
+# Configuration
+path('config/',                              views.config,               name='config'),
+path('settings/',                            views.site_settings,        name='site_settings'),
 
-    # Config
+# Departments
+path('config/departments/',                  views.department_list,      name='department_list'),
+path('config/departments/create/',           views.dept_create,          name='dept_create'),
+path('config/departments/<int:pk>/edit/',    views.dept_edit,            name='dept_edit'),
+path('config/departments/<int:pk>/delete/',  views.dept_delete,          name='dept_delete'),
 
+# Designations
+path('config/designations/',                 views.designation_list,     name='designation_list'),
+path('config/designations/create/',          views.desig_create,         name='desig_create'),
+path('config/designations/<int:pk>/edit/',   views.desig_edit,           name='desig_edit'),
+path('config/designations/<int:pk>/delete/', views.desig_delete,         name='desig_delete'),
 
+# Shifts
+path('config/shifts/',                       views.shift_list,           name='shift_list'),
+path('config/shifts/create/',                views.shift_create,         name='shift_create'),
+path('config/shifts/<int:pk>/edit/',         views.shift_edit,           name='shift_edit'),
+path('config/shifts/<int:pk>/delete/',       views.shift_delete,         name='shift_delete'),
 
-    path('config/',                    views.config,            name='config'),
+# Org Calendar / Holidays
+path('config/org-calendar/',                 views.org_calendar,         name='org_calendar'),
+path('config/holidays/create/',              views.holiday_create,       name='holiday_create'),
+path('config/holidays/<int:pk>/delete/',     views.holiday_delete,       name='holiday_delete'),
 
+# Email Templates
+path(
+    'config/email-templates/',
+    views.email_template_list,
+    name='email_template_list'
+),
 
+path(
+    'config/email-templates/create/',
+    views.email_template_create,
+    name='email_template_create'
+),
 
-    path('config/dept/create/',        views.dept_create,       name='dept_create'),
+path(
+    'config/email-templates/<int:pk>/',
+    views.email_template_detail,
+    name='email_template_detail'
+),
 
+path(
+    'config/email-templates/<int:pk>/edit/',
+    views.email_template_edit,
+    name='email_template_edit'
+),
 
+path(
+    'config/email-templates/<int:pk>/delete/',
+    views.email_template_delete,
+    name='email_template_delete'
+),
 
-    path('config/desig/create/',       views.desig_create,      name='desig_create'),
+# Notification Rules
+path('config/notification-rules/',           views.notification_rules,   name='notification_rules'),
+path('config/notif/<int:pk>/toggle/',        views.notif_rule_toggle,    name='notif_rule_toggle'),
 
+# Bank
+path('config/banks/',                        views.bank_list,            name='bank_list'),
 
-
-    path('config/shift/create/',       views.shift_create,      name='shift_create'),
-
-
-
-    path('config/holiday/create/',     views.holiday_create,    name='holiday_create'),
-
-
-
-    path('config/notif/<int:pk>/toggle/', views.notif_rule_toggle, name='notif_rule_toggle'),
-
-
-
-    path('permissions/',               views.permissions_view,  name='permissions_view'),
-
-
-
+# Permissions
+path('permissions/',                         views.permissions_view,     name='permissions_view'),
      
-
 path('calendar/', views.calendar_view, name='calendar_view'),
+
 
 path("settings/", views.site_settings, name="site_settings"),
 

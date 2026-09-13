@@ -1,26 +1,169 @@
-{% extends "hrm/base.html" %}
+{% extends 'hrm/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} — Configuration{% endblock %}
 
 {% block content %}
+<style>
+  .form-wrapper {
+    max-width: 640px;
+  }
+  .form-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 28px 30px;
+    position: relative;
+  }
+  .form-card .close-btn {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+  .form-card .close-btn:hover {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #ef4444;
+  }
+  .form-group {
+    margin-bottom: 20px;
+  }
+  .form-group label {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #64748b;
+    margin-bottom: 7px;
+  }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 14.5px;
+    color: #1e293b;
+    background: #fff;
+    transition: all 0.15s;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: #f97316;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12);
+  }
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 28px;
+    padding-top: 22px;
+    border-top: 1px solid #f1f5f9;
+  }
+  .btn-cancel {
+    background: white;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+    padding: 10px 22px;
+    border-radius: 10px;
+    font-size: 14.5px;
+    text-decoration: none;
+  }
+  .btn-cancel:hover {
+    background: #f8fafc;
+  }
+  .btn-save {
+    background: #f97316;
+    border: none;
+    color: white;
+    padding: 10px 26px;
+    border-radius: 10px;
+    font-size: 14.5px;
+    cursor: pointer;
+  }
+  .btn-save:hover {
+    background: #ea580c;
+  }
+</style>
 
-<div class="card pad">
-
-<h2>Create Department</h2>
-
-
-<form method="post">
-
-{% csrf_token %}
-
-{{ form.as_p }}
-
-
-<button class="btn btn-primary">
-Save
-</button>
-
-
-</form>
-
+<div class="page-head">
+  <div>
+    <h1>{{ title }}</h1>
+    <div class="crumb">Home · Configuration · Departments · {{ title }}</div>
+  </div>
+  <div style="display:flex; gap:10px;">
+    <a href="{% url 'department_list' %}" class="btn ghost">← Back</a>
+  </div>
 </div>
 
+<div class="form-wrapper">
+  <div class="form-card">
+    <!-- Close (X) button -->
+    <a href="{% url 'department_list' %}" class="close-btn" title="Close">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </a>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label>Department Name <span style="color:#ef4444">*</span></label>
+        {{ form.name }}
+        {% if form.name.errors %}
+          <div style="color:#ef4444; font-size:13px; margin-top:5px;">{{ form.name.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label>Department Head</label>
+        {{ form.head }}
+        {% if form.head.errors %}
+          <div style="color:#ef4444; font-size:13px; margin-top:5px;">{{ form.head.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      {% if form.notice %}
+      <div class="form-group">
+        <label>Notice / Description</label>
+        {{ form.notice }}
+      </div>
+      {% endif %}
+
+      <!-- Extra fields if any -->
+      {% for field in form %}
+        {% if field.name != 'name' and field.name != 'head' and field.name != 'notice' %}
+          <div class="form-group">
+            <label>{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+              <div style="color:#ef4444; font-size:13px; margin-top:5px;">{{ field.errors.0 }}</div>
+            {% endif %}
+          </div>
+        {% endif %}
+      {% endfor %}
+
+      <div class="form-actions">
+        <a href="{% url 'department_list' %}" class="btn-cancel">Cancel</a>
+        <button type="submit" class="btn-save">
+          {% if object %}Update Department{% else %}Create Department{% endif %}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
 {% endblock %}

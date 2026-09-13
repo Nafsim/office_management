@@ -1,0 +1,385 @@
+{% extends 'hrm/base.html' %}
+
+{% block title %}{{ title }} — Luminous HRM{% endblock %}
+
+{% block content %}
+
+<style>
+
+.email-form-page {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.email-form-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.email-form-head h1 {
+    margin: 0 0 5px;
+    font-size: 24px;
+    font-weight: 600;
+    color: #1e3a5f;
+}
+
+.email-form-crumb {
+    font-size: 13px;
+    font-weight: 400;
+    color: #7890ad;
+}
+
+.email-form-card {
+    background: #fff;
+    border: 1px solid #e5eaf0;
+    border-radius: 14px;
+    padding: 25px;
+}
+
+.email-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+
+.email-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.email-field.full {
+    grid-column: 1 / -1;
+}
+
+.email-field label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #607895;
+}
+
+.email-field input,
+.email-field select,
+.email-field textarea {
+    width: 100%;
+    box-sizing: border-box;
+
+    padding: 10px 11px;
+
+    border: 1px solid #dfe6ee;
+    border-radius: 8px;
+
+    background: #fff;
+
+    color: #526b88;
+
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 400;
+
+    outline: none;
+}
+
+.email-field textarea {
+    min-height: 180px;
+    resize: vertical;
+    line-height: 1.6;
+}
+
+.email-field input:focus,
+.email-field select:focus,
+.email-field textarea:focus {
+    border-color: #f66a4f;
+    box-shadow: 0 0 0 2px rgba(246,106,79,.08);
+}
+
+.email-error {
+    margin-top: 2px;
+    font-size: 11px;
+    color: #c85c5c;
+}
+
+.email-form-error {
+    margin-bottom: 18px;
+    padding: 11px 13px;
+    border-radius: 8px;
+
+    background: #fff3f3;
+    border: 1px solid #f3d3d3;
+
+    color: #b45353;
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.email-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+
+    margin-top: 24px;
+    padding-top: 18px;
+
+    border-top: 1px solid #edf0f4;
+}
+
+.email-cancel-btn,
+.email-save-btn {
+    height: 37px;
+    padding: 0 15px;
+
+    border-radius: 8px;
+
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.email-cancel-btn {
+    border: 1px solid #dfe6ee;
+    background: #fff;
+    color: #607895;
+}
+
+.email-save-btn {
+    border: 0;
+    background: #f66a4f;
+    color: #fff;
+}
+
+.email-save-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+@media(max-width: 700px) {
+
+    .email-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .email-field.full {
+        grid-column: auto;
+    }
+
+    .email-form-head {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+}
+
+</style>
+
+
+<div class="email-form-page">
+
+
+    <!-- HEADER -->
+
+    <div class="email-form-head">
+
+        <div>
+
+            <h1>
+                {{ title }}
+            </h1>
+
+            <div class="email-form-crumb">
+                Home · Configuration · Email Templates · {{ title }}
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- FORM CARD -->
+
+    <div class="email-form-card">
+
+        {% if form.non_field_errors %}
+
+            <div class="email-form-error">
+                {{ form.non_field_errors }}
+            </div>
+
+        {% endif %}
+
+
+        <form method="POST">
+
+            {% csrf_token %}
+
+
+            <div class="email-form-grid">
+
+
+                <!-- NAME -->
+
+                <div class="email-field">
+
+                    <label for="{{ form.name.id_for_label }}">
+                        Template Name
+                    </label>
+
+                    {{ form.name }}
+
+                    {% for error in form.name.errors %}
+                        <div class="email-error">
+                            {{ error }}
+                        </div>
+                    {% endfor %}
+
+                </div>
+
+
+                <!-- CATEGORY -->
+
+                <div class="email-field">
+
+                    <label for="{{ form.category.id_for_label }}">
+                        Category
+                    </label>
+
+                    {{ form.category }}
+
+                    {% for error in form.category.errors %}
+                        <div class="email-error">
+                            {{ error }}
+                        </div>
+                    {% endfor %}
+
+                </div>
+
+
+                <!-- SUBJECT -->
+
+                <div class="email-field full">
+
+                    <label for="{{ form.subject.id_for_label }}">
+                        Subject
+                    </label>
+
+                    {{ form.subject }}
+
+                    {% for error in form.subject.errors %}
+                        <div class="email-error">
+                            {{ error }}
+                        </div>
+                    {% endfor %}
+
+                </div>
+
+
+                <!-- TRIGGER -->
+
+                <div class="email-field full">
+
+                    <label for="{{ form.trigger.id_for_label }}">
+                        Trigger
+                    </label>
+
+                    {{ form.trigger }}
+
+                    {% for error in form.trigger.errors %}
+                        <div class="email-error">
+                            {{ error }}
+                        </div>
+                    {% endfor %}
+
+                </div>
+
+
+                <!-- STATUS -->
+
+                <div class="email-field">
+
+                    <label for="{{ form.status.id_for_label }}">
+                        Status
+                    </label>
+
+                    {{ form.status }}
+
+                    {% for error in form.status.errors %}
+                        <div class="email-error">
+                            {{ error }}
+                        </div>
+                    {% endfor %}
+
+                </div>
+
+
+                <!-- BODY -->
+
+                <div class="email-field full">
+
+                    <label for="{{ form.body.id_for_label }}">
+                        Email Body
+                    </label>
+
+                    {{ form.body }}
+
+                    {% for error in form.body.errors %}
+                        <div class="email-error">
+                            {{ error }}
+                        </div>
+                    {% endfor %}
+
+                </div>
+
+
+            </div>
+
+
+            <!-- BUTTONS -->
+
+            <div class="email-form-actions">
+
+                <a href="{% url 'email_template_list' %}"
+                   class="email-cancel-btn">
+
+                    Cancel
+
+                </a>
+
+
+                <button type="submit"
+                        class="email-save-btn">
+
+                    <svg viewBox="0 0 24 24"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="2">
+
+                        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+
+                        <path d="M17 21v-8H7v8"/>
+
+                        <path d="M7 3v5h8"/>
+
+                    </svg>
+
+                    Save Template
+
+                </button>
+
+            </div>
+
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}
