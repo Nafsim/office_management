@@ -208,17 +208,11 @@
                   {% if dept.head.first_name %}
                     {{ dept.head.first_name|slice:":1"|upper }}{{ dept.head.last_name|default:""|slice:":1"|upper }}
                   {% else %}
-                    {{ dept.head|stringformat:"s"|slice:":2"|upper }}
+                    {{ dept.head.full_name|slice:":2"|upper }}
                   {% endif %}
                 </span>
                 <span>
-                  {% if dept.head.get_full_name %}
-                    {{ dept.head.get_full_name }}
-                  {% elif dept.head.first_name %}
-                    {{ dept.head.first_name }} {{ dept.head.last_name|default:"" }}
-                  {% else %}
-                    {{ dept.head }}
-                  {% endif %}
+                  {{ dept.head.full_name }}
                 </span>
               {% else %}
                 <span style="color: #94a3b8;">—</span>

@@ -29,37 +29,108 @@
 
 <!-- Contact Cards -->
 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px; margin-bottom:32px;">
-
-  <!-- Email -->
-  <div class="card pad" style="text-align:center;">
+  <div class="card pad" style="text-align:center; cursor:pointer;" onclick="openEmailForm()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openEmailForm();}">
     <div style="margin-bottom:12px;">
-      <div style="background:#F3F4F6; width:56px; height:56px; border-radius:12px; margin:auto; display:flex; align-items:center; justify-content:center; font-size:28px;">✉️</div>
+      <div style="background:#F3F4F6; width:56px; height:56px; border-radius:12px; margin:auto; display:flex; align-items:center; justify-content:center; color:#FF6B00;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+      </div>
     </div>
     <strong>Email</strong><br>
-    <span style="color:var(--muted);">support@luminouslabsbd.com</span><br><br>
-    <a href="mailto:support@luminouslabsbd.com" class="btn" style="width:100%;">Send Email</a>
+    <span style="color:var(--muted);">Choose an employee and send directly</span><br><br>
+    <button type="button" onclick="openEmailForm()" class="btn" style="width:100%;">Send Email</button>
   </div>
 
-  <!-- Live Chat -->
-  <div class="card pad" style="text-align:center;">
+  <div class="card pad" style="text-align:center; cursor:pointer;" onclick="startLiveChat()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();startLiveChat();}">
     <div style="margin-bottom:12px;">
-      <div style="background:#F3F4F6; width:56px; height:56px; border-radius:12px; margin:auto; display:flex; align-items:center; justify-content:center; font-size:28px;">🔔</div>
+      <div style="background:#F3F4F6; width:56px; height:56px; border-radius:12px; margin:auto; display:flex; align-items:center; justify-content:center; color:#22C55E;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.5 9.6 9.6 0 0 1-4.2-1L3 20l1.4-4.3A8.2 8.2 0 0 1 3 11.5a8.8 8.8 0 0 1 9-8.5 8.7 8.7 0 0 1 9 8.5Z"/><path d="M8 12h.01M12 12h.01M16 12h.01"/></svg>
+      </div>
     </div>
     <strong>Live Chat</strong><br>
     <span style="color:var(--muted);">Avg. reply 3 min · Online</span><br><br>
-    <button onclick="startLiveChat()" class="btn" style="width:100%; background:#22C55E; color:white;">Start Chat</button>
+    <button type="button" onclick="startLiveChat()" class="btn" style="width:100%; background:#22C55E; color:white;">Start Chat</button>
   </div>
 
-  <!-- Hours -->
   <div class="card pad" style="text-align:center;">
     <div style="margin-bottom:12px;">
-      <div style="background:#F3F4F6; width:56px; height:56px; border-radius:12px; margin:auto; display:flex; align-items:center; justify-content:center; font-size:28px;">🕒</div>
+      <div style="background:#F3F4F6; width:56px; height:56px; border-radius:12px; margin:auto; display:flex; align-items:center; justify-content:center; color:#64748B;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      </div>
     </div>
     <strong>Hours</strong><br>
-    <span style="color:var(--muted);">Sun–Thu, 9am–6pm (GMT+6)</span><br><br>
+    <span style="color:var(--muted);">Sun-Thu, 9am-6pm (GMT+6)</span><br><br>
     <a href="{% url 'user_guide_faq' %}" class="btn ghost" style="width:100%;">Read FAQ</a>
   </div>
+</div>
 
+<div id="emailPanel" class="card pad" style="display:none; margin-bottom:24px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px;">
+    <div><h3 style="margin:0;">Email Support</h3><span style="color:var(--muted);">Choose a team member to compose a direct email.</span></div>
+    <button type="button" class="btn ghost" onclick="closeEmailForm()">Close</button>
+  </div>
+  <div class="support-workspace">
+    <aside class="support-directory" aria-label="Choose an email recipient">
+      <strong>Team members</strong>
+      <div class="support-people">
+        {% for employee in employees %}
+          <button type="button" class="support-person" data-email-user="{{ employee.user_id }}" onclick="chooseEmailRecipient(this)">
+            <span class="support-avatar" style="background:{{ employee.avatar_color|default:'#6366F1' }};">{{ employee.avatar_initials|default:employee.full_name|slice:':2'|upper }}</span>
+            <span style="min-width:0; text-align:left;"><strong>{{ employee.full_name }}</strong><small>{{ employee.user.email|default:'No email address' }}</small></span>
+          </button>
+        {% empty %}<p style="color:var(--muted);">No active employees available.</p>{% endfor %}
+      </div>
+    </aside>
+    <form id="emailForm" class="support-content">
+      {% csrf_token %}
+      <label style="display:block; margin-bottom:8px; font-weight:600;">Send to employee</label>
+      <select id="emailRecipient" name="recipient_id" class="input" required style="width:100%; margin-bottom:12px;">
+        <option value="">Choose an employee</option>
+        {% for employee in employees %}
+          <option value="{{ employee.user_id }}">{{ employee.full_name }}{% if employee.user.email %} — {{ employee.user.email }}{% else %} — No email address{% endif %}</option>
+        {% endfor %}
+      </select>
+      <input name="subject" class="input" placeholder="Subject" required style="width:100%; margin-bottom:12px;">
+      <textarea name="message" class="input" rows="8" placeholder="How can we help?" required></textarea>
+      <div style="display:flex; gap:12px; margin-top:16px;">
+        <button class="btn" type="submit" style="background:#FF6B00; color:white;">Send Email</button>
+        <button class="btn ghost" type="button" onclick="closeEmailForm()">Cancel</button>
+      </div>
+      <div id="emailStatus" role="status" style="margin-top:12px;"></div>
+    </form>
+  </div>
+</div>
+
+<div id="chatPanel" class="card pad" style="display:none; margin-bottom:24px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+    <div><h3 style="margin:0;">Live Chat</h3><span id="chatStatus" style="color:var(--muted);">Connecting...</span></div>
+    <div style="display:flex; gap:8px;">
+      <button type="button" class="btn ghost" onclick="loadChatHistory()">Show Chat History</button>
+      <button type="button" class="btn ghost" onclick="closeChat()">Close</button>
+    </div>
+  </div>
+  <div class="support-workspace chat-workspace">
+    <aside class="support-directory" aria-label="Choose a chat participant">
+      <strong>Team members</strong>
+      <div class="support-people">
+        {% for employee in employees %}
+          <button type="button" class="support-person" data-chat-user="{{ employee.user_id }}" onclick="chooseChatParticipant(this)">
+            <span class="support-avatar" style="background:{{ employee.avatar_color|default:'#6366F1' }};">{{ employee.avatar_initials|default:employee.full_name|slice:':2'|upper }}</span>
+            <span style="min-width:0; text-align:left;"><strong>{{ employee.full_name }}</strong><small>{{ employee.user.email|default:'Available for chat' }}</small></span>
+          </button>
+        {% empty %}<p style="color:var(--muted);">No active employees available.</p>{% endfor %}
+      </div>
+    </aside>
+    <section class="support-content chat-content">
+      <select id="chatEmployee" class="input" required style="display:none;"><option value="">Choose an employee</option></select>
+      <div id="chatHistory" style="display:none; margin-bottom:12px; border:1px solid #E2E8F0; border-radius:8px; padding:8px;"></div>
+      <div id="chatMessages" style="height:320px; overflow:auto; margin:0 0 16px; padding:12px; background:#F8FAFC; border-radius:8px;"></div>
+      <form id="chatForm" style="display:flex; gap:8px;">
+        {% csrf_token %}
+        <input id="chatInput" class="input" placeholder="Write a message..." autocomplete="off" required style="flex:1;">
+        <button class="btn" type="submit" style="background:#22C55E; color:white;">Send</button>
+      </form>
+    </section>
+  </div>
 </div>
 
 <!-- Submit Ticket -->
@@ -96,26 +167,174 @@
 
   <div style="margin-top:24px; display:flex; gap:12px;">
     <button onclick="submitTicket()" class="btn" style="background:#FF6B00; color:white; flex:1;">Submit Ticket</button>
-    <button onclick="attachFile()" class="btn ghost" style="flex:1;">Attach File</button>
   </div>
+  <div id="ticketStatus" role="status" style="margin-top:12px;"></div>
 </div>
 
+<style>
+  .support-workspace { display:grid; grid-template-columns:minmax(230px, 30%) 1fr; min-height:360px; border:1px solid #E2E8F0; border-radius:12px; overflow:hidden; background:#fff; }
+  .support-directory { padding:16px; border-right:1px solid #E2E8F0; background:#FBFCFE; overflow:auto; }
+  .support-content { min-width:0; padding:22px; }
+  .support-people { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+  .support-person { display:flex; align-items:center; gap:10px; min-width:0; padding:10px; border:1px solid #E2E8F0; border-radius:10px; background:#fff; cursor:pointer; text-align:left; }
+  .support-person:hover, .support-person.selected { border-color:#6366F1; background:#F5F3FF; }
+  .support-person strong, .support-person small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .support-person small { color:var(--muted); margin-top:3px; }
+  .support-avatar { width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex:0 0 38px; color:#fff; font-weight:700; font-size:12px; }
+  .chat-content { display:flex; flex-direction:column; }
+  .chat-content #chatMessages { flex:1; min-height:240px; }
+  .chat-message { display:flex; align-items:flex-end; gap:8px; margin:10px 0; }
+  .chat-message.mine { justify-content:flex-end; }
+  .chat-bubble { max-width:min(75%, 520px); padding:10px 13px; border-radius:14px; background:#fff; box-shadow:0 1px 4px rgba(15,23,42,.08); }
+  .chat-message.mine .chat-bubble { background:#4F46E5; color:#fff; border-bottom-right-radius:4px; }
+  .chat-time { color:#94A3B8; font-size:11px; white-space:nowrap; }
+  @media (max-width:700px) { .support-workspace { grid-template-columns:1fr; } .support-directory { border-right:0; border-bottom:1px solid #E2E8F0; max-height:220px; } }
+</style>
+
 <script>
-function startLiveChat() {
-  alert("✅ Live Chat started!\n\nConnecting you to support agent...");
+const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+let chatSocket = null;
+let chatUserId = {{ request.user.id }};
+let activeConversationId = null;
+
+function setStatus(id, message, color = 'var(--muted)') {
+  const element = document.getElementById(id);
+  element.textContent = message;
+  element.style.color = color;
 }
 
-function submitTicket() {
-  const subject = document.getElementById('subject').value.trim();
-  if (!subject) {
-    alert("Please enter a subject!");
+function showSupportPanel(panelId) {
+  ['emailPanel', 'chatPanel'].forEach((id) => {
+    document.getElementById(id).style.display = id === panelId ? 'block' : 'none';
+  });
+  document.getElementById(panelId).scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+
+function openEmailForm() { showSupportPanel('emailPanel'); }
+function closeEmailForm() { document.getElementById('emailPanel').style.display = 'none'; }
+
+function chooseEmailRecipient(button) {
+  document.querySelectorAll('[data-email-user]').forEach((item) => item.classList.remove('selected'));
+  button.classList.add('selected');
+  document.getElementById('emailRecipient').value = button.dataset.emailUser;
+  const emailInput = document.getElementById('emailRecipient');
+  if (emailInput.value) document.querySelector('#emailForm input[name="subject"]').focus();
+}
+
+function chooseChatParticipant(button) {
+  document.querySelectorAll('[data-chat-user]').forEach((item) => item.classList.remove('selected'));
+  button.classList.add('selected');
+  document.getElementById('chatEmployee').value = button.dataset.chatUser;
+  openChat(button.dataset.chatUser);
+}
+
+document.getElementById('emailForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  try {
+    const response = await fetch('{% url "support_send_email" %}', { method: 'POST', headers: {'X-CSRFToken': csrfToken}, body: new FormData(event.target) });
+    const data = await response.json();
+    setStatus('emailStatus', data.ok ? data.message : data.error, data.ok ? '#15803D' : '#B91C1C');
+    if (data.ok) event.target.reset();
+  } catch (error) {
+    setStatus('emailStatus', 'Email could not be sent. Please try again.', '#B91C1C');
+  }
+});
+
+async function startLiveChat() {
+  showSupportPanel('chatPanel');
+  const employeeSelect = document.getElementById('chatEmployee');
+  if (!employeeSelect.value) {
+    setStatus('chatStatus', 'Choose a team member to start chatting.', 'var(--muted)');
+    const firstPerson = document.querySelector('[data-chat-user]');
+    if (firstPerson) firstPerson.focus();
     return;
   }
-  alert("✅ Ticket submitted successfully!\n\nTicket ID: SUP-" + Math.floor(100000 + Math.random() * 900000));
+  await openChat(employeeSelect.value);
 }
 
-function attachFile() {
-  alert("📎 File upload dialog opened.\n\n(You can attach screenshots or documents)");
+async function openChat(participantId) {
+  if (chatSocket) chatSocket.close();
+  document.getElementById('chatMessages').replaceChildren();
+  document.getElementById('chatHistory').style.display = 'none';
+  document.getElementById('chatEmployee').value = participantId;
+  setStatus('chatStatus', 'Loading conversation...');
+  const formData = new FormData();
+  formData.append('participant_id', participantId);
+  try {
+    const response = await fetch('{% url "support_chat_start" %}', { method: 'POST', headers: {'X-CSRFToken': csrfToken}, body: formData });
+    const data = await response.json();
+    if (!data.ok) { setStatus('chatStatus', data.error, '#B91C1C'); return; }
+    activeConversationId = data.conversation_id;
+    data.messages.forEach(renderMessage);
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    chatSocket = new WebSocket(`${protocol}://${window.location.host}/ws/support/chat/${data.conversation_id}/`);
+    chatSocket.onopen = () => setStatus('chatStatus', 'Connected', '#15803D');
+    chatSocket.onclose = () => setStatus('chatStatus', 'Chat disconnected', '#B91C1C');
+    chatSocket.onerror = () => setStatus('chatStatus', 'Unable to connect to chat', '#B91C1C');
+    chatSocket.onmessage = (event) => renderMessage(JSON.parse(event.data));
+  } catch (error) {
+    setStatus('chatStatus', 'Unable to load chat. Please try again.', '#B91C1C');
+  }
+}
+
+async function loadChatHistory() {
+  const historyElement = document.getElementById('chatHistory');
+  historyElement.style.display = 'block';
+  historyElement.textContent = 'Loading chat history...';
+  try {
+    const response = await fetch('{% url "support_chat_history" %}');
+    const data = await response.json();
+    historyElement.replaceChildren();
+    if (!data.history.length) {
+      historyElement.textContent = 'No saved conversations yet.';
+      return;
+    }
+    data.history.forEach((conversation) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'btn ghost';
+      button.style.cssText = 'display:block; width:100%; text-align:left; margin:4px 0;';
+      button.textContent = `${conversation.participant}: ${conversation.last_message}`;
+      button.addEventListener('click', () => openChat(conversation.participant_id));
+      historyElement.appendChild(button);
+    });
+  } catch (error) {
+    historyElement.textContent = 'Chat history could not be loaded.';
+  }
+}
+
+function renderMessage(message) {
+  const wrapper = document.createElement('div');
+  const isMine = message.sender_id === chatUserId;
+  wrapper.className = `chat-message${isMine ? ' mine' : ''}`;
+  const time = message.created_at ? new Date(message.created_at).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}) : '';
+  const timeMarkup = `<span class="chat-time">${escapeHtml(time)}</span>`;
+  const bubbleMarkup = `<span class="chat-bubble">${escapeHtml(message.message)}<small style="display:block; margin-top:4px; opacity:.7;">${escapeHtml(message.sender)}</small></span>`;
+  wrapper.innerHTML = isMine ? `${bubbleMarkup}${timeMarkup}` : `${timeMarkup}${bubbleMarkup}`;
+  const messages = document.getElementById('chatMessages');
+  messages.appendChild(wrapper);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function escapeHtml(value) { const div = document.createElement('div'); div.textContent = value; return div.innerHTML; }
+function closeChat() { if (chatSocket) chatSocket.close(); chatSocket = null; activeConversationId = null; document.getElementById('chatPanel').style.display = 'none'; }
+
+document.getElementById('chatForm').addEventListener('submit', (event) => {
+  event.preventDefault();
+  const input = document.getElementById('chatInput');
+  if (chatSocket && chatSocket.readyState === WebSocket.OPEN && input.value.trim()) { chatSocket.send(JSON.stringify({message: input.value.trim()})); input.value = ''; }
+});
+
+async function submitTicket() {
+  const formData = new FormData();
+  formData.append('subject', document.getElementById('subject').value.trim());
+  formData.append('priority', document.getElementById('priority').value);
+  formData.append('category', document.getElementById('category').value);
+  formData.append('description', document.getElementById('description').value.trim());
+  const response = await fetch('{% url "support_ticket_create" %}', { method: 'POST', headers: {'X-CSRFToken': csrfToken}, body: formData });
+  const data = await response.json();
+  setStatus('ticketStatus', data.ok ? `Ticket ${data.ticket_id} submitted successfully.` : data.error, data.ok ? '#15803D' : '#B91C1C');
+  if (data.ok) { document.getElementById('subject').value = ''; document.getElementById('description').value = ''; }
 }
 </script>
 

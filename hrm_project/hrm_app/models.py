@@ -49,6 +49,45 @@ class User(AbstractUser):
         return f"{self.get_full_name() or self.username} ({self.role})"
 
 
+class SupportTicket(models.Model):
+    PRIORITY_CHOICES = [
+        ('Low', 'Low'), ('Medium', 'Medium'), ('High', 'High'), ('Urgent', 'Urgent'),
+    ]
+
+    requester = models.ForeignKey(User, on_delete=models.CASCADE, related_name='support_tickets')
+    subject = models.CharField(max_length=200)
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='Medium')
+    category = models.CharField(max_length=80, default='Other')
+    description = models.TextField()
+    attachment = models.FileField(upload_to='support/tickets/', blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'SUP-{self.pk:06d} {self.subject}'
+
+
+class SupportConversation(models.Model):
+    requester = models.ForeignKey(User, on_delete=models.CASCADE, related_name='support_conversations')
+    participant = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='support_participating_conversations',
+        null=True, blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_open = models.BooleanField(default=True)
+
+
+class SupportMessage(models.Model):
+    conversation = models.ForeignKey(SupportConversation, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='support_messages')
+    body = models.TextField(max_length=4000)
+    attachment = models.FileField(upload_to='support/chat/', blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+
 # ─────────────────────────────────────────────
 #  DEPARTMENT
 # ─────────────────────────────────────────────
@@ -121,6 +160,18 @@ class Employee(models.Model):
 
     def __str__(self):
         return f"{self.emp_id} — {self.user.get_full_name()}"
+
+    @property
+    def full_name(self):
+        return self.user.get_full_name() or self.user.username
+
+    @property
+    def first_name(self):
+        return self.user.first_name
+
+    @property
+    def last_name(self):
+        return self.user.last_name
 
     def save(self, *args, **kwargs):
         if not self.avatar_initials:
@@ -1014,6 +1065,7 @@ class SiteSettings(models.Model):
     
     logo = models.ImageField(upload_to='company/', blank=True, null=True)
     maintenance_mode = models.BooleanField(default=False)
+    permissions_matrix = models.JSONField(default=dict, blank=True)
 
     class Meta:
         verbose_name = "Site Settings"

@@ -3,6 +3,7 @@ from html import escape
 from io import BytesIO
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.conf import settings
 
 from django.urls import reverse
 
@@ -11,6 +12,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 
 from django.contrib import messages
+from django.core.mail import send_mail
 
 from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
 
@@ -49,7 +51,7 @@ from .models import (
     Notice, Document, DocumentRequest, SalaryStructure, Payslip, PettyCashLedger,
 
     Asset, Project, Task, TaskAttachment, TaskImage, TaskStatus, TaskStep, OnboardingRecord, SecureFile,
-    EmailTemplate, Holiday, NotificationRule, Role,
+    EmailTemplate, Holiday, NotificationRule, Role, SupportTicket, SupportConversation,
 
 )
 
@@ -70,6 +72,8 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import SiteSettings
 from .forms import SiteSettingsForm
 from django.core.paginator import Paginator
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from .models import BankAccount
 from .models import UploadedFile
 # ─────────────────────────────────────────────
@@ -2089,7 +2093,146 @@ def user_guide_faq(request):
 
 @login_required
 def contact_support(request):
-    return render(request, 'hrm/contact_support.html', _ctx(request))
+    employees = Employee.objects.select_related('user').filter(
+        user__is_active=True,
+    ).exclude(user_id=request.user.id)
+    return render(request, 'hrm/contact_support.html', _ctx(request, employees=employees))
+
+
+@login_required
+@require_POST
+def support_send_email(request):
+    recipient_id = request.POST.get('recipient_id', '').strip()
+    subject = request.POST.get('subject', '').strip()
+    body = request.POST.get('message', '').strip()
+    recipient = User.objects.filter(pk=recipient_id, is_active=True).first()
+    if not recipient or not recipient.email:
+        return JsonResponse({'ok': False, 'error': 'Choose an employee with an email address.'}, status=400)
+    if not subject or not body:
+        return JsonResponse({'ok': False, 'error': 'Recipient, subject, and message are required.'}, status=400)
+
+    sender_name = request.user.get_full_name() or request.user.username
+    email_body = f'From: {sender_name} <{request.user.email or "no email"}>\n\n{body}'
+    try:
+        send_mail(
+            subject=f'[HRM Support] {subject}',
+            message=email_body,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[recipient.email],
+            fail_silently=False,
+        )
+    except Exception:
+        return JsonResponse({'ok': False, 'error': 'Email could not be sent. Please try again.'}, status=503)
+    return JsonResponse({'ok': True, 'message': 'Your email was sent to support.'})
+
+
+@login_required
+@require_POST
+def support_ticket_create(request):
+    subject = request.POST.get('subject', '').strip()
+    description = request.POST.get('description', '').strip()
+    priority = request.POST.get('priority', 'Medium')
+    category = request.POST.get('category', 'Other')
+    valid_priorities = {choice[0] for choice in SupportTicket.PRIORITY_CHOICES}
+    if not subject or not description:
+        return JsonResponse({'ok': False, 'error': 'Subject and description are required.'}, status=400)
+    if priority not in valid_priorities:
+        return JsonResponse({'ok': False, 'error': 'Invalid priority.'}, status=400)
+    attachment = request.FILES.get('attachment')
+    if attachment and attachment.size > 10 * 1024 * 1024:
+        return JsonResponse({'ok': False, 'error': 'Attachment must be 10 MB or smaller.'}, status=400)
+
+    ticket = SupportTicket.objects.create(
+        requester=request.user,
+        subject=subject,
+        description=description,
+        priority=priority,
+        category=category,
+        attachment=attachment,
+    )
+    return JsonResponse({'ok': True, 'ticket_id': f'SUP-{ticket.pk:06d}'})
+
+
+@login_required
+@require_POST
+def support_chat_start(request):
+    participant_id = request.POST.get('participant_id', '').strip()
+    participant = User.objects.filter(pk=participant_id, is_active=True).first()
+    if not participant or participant.id == request.user.id:
+        return JsonResponse({'ok': False, 'error': 'Choose an employee to chat with.'}, status=400)
+    conversation, _ = SupportConversation.objects.get_or_create(
+        requester=request.user,
+        participant=participant,
+        is_open=True,
+    )
+    messages_data = [
+        {
+            'id': message.id,
+            'message': message.body,
+            'sender': message.sender.get_full_name() or message.sender.username,
+            'sender_id': message.sender_id,
+            'created_at': message.created_at.isoformat(),
+            'attachment_url': message.attachment.url if message.attachment else '',
+            'attachment_name': message.attachment.name.rsplit('/', 1)[-1] if message.attachment else '',
+        }
+        for message in conversation.messages.select_related('sender').all()
+    ]
+    return JsonResponse({'ok': True, 'conversation_id': conversation.id, 'messages': messages_data})
+
+
+@login_required
+@require_POST
+def support_chat_attachment(request):
+    conversation_id = request.POST.get('conversation_id', '').strip()
+    attachment = request.FILES.get('attachment')
+    conversation = SupportConversation.objects.filter(pk=conversation_id).first()
+    if not conversation or request.user.id not in {conversation.requester_id, conversation.participant_id}:
+        return JsonResponse({'ok': False, 'error': 'You cannot access this conversation.'}, status=403)
+    if not attachment:
+        return JsonResponse({'ok': False, 'error': 'Choose a file or image first.'}, status=400)
+    if attachment.size > 10 * 1024 * 1024:
+        return JsonResponse({'ok': False, 'error': 'Attachment must be 10 MB or smaller.'}, status=400)
+    message = SupportMessage.objects.create(
+        conversation=conversation,
+        sender=request.user,
+        body='',
+        attachment=attachment,
+    )
+    payload = {
+        'id': message.id,
+        'message': '',
+        'sender': request.user.get_full_name() or request.user.username,
+        'sender_id': request.user.id,
+        'created_at': message.created_at.isoformat(),
+        'attachment_url': message.attachment.url,
+        'attachment_name': message.attachment.name.rsplit('/', 1)[-1],
+    }
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        f'support_chat_{conversation.id}',
+        {'type': 'chat.message', 'message': payload},
+    )
+    return JsonResponse({'ok': True, **payload})
+
+
+@login_required
+def support_chat_history(request):
+    conversations = SupportConversation.objects.filter(
+        Q(requester=request.user) | Q(participant=request.user),
+        participant__isnull=False,
+    ).select_related('requester', 'participant').prefetch_related('messages').order_by('-updated_at')
+    history = []
+    for conversation in conversations:
+        other_user = conversation.participant if conversation.requester_id == request.user.id else conversation.requester
+        last_message = conversation.messages.all().last()
+        history.append({
+            'conversation_id': conversation.id,
+            'participant_id': other_user.id if other_user else None,
+            'participant': (other_user.get_full_name() or other_user.username) if other_user else 'Support',
+            'last_message': last_message.body if last_message else 'No messages yet',
+            'updated_at': conversation.updated_at.isoformat(),
+        })
+    return JsonResponse({'ok': True, 'history': history})
 
 
 @login_required
@@ -5924,7 +6067,7 @@ def department_list(request):
 
     departments = Department.objects.annotate(
         emp_count=Count('employee')
-    ).select_related('head').order_by('name')
+    ).select_related('head__user').prefetch_related('designations').order_by('name')
 
     return render(request, 'hrm/department_list.html', _ctx(
         request,
@@ -6413,10 +6556,21 @@ def notif_rule_toggle(request, pk):
         return redirect("notification_rules")
 
     rule = get_object_or_404(NotificationRule, pk=pk)
-    rule.is_active = not rule.is_active
-    rule.save()
-    status = "enabled" if rule.is_active else "disabled"
-    messages.success(request, f'Notification rule "{rule.event}" {status}.')
+    
+    # Handle checkbox state from form
+    if request.method == "POST":
+        is_active = request.POST.get("is_active") == "on"
+        rule.is_active = is_active
+        rule.save()
+        status = "enabled" if rule.is_active else "disabled"
+        messages.success(request, f'Notification rule "{rule.event}" {status}.')
+    else:
+        # Fallback to toggle for GET requests
+        rule.is_active = not rule.is_active
+        rule.save()
+        status = "enabled" if rule.is_active else "disabled"
+        messages.success(request, f'Notification rule "{rule.event}" {status}.')
+    
     return redirect("notification_rules")
 
 
@@ -6527,13 +6681,39 @@ def permissions_view(request):
         messages.error(request, "Permission denied.")
         return redirect("dashboard")
 
+    # Get or create site settings
+    from .models import SiteSettings
+    settings_obj, _ = SiteSettings.objects.get_or_create(id=1)
+
+    # Handle POST request to save permissions
+    if request.method == "POST":
+        # Build permissions matrix from form data
+        permissions_matrix = {}
+        for key, value in request.POST.items():
+            if key.startswith('perm_') and value == 'on':
+                # Parse key format: perm_{index}_{role}
+                parts = key.split('_')
+                if len(parts) == 3:
+                    index = int(parts[1])
+                    role = parts[2]
+                    if index not in permissions_matrix:
+                        permissions_matrix[index] = {}
+                    permissions_matrix[index][role] = True
+
+        # Save to site settings
+        settings_obj.permissions_matrix = permissions_matrix
+        settings_obj.save()
+
+        messages.success(request, "Permissions updated successfully.")
+        return redirect("permissions_view")
+
     # Get role counts
     from django.db.models import Count
     role_counts = User.objects.values('role').annotate(count=Count('id')).order_by('role')
     role_dict = {r['role']: r['count'] for r in role_counts}
 
-    # Define permissions matrix
-    permissions = [
+    # Define permissions matrix (default values)
+    all_permissions = [
         {'name': 'View Dashboard', 'super_admin': True, 'manager': True, 'employee': True},
         {'name': 'Manage Employees', 'super_admin': True, 'manager': False, 'employee': False},
         {'name': 'Onboarding & NDA', 'super_admin': True, 'manager': False, 'employee': False},
@@ -6550,10 +6730,44 @@ def permissions_view(request):
         {'name': 'Calendar View', 'super_admin': True, 'manager': True, 'employee': True},
     ]
 
+    # Load saved permissions and override defaults
+    saved_permissions = settings_obj.permissions_matrix or {}
+    for index, perm in enumerate(all_permissions):
+        if index in saved_permissions:
+            for role, value in saved_permissions[index].items():
+                if role == 'admin':
+                    perm['super_admin'] = value
+                elif role == 'manager':
+                    perm['manager'] = value
+                elif role == 'employee':
+                    perm['employee'] = value
+
+    # Pagination
+    page = int(request.GET.get('page', 1))
+    per_page = 6
+    total_items = len(all_permissions)
+    total_pages = (total_items + per_page - 1) // per_page
+
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    permissions = all_permissions[start_idx:end_idx]
+
+    # Add index to each permission for form field naming
+    for idx, perm in enumerate(permissions):
+        perm['index'] = start_idx + idx
+
+    # Generate page numbers for template
+    page_numbers = list(range(1, total_pages + 1))
+
     return render(request, "hrm/permissions.html", _ctx(
         request,
         role_counts=role_dict,
-        permissions=permissions
+        permissions=permissions,
+        page=page,
+        total_pages=total_pages,
+        total_items=total_items,
+        per_page=per_page,
+        page_numbers=page_numbers
     ))
 
 
@@ -6602,12 +6816,6 @@ def calendar_view(request):
         month_days=month_days,
     ))
 # ─── SUPPORT PAGES ─────────────────────────────────────────────────────────────
-
-
-
-@login_required
-def contact_support(request):
-    return render(request, 'hrm/contact_support.html', _ctx(request))
 
 @login_required
 def upload_center(request):

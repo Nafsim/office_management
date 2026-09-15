@@ -213,6 +213,46 @@ class NotificationRuleForm(forms.ModelForm):
 
 
 class SiteSettingsForm(forms.ModelForm):
+    TIMEZONE_CHOICES = [
+        ('UTC', 'UTC'),
+        ('America/New_York', 'America/New_York'),
+        ('America/Los_Angeles', 'America/Los_Angeles'),
+        ('Europe/London', 'Europe/London'),
+        ('Europe/Paris', 'Europe/Paris'),
+        ('Asia/Dubai', 'Asia/Dubai'),
+        ('Asia/Kolkata', 'Asia/Kolkata'),
+        ('Asia/Dhaka', 'Asia/Dhaka'),
+        ('Asia/Singapore', 'Asia/Singapore'),
+        ('Asia/Tokyo', 'Asia/Tokyo'),
+        ('Australia/Sydney', 'Australia/Sydney'),
+    ]
+
+    CURRENCY_CHOICES = [
+        ('USD', 'USD - US Dollar'),
+        ('EUR', 'EUR - Euro'),
+        ('GBP', 'GBP - British Pound'),
+        ('BDT', 'BDT - Bangladeshi Taka'),
+        ('INR', 'INR - Indian Rupee'),
+        ('AUD', 'AUD - Australian Dollar'),
+        ('CAD', 'CAD - Canadian Dollar'),
+        ('SGD', 'SGD - Singapore Dollar'),
+        ('JPY', 'JPY - Japanese Yen'),
+        ('AED', 'AED - UAE Dirham'),
+    ]
+
+    DATE_FORMAT_CHOICES = [
+        ('DD-MM-YYYY', 'DD-MM-YYYY (e.g., 25-12-2024)'),
+        ('MM-DD-YYYY', 'MM-DD-YYYY (e.g., 12-25-2024)'),
+        ('YYYY-MM-DD', 'YYYY-MM-DD (e.g., 2024-12-25)'),
+        ('DD/MM/YYYY', 'DD/MM/YYYY (e.g., 25/12/2024)'),
+        ('MM/DD/YYYY', 'MM/DD/YYYY (e.g., 12/25/2024)'),
+        ('YYYY/MM/DD', 'YYYY/MM/DD (e.g., 2024/12/25)'),
+    ]
+
+    timezone = forms.ChoiceField(choices=TIMEZONE_CHOICES, widget=forms.Select(attrs={'class': 'form-input'}))
+    currency = forms.ChoiceField(choices=CURRENCY_CHOICES, widget=forms.Select(attrs={'class': 'form-input'}))
+    date_format = forms.ChoiceField(choices=DATE_FORMAT_CHOICES, widget=forms.Select(attrs={'class': 'form-input'}))
+
     class Meta:
         model = SiteSettings
         fields = [
@@ -244,9 +284,6 @@ class SiteSettingsForm(forms.ModelForm):
                 'rows': 3,
                 'placeholder': 'Full address'
             }),
-            'timezone': forms.Select(attrs={'class': 'form-input'}),
-            'currency': forms.Select(attrs={'class': 'form-input'}),
-            'date_format': forms.Select(attrs={'class': 'form-input'}),
             'logo': forms.ClearableFileInput(attrs={'class': 'form-input'}),
             'maintenance_mode': forms.CheckboxInput(),
         }

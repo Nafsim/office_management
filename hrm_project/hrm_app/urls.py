@@ -478,6 +478,11 @@ path('petty-cash/fixed-costs/<int:pk>/delete/', views.fixedcost_delete, name='fi
 
 
     path('support/contact/', views.contact_support, name='contact_support'),
+    path('support/email/', views.support_send_email, name='support_send_email'),
+    path('support/ticket/', views.support_ticket_create, name='support_ticket_create'),
+    path('support/chat/start/', views.support_chat_start, name='support_chat_start'),
+    path('support/chat/attachment/', views.support_chat_attachment, name='support_chat_attachment'),
+    path('support/chat/history/', views.support_chat_history, name='support_chat_history'),
 
 
 
