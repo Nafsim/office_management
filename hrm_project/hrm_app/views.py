@@ -6770,7 +6770,7 @@ def permissions_view(request):
         page_numbers=page_numbers
     ))
 
-
+#calendar view
 from datetime import date
 import calendar
 
@@ -6784,151 +6784,182 @@ def calendar_view(request):
     month = int(request.GET.get('month', today.month))
     year  = int(request.GET.get('year', today.year))
 
+    # Keep month/year in valid range
+    if month < 1:
+        month = 12
+        year -= 1
+    elif month > 12:
+        month = 1
+        year += 1
+
+    # Previous / Next month values
+    if month == 1:
+        prev_month, prev_year = 12, year - 1
+    else:
+        prev_month, prev_year = month - 1, year
+
+    if month == 12:
+        next_month, next_year = 1, year + 1
+    else:
+        next_month, next_year = month + 1, year
+
+    # Approved + Pending leaves for this month
     leaves = LeaveRequest.objects.filter(
-        status='Approved',
+        status__in=['Approved', 'Pending'],
         from_date__year=year,
         from_date__month=month
     ).select_related('employee__user')
 
+    # Holidays for this month
     holidays = Holiday.objects.filter(date__year=year, date__month=month)
 
-    cal = calendar.Calendar(firstweekday=6)
+    cal = calendar.Calendar(firstweekday=6)  # Sunday first
     month_days = []
+
     for week in cal.monthdayscalendar(year, month):
-        month_days.append([
-            {
+        week_data = []
+        for day in week:
+            if day == 0:
+                week_data.append({'day': 0})
+                continue
+
+            day_leaves = []
+            for leave in leaves:
+                # Check if this day falls inside the leave range
+                if leave.from_date.day <= day <= leave.to_date.day:
+                    emp_name = leave.employee.user.get_full_name() or leave.employee.user.username
+                    leave_type = getattr(leave, 'leave_type', None) or getattr(leave, 'type', 'Leave')
+                    if hasattr(leave_type, 'name'):
+                        leave_type = leave_type.name
+                    day_leaves.append({
+                        'employee_name': emp_name.split()[0],  # first name only
+                        'leave_type': str(leave_type),
+                        'status': leave.status,
+                    })
+
+            day_holidays = [
+                {'name': h.name}
+                for h in holidays
+                if h.date.day == day
+            ]
+
+            week_data.append({
                 'day': day,
-                'is_current': day == today.day and month == today.month and year == today.year,
-                'has_leave': any(
-                    l.from_date.day <= day <= l.to_date.day
-                    for l in leaves
-                    if l.from_date.month == month and l.from_date.year == year
-                )
-            }
-            for day in week
-        ])
+                'is_today': (day == today.day and month == today.month and year == today.year),
+                'leaves': day_leaves,
+                'holidays': day_holidays,
+            })
+        month_days.append(week_data)
 
     return render(request, 'hrm/calendar.html', _ctx(
         request,
         month=month,
         year=year,
         month_name=calendar.month_name[month],
+        prev_month=prev_month,
+        prev_year=prev_year,
+        next_month=next_month,
+        next_year=next_year,
         month_days=month_days,
     ))
-# ─── SUPPORT PAGES ─────────────────────────────────────────────────────────────
+# ───upload center ─────────────────────────────────────────────────────────────
 
 @login_required
 def upload_center(request):
     if request.method == "POST":
-
         files = request.FILES.getlist("file")
 
         for uploaded_file in files:
-
-            # 25 MB limit
             if uploaded_file.size > 25 * 1024 * 1024:
-                messages.error(
-                    request,
-                    f"{uploaded_file.name} is larger than 25 MB."
-                )
+                messages.error(request, f"{uploaded_file.name} is larger than 25 MB.")
                 continue
 
             UploadedFile.objects.create(
                 file=uploaded_file,
                 original_name=uploaded_file.name,
                 uploaded_by=request.user,
-                status="processing",
+                status="processing",          # or "Pending" – match your model choices
             )
 
         if files:
-            messages.success(request, "File uploaded successfully.")
+            messages.success(request, "File(s) uploaded successfully.")
 
         return redirect("upload_center")
 
     uploads = UploadedFile.objects.all().order_by("-uploaded_at")
 
     total_uploads = uploads.count()
-
-    approved_uploads = uploads.filter(
-        status="approved"
-    ).count()
+    approved_uploads = uploads.filter(status__in=["approved", "Active"]).count()
 
     total_size = sum(
-        upload.file.size for upload in uploads
-        if upload.file
+        (u.file.size for u in uploads if u.file),
+        0
     )
+    total_size_mb = round(total_size / (1024 * 1024), 2)
 
-    total_size_mb = round(
-        total_size / (1024 * 1024),
-        2
-    )
+    return render(request, "hrm/upload_center.html", {
+        "uploads": uploads,
+        "total_uploads": total_uploads,
+        "approved_uploads": approved_uploads,
+        "total_size_mb": total_size_mb,
+    })
 
-    return render(
-        request,
-        "hrm/upload_center.html",
-        {
-            "uploads": uploads,
-            "total_uploads": total_uploads,
-            "approved_uploads": approved_uploads,
-            "total_size_mb": total_size_mb,
-        }
-    )
+
 @login_required
 def upload_file_view(request, pk):
-    uploaded_file = get_object_or_404(
-        UploadedFile,
-        pk=pk
-    )
-
+    """Used by the eye icon – just returns the file URL (modal handles display)."""
+    uploaded_file = get_object_or_404(UploadedFile, pk=pk)
     return redirect(uploaded_file.file.url)
+
+
 @login_required
+@require_POST
 def upload_file_delete(request, pk):
+    uploaded_file = get_object_or_404(UploadedFile, pk=pk)
 
-    uploaded_file = get_object_or_404(
-        UploadedFile,
-        pk=pk
-    )
+    if uploaded_file.file:
+        uploaded_file.file.delete(save=False)
+    uploaded_file.delete()
 
-    if request.method == "POST":
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return JsonResponse({"success": True, "message": "File deleted successfully."})
 
-        if uploaded_file.file:
-            uploaded_file.file.delete(save=False)
-
-        uploaded_file.delete()
-
-        messages.success(
-            request,
-            "File deleted successfully."
-        )
-
+    messages.success(request, "File deleted successfully.")
     return redirect("upload_center")
+
+
 @login_required
 def upload_file_edit(request, pk):
-
-    uploaded_file = get_object_or_404(
-        UploadedFile,
-        pk=pk
-    )
+    uploaded_file = get_object_or_404(UploadedFile, pk=pk)
 
     if request.method == "POST":
-
+        # AJAX edit from modal
         new_name = request.POST.get("original_name", "").strip()
+        new_status = request.POST.get("status", "").strip()
+        new_description = request.POST.get("description", "").strip()
 
         if new_name:
             uploaded_file.original_name = new_name
-            uploaded_file.save()
+        if new_status:
+            uploaded_file.status = new_status
+        # only set description if the field exists on the model
+        if hasattr(uploaded_file, "description"):
+            uploaded_file.description = new_description
 
-            messages.success(
-                request,
-                "File name updated successfully."
-            )
+        uploaded_file.save()
 
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({
+                "success": True,
+                "message": "File updated successfully.",
+                "original_name": uploaded_file.original_name,
+                "status": uploaded_file.status,
+            })
+
+        messages.success(request, "File updated successfully.")
         return redirect("upload_center")
 
-    return render(
-        request,
-        "hrm/upload_file_edit.html",
-        {
-            "uploaded_file": uploaded_file
-        }
-    )
+    # Fallback (if someone hits the URL directly)
+    return render(request, "hrm/upload_file_edit.html", {
+        "uploaded_file": uploaded_file
+    })

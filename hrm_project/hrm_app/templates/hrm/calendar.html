@@ -1,102 +1,228 @@
 {% extends 'hrm/base.html' %}
-
 {% block title %}Calendar — Luminous HRM{% endblock %}
 
 {% block content %}
+<style>
+  .cal-banner {
+    background: linear-gradient(135deg, #FF6B00, #FF9F4D);
+    color: #fff;
+    border-radius: 16px;
+    padding: 18px 22px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 8px 24px rgba(255, 107, 0, 0.15);
+  }
+  .cal-banner-icon {
+    background: rgba(255,255,255,0.25);
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
 
-<!-- Top Header -->
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
+  .cal-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .cal-month-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1f2937;
+  }
+  .cal-nav {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .cal-nav a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    color: #4b5563;
+    font-weight: 600;
+    font-size: 13px;
+    text-decoration: none;
+    transition: .2s;
+  }
+  .cal-nav a:hover {
+    border-color: #ff6b00;
+    color: #ff6b00;
+  }
+  .btn-apply {
+    background: #ff6b00 !important;
+    color: #fff !important;
+    border: none !important;
+  }
+  .btn-apply:hover {
+    background: #e85f00 !important;
+  }
+
+  .cal-legend {
+    display: flex;
+    gap: 18px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: #6b7280;
+  }
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+  }
+
+  .calendar-grid {
+    background: #fff;
+    border: 1px solid #e8ebf0;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,.03);
+  }
+  .cal-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: #fafafa;
+    border-bottom: 1px solid #edf0f3;
+  }
+  .cal-weekday {
+    padding: 12px 8px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #7b8494;
+    text-transform: uppercase;
+  }
+  .cal-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+  }
+  .cal-day {
+    min-height: 110px;
+    border-right: 1px solid #f0f2f5;
+    border-bottom: 1px solid #f0f2f5;
+    padding: 8px;
+    position: relative;
+  }
+  .cal-day:nth-child(7n) { border-right: none; }
+  .cal-day.empty { background: #fafafa; }
+  .cal-day.today {
+    background: #fff8f3;
+    outline: 2px solid #ff6b00;
+    outline-offset: -2px;
+    z-index: 1;
+  }
+  .day-number {
+    font-weight: 700;
+    font-size: 14px;
+    color: #1f2937;
+    margin-bottom: 6px;
+  }
+  .leave-chip {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 7px;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .leave-approved { background: #e6f7ed; color: #0f7a3e; }
+  .leave-pending  { background: #fff6df; color: #b77900; }
+  .leave-holiday  { background: #e0f2fe; color: #0369a1; }
+</style>
+
+<!-- Header -->
+<div class="page-head">
   <div>
-    <h1 style="font-size:28px; font-weight:700; color:var(--ink); margin:0;">Calendar</h1>
-    <div style="font-size:14px; color:var(--muted); margin-top:4px;">Home · Time & Attendance · Calendar</div>
+    <h1>Calendar</h1>
+    <div class="crumb">Home · Time & Attendance · Calendar</div>
   </div>
-
-  <div style="display:flex; gap:10px;">
-    <button onclick="history.back()" class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">← Back</button>
-    <a href="{% url 'leave_apply' %}" class="btn" style="background:#FF6B00; color:white;">Apply Leave</a>
+  <div class="cal-nav">
+    <a href="javascript:history.back()">← Back</a>
+    <a href="?year={{ prev_year }}&month={{ prev_month }}{% if view_role %}&view_role={{ view_role }}{% endif %}">←</a>
+    <a href="?year={{ next_year }}&month={{ next_month }}{% if view_role %}&view_role={{ view_role }}{% endif %}">Next →</a>
+    <a href="{% url 'leave_apply' %}{% if view_role %}?view_role={{ view_role }}{% endif %}" class="btn-apply">+ Apply Leave</a>
   </div>
 </div>
 
 <!-- Orange Banner -->
-<div style="background:linear-gradient(90deg, #FF6B00, #FF8C3A); color:white; border-radius:12px; padding:16px 20px; margin-bottom:28px; display:flex; align-items:center; gap:16px;">
-  <div style="background:rgba(255,255,255,0.25); width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+<div class="cal-banner">
+  <div class="cal-banner-icon">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <rect x="3" y="4" width="18" height="18" rx="2"/>
       <path d="M16 2v4M8 2v4M3 10h18"/>
     </svg>
   </div>
   <div>
-    <strong style="font-size:16px;">Team calendar — Company-wide</strong><br>
-    <span style="opacity:0.95;">See approved & pending leave, holidays and key dates. Click any day for details.</span>
+    <div style="font-weight:700; font-size:15px;">Team calendar — Company-wide</div>
+    <div style="font-size:13.5px; opacity:0.95; margin-top:3px;">
+      See approved & pending leave, holidays and key dates. Click any day for details.
+    </div>
   </div>
 </div>
 
-<!-- Month Navigation -->
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-  <button class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">← Previous</button>
-  <h2 style="font-size:24px; font-weight:700;">{{ month_name }} {{ year }}</h2>
-  <button class="btn" style="background:white; color:var(--brand); border:1px solid var(--brand);">Next →</button>
-</div>
-
-<!-- Legend -->
-<div style="display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap;">
-  <div onclick="filterCalendar('all')" class="tag" style="cursor:pointer; padding:8px 14px; background:#e2e8f0;">Show All</div>
-  <div onclick="filterCalendar('approved')" class="tag t-green" style="cursor:pointer; padding:8px 14px;">Approved Leave</div>
-  <div onclick="filterCalendar('pending')" class="tag t-amber" style="cursor:pointer; padding:8px 14px;">Pending Leave</div>
-  <div onclick="filterCalendar('holiday')" class="tag t-red" style="cursor:pointer; padding:8px 14px;">Holiday</div>
+<!-- Month Title + Legend -->
+<div class="cal-top">
+  <div class="cal-month-title">{{ month_name }} {{ year }}</div>
+  <div class="cal-legend">
+    <span><span class="legend-dot" style="background:#16a34a"></span> Approved</span>
+    <span><span class="legend-dot" style="background:#f59e0b"></span> Pending</span>
+    <span><span class="legend-dot" style="background:#0ea5e9"></span> Holiday</span>
+  </div>
 </div>
 
 <!-- Calendar Grid -->
-<div id="calendarGrid" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:6px; background:#fff; border:2px solid #FF9F4D; border-radius:16px; padding:10px;">
-  <!-- Weekdays -->
-  <div style="text-align:center; font-weight:600; color:var(--muted); padding:6px 4px; font-size:13px;">Sun</div>
-  <div style="text-align:center; font-weight:600; color:var(--muted); padding:6px 4px; font-size:13px;">Mon</div>
-  <div style="text-align:center; font-weight:600; color:var(--muted); padding:6px 4px; font-size:13px;">Tue</div>
-  <div style="text-align:center; font-weight:600; color:var(--muted); padding:6px 4px; font-size:13px;">Wed</div>
-  <div style="text-align:center; font-weight:600; color:var(--muted); padding:6px 4px; font-size:13px;">Thu</div>
-  <div style="text-align:center; font-weight:600; color:var(--muted); padding:6px 4px; font-size:13px;">Fri</div>
-  <div style="text-align:center; font-weight:600; color:var(--muted); padding:6px 4px; font-size:13px;">Sat</div>
+<div class="calendar-grid">
+  <div class="cal-weekdays">
+    <div class="cal-weekday">Sun</div>
+    <div class="cal-weekday">Mon</div>
+    <div class="cal-weekday">Tue</div>
+    <div class="cal-weekday">Wed</div>
+    <div class="cal-weekday">Thu</div>
+    <div class="cal-weekday">Fri</div>
+    <div class="cal-weekday">Sat</div>
+  </div>
 
-  {% for week in month_days %}
-    {% for day in week %}
-      <div class="day-box card" style="min-height:85px; padding:6px; font-size:13px; {% if day.is_current %}border:2px solid #FF6B00;{% endif %}" data-type="all" onclick="showDayDetail({{ day.day }})">
-        {% if day.day != 0 %}
-          <div style="font-weight:700; margin-bottom:4px;">{{ day.day }}</div>
-          {% if day.has_leave %}
-            <span class="tag t-green" style="font-size:10px;">Leave</span>
+  <div class="cal-days">
+    {% for week in month_days %}
+      {% for day in week %}
+        <div class="cal-day {% if day.day == 0 %}empty{% endif %} {% if day.is_today %}today{% endif %}">
+          {% if day.day != 0 %}
+            <div class="day-number">{{ day.day }}</div>
+
+            {% for leave in day.leaves %}
+              <div class="leave-chip 
+                {% if leave.status == 'Approved' %}leave-approved
+                {% elif leave.status == 'Pending' %}leave-pending
+                {% else %}leave-holiday{% endif %}">
+                {{ leave.employee_name }} · {{ leave.leave_type }}
+              </div>
+            {% endfor %}
+
+            {% for holiday in day.holidays %}
+              <div class="leave-chip leave-holiday">
+                {{ holiday.name }}
+              </div>
+            {% endfor %}
           {% endif %}
-        {% endif %}
-      </div>
+        </div>
+      {% endfor %}
     {% endfor %}
-  {% endfor %}
+  </div>
 </div>
-
-<script>
-let currentFilter = 'all';
-
-function filterCalendar(type) {
-  currentFilter = type;
-  const boxes = document.querySelectorAll('.day-box');
-  
-  boxes.forEach(box => {
-    if (type === 'all') {
-      box.style.display = 'block';
-    } else {
-      // Simple demo - you can enhance with real data types later
-      if (Math.random() > 0.5) {
-        box.style.display = 'block';
-      } else {
-        box.style.display = 'none';
-      }
-    }
-  });
-  
-  alert('Filtered by: ' + type.toUpperCase());
-}
-
-function showDayDetail(day) {
-  alert('Details for Day ' + day + '\n\nLeave / Holiday information would appear here.');
-}
-</script>
-
 {% endblock %}

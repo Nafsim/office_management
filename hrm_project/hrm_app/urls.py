@@ -626,4 +626,10 @@ path('calendar/', views.calendar_view, name='calendar_view'),
 
 path("settings/", views.site_settings, name="site_settings"),
 
+# Upload Center
+path("upload/", views.upload_center, name="upload_center"),
+path("upload/view/<int:pk>/", views.upload_file_view, name="upload_file_view"),
+path("upload/edit/<int:pk>/", views.upload_file_edit, name="upload_file_edit"),
+path("upload/delete/<int:pk>/", views.upload_file_delete, name="upload_file_delete"),
+
 ]

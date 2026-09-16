@@ -1,0 +1,849 @@
+{% extends "hrm/base.html" %}
+
+{% block title %}Upload Center - Luminous HRM{% endblock %}
+
+{% block content %}
+
+<style>
+    .upload-center { padding: 4px 28px 30px; }
+
+    .upload-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .upload-header-left h1 {
+        margin: 0 0 5px;
+        font-size: 26px;
+        font-weight: 700;
+        color: #1f2937;
+    }
+    .upload-breadcrumb { color: #8a94a6; font-size: 14px; }
+    .upload-breadcrumb span { margin: 0 6px; }
+
+    .header-actions { display: flex; gap: 10px; }
+    .back-btn, .all-docs-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+        color: #4b5563;
+        font-size: 14px;
+        font-weight: 600;
+        padding: 9px 14px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: #fff;
+        transition: .2s;
+    }
+    .back-btn:hover, .all-docs-btn:hover {
+        color: #ff6b00;
+        border-color: #ff6b00;
+    }
+
+    .upload-banner {
+        background: linear-gradient(90deg, #ff8a00, #ff6b00);
+        border-radius: 12px;
+        padding: 15px 20px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        color: #fff;
+        margin-bottom: 22px;
+        box-shadow: 0 4px 14px rgba(255, 107, 0, 0.28);
+    }
+    .upload-banner-icon {
+        width: 42px;
+        height: 42px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .upload-banner h3 { margin: 0 0 3px; font-size: 17px; font-weight: 700; }
+    .upload-banner p { margin: 0; font-size: 13px; opacity: 0.95; }
+
+    .upload-box {
+        background: linear-gradient(180deg, #fff8f3 0%, #ffffff 100%);
+        border: 2px dashed #ff9a4d;
+        border-radius: 14px;
+        min-height: 240px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 36px 20px;
+        transition: .25s;
+        cursor: pointer;
+        margin-bottom: 28px;
+    }
+    .upload-box:hover,
+    .upload-box.dragover {
+        border-color: #ff6b00;
+        background: #fff3ea;
+        box-shadow: 0 0 0 4px rgba(255, 107, 0, 0.1);
+    }
+    .upload-icon {
+        width: 62px;
+        height: 62px;
+        border-radius: 50%;
+        background: #fff1e8;
+        color: #ff6b00;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 14px;
+    }
+    .upload-box h3 {
+        margin: 0 0 7px;
+        font-size: 18px;
+        color: #1f2937;
+        font-weight: 700;
+    }
+    .upload-box p {
+        margin: 0 0 16px;
+        color: #8a94a6;
+        font-size: 14px;
+    }
+    .select-files-btn {
+        border: 0;
+        background: #ff6b00;
+        color: #fff;
+        padding: 11px 22px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(255, 107, 0, 0.35);
+        transition: .2s;
+    }
+    .select-files-btn:hover {
+        background: #e85f00;
+        transform: translateY(-1px);
+    }
+    .file-types {
+        font-size: 12px;
+        color: #9ca3af;
+        margin-top: 12px;
+    }
+    #fileInput { display: none; }
+
+    .recent-section {
+        background: #fff;
+        border: 1px solid #e8ebf0;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,.03);
+    }
+    .recent-header {
+        padding: 18px 22px;
+        border-bottom: 1px solid #edf0f3;
+    }
+    .recent-header h2 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .upload-table { width: 100%; border-collapse: collapse; }
+    .upload-table th {
+        background: #fafafa;
+        color: #7b8494;
+        font-size: 12px;
+        font-weight: 700;
+        text-align: left;
+        padding: 13px 18px;
+        border-bottom: 1px solid #edf0f3;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    .upload-table td {
+        padding: 14px 18px;
+        border-bottom: 1px solid #f0f2f5;
+        font-size: 13px;
+        color: #4b5563;
+        vertical-align: middle;
+    }
+    .upload-table tr:last-child td { border-bottom: 0; }
+    .upload-table tr:hover { background: #fafbfc; }
+
+    .file-name-cell {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 600;
+        color: #374151;
+    }
+    .file-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: #fff1e8;
+        color: #ff6b00;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .status {
+        display: inline-flex;
+        padding: 5px 11px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+    .status-approved, .status-Active {
+        background: #eaf8ef;
+        color: #198754;
+    }
+    .status-processing, .status-Pending {
+        background: #fff6df;
+        color: #b77900;
+    }
+    .status-rejected, .status-Inactive {
+        background: #fff0f0;
+        color: #dc3545;
+    }
+
+    .action-buttons { display: flex; gap: 6px; }
+    .action-btn {
+        width: 34px;
+        height: 34px;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        border-radius: 7px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6b7280;
+        cursor: pointer;
+        transition: .2s;
+    }
+    .action-btn:hover {
+        color: #ff6b00;
+        border-color: #ff6b00;
+        background: #fff8f3;
+    }
+    .action-btn.delete:hover {
+        color: #dc3545;
+        border-color: #dc3545;
+        background: #fff5f5;
+    }
+
+    .empty-upload {
+        text-align: center;
+        padding: 50px 20px !important;
+        color: #9ca3af !important;
+    }
+
+    /* Modals */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.55);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        padding: 20px;
+    }
+    .modal-overlay.active { display: flex; }
+
+    .modal-box {
+        background: #fff;
+        border-radius: 14px;
+        width: 100%;
+        max-width: 480px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+        overflow: hidden;
+        animation: modalIn 0.22s ease;
+    }
+    @keyframes modalIn {
+        from { opacity: 0; transform: translateY(10px) scale(0.98); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .modal-header {
+        padding: 18px 22px;
+        border-bottom: 1px solid #edf0f3;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .modal-header h3 {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 700;
+        color: #1f2937;
+    }
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 22px;
+        color: #9ca3af;
+        cursor: pointer;
+        line-height: 1;
+    }
+    .modal-close:hover { color: #374151; }
+
+    .modal-body { padding: 22px; }
+
+    .preview-file-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    .preview-file-title .file-icon {
+        width: 44px;
+        height: 44px;
+    }
+    .preview-file-title h4 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 700;
+        color: #1f2937;
+    }
+    .preview-file-title p {
+        margin: 2px 0 0;
+        font-size: 13px;
+        color: #9ca3af;
+    }
+
+    .detail-row {
+        display: flex;
+        padding: 12px 0;
+        border-bottom: 1px solid #f3f4f6;
+        font-size: 14px;
+    }
+    .detail-row:last-child { border-bottom: 0; }
+    .detail-label { width: 110px; color: #6b7280; font-weight: 500; }
+    .detail-value { flex: 1; color: #1f2937; font-weight: 600; }
+    .detail-row.highlight {
+        background: #fff8f3;
+        margin: 0 -22px;
+        padding: 12px 22px;
+    }
+
+    .modal-footer {
+        padding: 16px 22px;
+        border-top: 1px solid #edf0f3;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+    .btn-secondary {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        color: #4b5563;
+        padding: 9px 16px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+    }
+    .btn-secondary:hover {
+        border-color: #ff6b00;
+        color: #ff6b00;
+    }
+    .btn-primary {
+        background: #ff6b00;
+        border: none;
+        color: #fff;
+        padding: 9px 18px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .btn-primary:hover { background: #e85f00; }
+    .btn-danger {
+        background: #dc3545;
+        border: none;
+        color: #fff;
+        padding: 9px 16px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .btn-danger:hover { background: #c82333; }
+
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #4b5563;
+        margin-bottom: 6px;
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #1f2937;
+        outline: none;
+        box-sizing: border-box;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        border-color: #ff6b00;
+        box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.12);
+    }
+    .form-group textarea { min-height: 80px; resize: vertical; }
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    @media (max-width: 650px) {
+        .upload-center { padding: 10px 15px 25px; }
+        .header-actions .back-btn { display: none; }
+        .form-row { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="upload-center">
+
+    <div class="upload-header">
+        <div class="upload-header-left">
+            <h1>Upload Center</h1>
+            <div class="upload-breadcrumb">
+                Home <span>·</span> Work <span>·</span> Files
+            </div>
+        </div>
+        <div class="header-actions">
+            <a href="javascript:history.back()" class="back-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5"></path>
+                    <path d="M12 19l-7-7 7-7"></path>
+                </svg>
+                Back
+            </a>
+            <a href="{% url 'upload_center' %}" class="all-docs-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                All Documents
+            </a>
+        </div>
+    </div>
+
+    <div class="upload-banner">
+        <div class="upload-banner-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+        </div>
+        <div>
+            <h3>Drag, drop & upload</h3>
+            <p>Drop files into the box or browse. Each upload shows progress, then a preview.</p>
+        </div>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" id="uploadForm">
+        {% csrf_token %}
+        <div class="upload-box" id="uploadBox">
+            <div class="upload-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 16l-4-4-4 4"></path>
+                    <path d="M12 12v9"></path>
+                    <path d="M20.39 17.39A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.3"></path>
+                </svg>
+            </div>
+            <h3>Drag files here or click to browse</h3>
+            <p>PDF, DOCX, PNG, JPG, XLSX · up to 25 MB</p>
+
+            <button type="button" class="select-files-btn" id="selectFilesBtn">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14"></path>
+                    <path d="M5 12h14"></path>
+                </svg>
+                Select Files
+            </button>
+
+            <input type="file" name="file" id="fileInput" multiple
+                   accept=".pdf,.docx,.png,.jpg,.jpeg,.xlsx">
+            <div class="file-types">PDF, DOCX, PNG, JPG, XLSX · up to 25 MB</div>
+        </div>
+    </form>
+
+    <div class="recent-section">
+        <div class="recent-header">
+            <h2>Recent Uploads</h2>
+        </div>
+        <div class="upload-table-wrapper">
+            <table class="upload-table">
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Size</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for upload in uploads %}
+                    <tr data-id="{{ upload.pk }}"
+                        data-name="{{ upload.original_name }}"
+                        data-status="{{ upload.status }}"
+                        data-created="{{ upload.uploaded_at|date:'d M Y' }}"
+                        data-updated="{{ upload.uploaded_at|date:'d M Y' }}"
+                        data-edit-url="{% url 'upload_file_edit' upload.pk %}"
+                        data-delete-url="{% url 'upload_file_delete' upload.pk %}">
+
+                        <td>
+                            <div class="file-name-cell">
+                                <div class="file-icon">
+                                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                    </svg>
+                                </div>
+                                {{ upload.original_name }}
+                            </div>
+                        </td>
+                        <td>
+                            {% if upload.file %}
+                                {{ upload.file.size|filesizeformat }}
+                            {% else %}-{% endif %}
+                        </td>
+                        <td>{{ upload.uploaded_at|date:"d M Y" }}</td>
+                        <td>
+                            {% if upload.status == "approved" or upload.status == "Active" %}
+                                <span class="status status-approved">Approved</span>
+                            {% elif upload.status == "processing" or upload.status == "Pending" %}
+                                <span class="status status-processing">Processing</span>
+                            {% else %}
+                                <span class="status status-rejected">{{ upload.status|title }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <button type="button" class="action-btn btn-view" title="View">
+                                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                </button>
+                                <button type="button" class="action-btn btn-edit" title="Edit">
+                                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 20h9"></path>
+                                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                                    </svg>
+                                </button>
+                                <button type="button" class="action-btn delete btn-delete" title="Delete">
+                                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6l-1 14H6L5 6"></path>
+                                        <path d="M10 11v6"></path>
+                                        <path d="M14 11v6"></path>
+                                        <path d="M9 6V4h6v2"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="empty-upload">
+                            No files uploaded yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal-overlay" id="previewModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>Preview File</h3>
+            <button class="modal-close" data-close>&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="preview-file-title">
+                <div class="file-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                </div>
+                <div>
+                    <h4 id="previewName">—</h4>
+                    <p>File details</p>
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Name</div>
+                <div class="detail-value" id="previewNameValue">—</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Status</div>
+                <div class="detail-value" id="previewStatus">—</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Created</div>
+                <div class="detail-value" id="previewCreated">—</div>
+            </div>
+            <div class="detail-row highlight">
+                <div class="detail-label">Updated</div>
+                <div class="detail-value" id="previewUpdated">—</div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" data-close>Close</button>
+            <button class="btn-secondary" id="previewEditBtn">Edit</button>
+            <button class="btn-danger" id="previewDeleteBtn">Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>Edit File — <span id="editModalTitle">—</span></h3>
+            <button class="modal-close" data-close>&times;</button>
+        </div>
+        <form id="editForm">
+            {% csrf_token %}
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" name="original_name" id="editName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select name="status" id="editStatus">
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                            <option value="Pending">Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="processing">Processing</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="description" id="editDescription" placeholder="Optional..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" data-close>Cancel</button>
+                <button type="submit" class="btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    const fileInput = document.getElementById("fileInput");
+    const uploadBox = document.getElementById("uploadBox");
+    const uploadForm = document.getElementById("uploadForm");
+    const selectFilesBtn = document.getElementById("selectFilesBtn");
+
+    let currentId = null;
+    let currentRow = null;
+    let currentEditUrl = null;
+    let currentDeleteUrl = null;
+
+    selectFilesBtn.addEventListener("click", e => {
+        e.stopPropagation();
+        fileInput.click();
+    });
+    uploadBox.addEventListener("click", e => {
+        if (e.target.closest(".select-files-btn")) return;
+        fileInput.click();
+    });
+    fileInput.addEventListener("change", function () {
+        if (this.files.length) uploadForm.submit();
+    });
+
+    ["dragenter", "dragover"].forEach(evt => {
+        uploadBox.addEventListener(evt, e => {
+            e.preventDefault();
+            uploadBox.classList.add("dragover");
+        });
+    });
+    ["dragleave", "drop"].forEach(evt => {
+        uploadBox.addEventListener(evt, e => {
+            e.preventDefault();
+            uploadBox.classList.remove("dragover");
+        });
+    });
+    uploadBox.addEventListener("drop", e => {
+        const files = e.dataTransfer.files;
+        if (files.length) {
+            fileInput.files = files;
+            uploadForm.submit();
+        }
+    });
+
+    const previewModal = document.getElementById("previewModal");
+    const editModal = document.getElementById("editModal");
+
+    function openModal(m) { m.classList.add("active"); }
+    function closeModal(m) { m.classList.remove("active"); }
+
+    document.querySelectorAll("[data-close]").forEach(btn => {
+        btn.addEventListener("click", () => {
+            closeModal(previewModal);
+            closeModal(editModal);
+        });
+    });
+    [previewModal, editModal].forEach(m => {
+        m.addEventListener("click", e => { if (e.target === m) closeModal(m); });
+    });
+
+    document.querySelectorAll(".btn-view").forEach(btn => {
+        btn.addEventListener("click", function () {
+            const row = this.closest("tr");
+            currentId = row.dataset.id;
+            currentRow = row;
+            currentEditUrl = row.dataset.editUrl;
+            currentDeleteUrl = row.dataset.deleteUrl;
+
+            document.getElementById("previewName").textContent = row.dataset.name;
+            document.getElementById("previewNameValue").textContent = row.dataset.name;
+            document.getElementById("previewStatus").textContent = row.dataset.status;
+            document.getElementById("previewCreated").textContent = row.dataset.created;
+            document.getElementById("previewUpdated").textContent = row.dataset.updated;
+
+            openModal(previewModal);
+        });
+    });
+
+    function openEdit(row) {
+        currentId = row.dataset.id;
+        currentRow = row;
+        currentEditUrl = row.dataset.editUrl;
+        currentDeleteUrl = row.dataset.deleteUrl;
+
+        document.getElementById("editModalTitle").textContent = row.dataset.name;
+        document.getElementById("editName").value = row.dataset.name;
+        document.getElementById("editStatus").value = row.dataset.status || "Active";
+        document.getElementById("editDescription").value = "";
+
+        closeModal(previewModal);
+        openModal(editModal);
+    }
+
+    document.querySelectorAll(".btn-edit").forEach(btn => {
+        btn.addEventListener("click", function () {
+            openEdit(this.closest("tr"));
+        });
+    });
+    document.getElementById("previewEditBtn").addEventListener("click", () => {
+        if (currentRow) openEdit(currentRow);
+    });
+
+    document.getElementById("editForm").addEventListener("submit", function (e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+
+        fetch(currentEditUrl, {
+            method: "POST",
+            body: formData,
+            headers: {
+                "X-Requested-With": "XMLHttpRequest",
+                "X-CSRFToken": formData.get("csrfmiddlewaretoken")
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                currentRow.dataset.name = data.original_name;
+                currentRow.dataset.status = data.status;
+                currentRow.querySelector(".file-name-cell").lastChild.textContent = data.original_name;
+
+                const statusTd = currentRow.querySelector("td:nth-child(4)");
+                let cls = "status-rejected", label = data.status;
+                if (["approved", "Active"].includes(data.status)) {
+                    cls = "status-approved"; label = "Approved";
+                } else if (["processing", "Pending"].includes(data.status)) {
+                    cls = "status-processing"; label = "Processing";
+                }
+                statusTd.innerHTML = `<span class="status ${cls}">${label}</span>`;
+
+                closeModal(editModal);
+                Swal.fire({ icon: "success", title: "Updated!", timer: 1500, showConfirmButton: false });
+            }
+        })
+        .catch(() => Swal.fire("Error", "Could not update file", "error"));
+    });
+
+    function doDelete() {
+        Swal.fire({
+            title: "Are you sure?",
+            text: "This file will be permanently deleted.",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#dc3545",
+            cancelButtonColor: "#6b7280",
+            confirmButtonText: "Yes, delete it"
+        }).then(result => {
+            if (!result.isConfirmed) return;
+
+            const formData = new FormData();
+            formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+            fetch(currentDeleteUrl, {
+                method: "POST",
+                body: formData,
+                headers: { "X-Requested-With": "XMLHttpRequest" }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    currentRow.remove();
+                    closeModal(previewModal);
+                    Swal.fire({ icon: "success", title: "Deleted!", timer: 1400, showConfirmButton: false });
+                }
+            })
+            .catch(() => Swal.fire("Error", "Could not delete file", "error"));
+        });
+    }
+
+    document.querySelectorAll(".btn-delete").forEach(btn => {
+        btn.addEventListener("click", function () {
+            currentRow = this.closest("tr");
+            currentDeleteUrl = currentRow.dataset.deleteUrl;
+            doDelete();
+        });
+    });
+    document.getElementById("previewDeleteBtn").addEventListener("click", doDelete);
+</script>
+
+{% endblock %}

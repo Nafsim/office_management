@@ -556,11 +556,11 @@ document.addEventListener('keydown', function (event) {
 
   {% if user.role == "super_admin" or 'upload_center' in allowed_menus %}
   <div class="group">Work</div>
-  <a class="item {% if current_url == 'document_upload' %}active{% endif %}" href="{% url 'document_upload' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+  <a class="item {% if current_url == 'upload_center' %}active{% endif %}" href="{% url 'upload_center' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
     <svg class="ico" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
     Upload Center
   </a>
-  {% endif %}
+{% endif %}
 
   {% if user.role == "super_admin" or 'support' in allowed_menus %}
   <div class="group">Support & Help</div>
@@ -661,14 +661,13 @@ document.addEventListener('keydown', function (event) {
     Asset Management
   </a>
   {% endif %}
-
-  {% if user.role == "super_admin" or 'upload_center' in allowed_menus %}
+{% if user.role == "super_admin" or 'upload_center' in allowed_menus %}
   <div class="group">Work</div>
-  <a class="item {% if current_url == 'document_upload' %}active{% endif %}" href="{% url 'document_upload' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+  <a class="item {% if current_url == 'upload_center' %}active{% endif %}" href="{% url 'upload_center' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
     <svg class="ico" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
     Upload Center
   </a>
-  {% endif %}
+{% endif %}
 
   {% if user.role == "super_admin" or 'support' in allowed_menus %}
   <div class="group">Support & Help</div>
@@ -765,11 +764,11 @@ document.addEventListener('keydown', function (event) {
 
   {% if user.role == "super_admin" or 'upload_center' in allowed_menus %}
   <div class="group">Work</div>
-  <a class="item {% if current_url == 'document_upload' %}active{% endif %}" href="{% url 'document_upload' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
+  <a class="item {% if current_url == 'upload_center' %}active{% endif %}" href="{% url 'upload_center' %}{% if view_role %}?view_role={{ view_role }}{% endif %}">
     <svg class="ico" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
     Upload Center
   </a>
-  {% endif %}
+{% endif %}
 
   {% if user.role == "super_admin" or 'support' in allowed_menus %}
   <div class="group">Support & Help</div>
