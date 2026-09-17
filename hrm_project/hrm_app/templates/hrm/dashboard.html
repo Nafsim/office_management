@@ -129,6 +129,249 @@
             grid-template-columns: 1fr;
         }
     }
+  /* =========================
+   QUICK TOUR MODAL
+========================= */
+
+.quick-tour-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+
+    background: rgba(15, 23, 42, 0.42);
+
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    animation: quickTourFadeIn 0.2s ease;
+}
+
+.quick-tour-modal {
+    width: min(814px, 100%);
+    background: #ffffff;
+
+    border-radius: 22px;
+
+    box-shadow:
+        0 25px 60px rgba(15, 23, 42, 0.22),
+        0 8px 25px rgba(15, 23, 42, 0.10);
+
+    overflow: hidden;
+
+    animation: quickTourScaleIn 0.22s ease;
+}
+
+
+/* HEADER */
+
+.quick-tour-header {
+    min-height: 84px;
+
+    padding: 0 28px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.quick-tour-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    color: #273449;
+
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.quick-tour-icon {
+    font-size: 22px;
+    line-height: 1;
+}
+
+.quick-tour-close {
+    width: 38px;
+    height: 38px;
+
+    border: none;
+    background: transparent;
+
+    color: #64748b;
+
+    font-size: 30px;
+    font-weight: 300;
+
+    line-height: 1;
+
+    border-radius: 8px;
+
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    transition:
+        background 0.15s ease,
+        color 0.15s ease;
+}
+
+.quick-tour-close:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+}
+
+
+/* BODY */
+
+.quick-tour-body {
+    padding: 30px 30px 26px;
+
+    color: #475569;
+
+    font-size: 17px;
+    line-height: 1.75;
+}
+
+.quick-tour-body p {
+    margin: 0 0 22px;
+}
+
+.quick-tour-body ul {
+    margin: 0;
+    padding-left: 27px;
+}
+
+.quick-tour-body li {
+    margin-bottom: 10px;
+    padding-left: 2px;
+}
+
+.quick-tour-body li:last-child {
+    margin-bottom: 0;
+}
+
+.quick-tour-body strong {
+    color: #334155;
+    font-weight: 700;
+}
+
+.quick-tour-body li span {
+    color: #475569;
+}
+
+
+/* FOOTER */
+
+.quick-tour-footer {
+    border-top: 1px solid #e5e7eb;
+
+    min-height: 94px;
+
+    padding: 20px 30px;
+
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.quick-tour-got-it {
+    background: #f56545;
+    color: white;
+
+    border: none;
+
+    padding: 12px 22px;
+
+    border-radius: 13px;
+
+    font-size: 16px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    box-shadow: 0 4px 10px rgba(245, 101, 69, 0.18);
+
+    transition:
+        transform 0.15s ease,
+        background 0.15s ease;
+}
+
+.quick-tour-got-it:hover {
+    background: #e95738;
+    transform: translateY(-1px);
+}
+
+.quick-tour-got-it:active {
+    transform: translateY(0);
+}
+
+
+/* ANIMATION */
+
+@keyframes quickTourFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes quickTourScaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.96) translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+
+/* MOBILE */
+
+@media (max-width: 600px) {
+
+    .quick-tour-overlay {
+        padding: 14px;
+    }
+
+    .quick-tour-modal {
+        border-radius: 17px;
+    }
+
+    .quick-tour-header {
+        min-height: 70px;
+        padding: 0 20px;
+    }
+
+    .quick-tour-title {
+        font-size: 20px;
+    }
+
+    .quick-tour-body {
+        padding: 24px 20px;
+        font-size: 15px;
+    }
+
+    .quick-tour-footer {
+        padding: 16px 20px;
+    }
+
+}
 </style>
 
 <!-- ==================== 1. GOOD MORNING ==================== -->
@@ -560,7 +803,149 @@ window.onload = function () {
 }
 
 function startTour() {
-  alert("🚀 Tour starting — click any dashboard card to explore that section!");
+
+  // Remove existing tour if already open
+  const oldTour = document.getElementById('quickTourModal');
+  if (oldTour) {
+    oldTour.remove();
+  }
+
+  // Get current role dynamically from Django
+  const currentRole = "{{ view_role|default:'employee' }}";
+
+  let roleText = "Employee";
+
+  if (currentRole === "super_admin") {
+    roleText = "Super Admin";
+  } else if (currentRole === "manager") {
+    roleText = "Manager";
+  }
+
+  // Create modal dynamically
+  const modal = document.createElement("div");
+  modal.id = "quickTourModal";
+
+  modal.innerHTML = `
+    <div class="quick-tour-overlay">
+
+      <div class="quick-tour-modal">
+
+        <!-- Header -->
+        <div class="quick-tour-header">
+          <div class="quick-tour-title">
+            <span class="quick-tour-icon">🚀</span>
+            <span>Quick Tour</span>
+          </div>
+
+          <button type="button"
+                  class="quick-tour-close"
+                  onclick="closeQuickTour()"
+                  aria-label="Close">
+            ×
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="quick-tour-body">
+
+          <p>
+            Welcome to Luminous HRM! Key things to know:
+          </p>
+
+          <ul>
+
+            <li>
+              <strong>Role switcher</strong>
+              <span>
+                (top of sidebar) — see the system as Super Admin,
+                Manager or Employee. The menu & permissions change live.
+              </span>
+            </li>
+
+            <li>
+              <strong>Sidebar</strong>
+              <span>
+                — modules grouped by area.
+              </span>
+            </li>
+
+            <li>
+              <strong>Top search</strong>
+              <span>
+                — find anyone or any page instantly.
+              </span>
+            </li>
+
+            <li>
+              <strong>Every button works</strong>
+              <span>
+                — click around freely; you will see a ripple on each click.
+              </span>
+            </li>
+
+          </ul>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="quick-tour-footer">
+          <button type="button"
+                  class="quick-tour-got-it"
+                  onclick="closeQuickTour()">
+            Got it!
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Prevent background scrolling
+  document.body.style.overflow = "hidden";
+
+  // Close when clicking outside the modal
+  const overlay = modal.querySelector(".quick-tour-overlay");
+
+  overlay.addEventListener("click", function (event) {
+    if (event.target === overlay) {
+      closeQuickTour();
+    }
+  });
+
+  // Close with ESC
+  document.addEventListener("keydown", quickTourEscapeHandler);
+}
+
+
+/* =========================
+   QUICK TOUR CLOSE
+========================= */
+function closeQuickTour() {
+
+  const modal = document.getElementById("quickTourModal");
+
+  if (modal) {
+    modal.remove();
+  }
+
+  document.body.style.overflow = "";
+
+  document.removeEventListener("keydown", quickTourEscapeHandler);
+}
+
+
+/* =========================
+   ESC KEY
+========================= */
+function quickTourEscapeHandler(event) {
+
+  if (event.key === "Escape") {
+    closeQuickTour();
+  }
+
 }
 </script>
 {% endblock %}
