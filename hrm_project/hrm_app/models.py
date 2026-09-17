@@ -426,7 +426,21 @@ class LeaveRequest(models.Model):
     def __str__(self):
         return f"{self.employee} — {self.leave_type} ({self.status})"
 
+class LeaveReport(models.Model):
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
+    from_date = models.DateField()
+    to_date = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ['-created_at']
+    def __str__(self):
+        return self.name
 # ─────────────────────────────────────────────
 #  NOTICE / ANNOUNCEMENT
 # ─────────────────────────────────────────────

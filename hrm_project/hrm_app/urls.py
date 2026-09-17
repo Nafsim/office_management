@@ -302,7 +302,7 @@ path(
 
     path('leave/<int:pk>/<str:action>/', views.leave_action, name='leave_action'),
 
-
+    path('leave/report/', views.leave_report, name='leave_report'), 
 
     # ─── TASKS ──────────────────────────────────────────────────────────────
     path('tasks/',                         views.task_list,                name='task_list'),

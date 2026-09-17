@@ -48,7 +48,20 @@
     <span style="opacity:0.95; font-size:13px;">Apply for leave, track balances, and run the approval chain. Managers approve their team; HR/Admin approve everyone.</span>
   </div>
 </div>
+<!-- Leave Management Sub Menu -->
+<div style="display:flex; gap:24px; margin-bottom:20px; padding:0 2px;">
 
+  <a href="{% url 'org_calendar' %}"
+     style="text-decoration:none; font-size:13px; color:{% if request.resolver_match.url_name == 'org_calendar' %}#FF6B00{% else %}#6B7280{% endif %}; {% if request.resolver_match.url_name == 'org_calendar' %}text-decoration:underline; text-underline-offset:4px;{% endif %}">
+    Public Holiday
+  </a>
+
+  <a href="{% url 'leave_report' %}"
+     style="text-decoration:none; font-size:13px; color:{% if request.resolver_match.url_name == 'leave_report' %}#FF6B00{% else %}#6B7280{% endif %}; {% if request.resolver_match.url_name == 'leave_report' %}text-decoration:underline; text-underline-offset:4px;{% endif %}">
+    Leave Report
+  </a>
+
+</div>
 <!-- Stats Cards -->
 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:14px; margin-bottom:20px;">
 

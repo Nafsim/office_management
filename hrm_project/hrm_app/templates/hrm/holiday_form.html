@@ -1,96 +1,95 @@
 {% extends "hrm/base.html" %}
 {% load static %}
 
+{% block title %}Add Holiday — Luminous HRM{% endblock %}
+
 {% block content %}
 
 <style>
-    .holiday-form-page {
+    .holiday-page {
         padding: 28px;
     }
 
-    .page-header {
+    .holiday-header {
         display: flex;
-        align-items: center;
         justify-content: space-between;
-        margin-bottom: 24px;
+        align-items: center;
+        margin-bottom: 20px;
     }
 
-    .page-title {
+    .holiday-title {
         margin: 0;
         font-size: 24px;
         font-weight: 700;
         color: #1f2937;
     }
 
-    .breadcrumb {
-        margin-top: 6px;
+    .holiday-breadcrumb {
+        margin-top: 5px;
+        font-size: 13px;
         color: #8a94a6;
-        font-size: 13px;
     }
 
-    .back-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        padding: 9px 15px;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        background: #fff;
-        color: #4b5563;
-        text-decoration: none;
-        font-size: 13px;
-        font-weight: 600;
-    }
-
-    .back-btn:hover {
-        background: #f9fafb;
-        color: #374151;
-    }
-
-    .form-card {
-        max-width: 720px;
+    .holiday-card {
         background: #fff;
         border: 1px solid #edf0f4;
         border-radius: 12px;
         box-shadow: 0 2px 8px rgba(0,0,0,.03);
-        overflow: hidden;
+        max-width: 720px;
     }
 
-    .form-card-header {
-        padding: 18px 20px;
+    .holiday-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
         border-bottom: 1px solid #edf0f4;
     }
 
-    .form-card-title {
+    .holiday-card-title {
         margin: 0;
-        font-size: 17px;
+        font-size: 16px;
         font-weight: 700;
         color: #1f2937;
     }
 
-    .form-card-body {
-        padding: 24px 20px;
+    .close-btn {
+        border: none;
+        background: transparent;
+        color: #9ca3af;
+        font-size: 22px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 2px 5px;
+    }
+
+    .close-btn:hover {
+        color: #374151;
+    }
+
+    .holiday-card-body {
+        padding: 22px 20px;
     }
 
     .form-group {
-        margin-bottom: 18px;
+        margin-bottom: 17px;
     }
 
     .form-label {
         display: block;
         margin-bottom: 7px;
-        color: #374151;
         font-size: 13px;
-        font-weight: 700;
+        font-weight: 600;
+        color: #374151;
     }
 
     .form-control,
     .form-select {
         width: 100%;
-        height: 42px;
-        padding: 0 12px;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
+        height: 40px;
+        padding: 0 11px;
+        border: 1px solid #dfe3e8;
+        border-radius: 7px;
         background: #fff;
         color: #374151;
         font-size: 13px;
@@ -100,22 +99,22 @@
 
     .form-control:focus,
     .form-select:focus {
-        border-color: #f59e0b;
-        box-shadow: 0 0 0 3px rgba(245,158,11,.08);
+        border-color: #ff6b00;
+        box-shadow: 0 0 0 2px rgba(255,107,0,.08);
     }
 
     .error-list {
-        margin-top: 6px;
+        margin-top: 5px;
         color: #dc2626;
         font-size: 12px;
     }
 
     .form-actions {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 25px;
-        padding-top: 18px;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 22px;
+        padding-top: 16px;
         border-top: 1px solid #f1f3f5;
     }
 
@@ -123,211 +122,178 @@
     .save-btn {
         display: inline-flex;
         align-items: center;
-        gap: 7px;
-        padding: 10px 16px;
-        border-radius: 8px;
-        text-decoration: none;
+        gap: 6px;
+        height: 36px;
+        padding: 0 15px;
+        border-radius: 7px;
         font-size: 13px;
-        font-weight: 700;
+        font-weight: 600;
         cursor: pointer;
+        text-decoration: none;
     }
 
     .cancel-btn {
-        background: #f8fafc;
-        color: #64748b;
-        border: 1px solid #e2e8f0;
+        background: #fff;
+        color: #4b5563;
+        border: 1px solid #dfe3e8;
     }
 
     .cancel-btn:hover {
-        background: #f1f5f9;
+        background: #f9fafb;
     }
 
     .save-btn {
-        background: #fff7ed;
-        color: #f97316;
-        border: 1px solid #fed7aa;
+        background: #ff6b00;
+        color: #fff;
+        border: 1px solid #ff6b00;
     }
 
     .save-btn:hover {
-        background: #ffedd5;
-        color: #ea580c;
+        background: #ea580c;
     }
 
     @media (max-width: 700px) {
-        .page-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 14px;
+        .holiday-page {
+            padding: 18px;
         }
 
-        .form-card {
+        .holiday-card {
             max-width: 100%;
         }
     }
 </style>
 
+<div class="holiday-page">
 
-<div class="holiday-form-page">
+<!-- PAGE HEADER -->
+<div class="holiday-header">
 
-    <!-- HEADER -->
-    <div class="page-header">
+    <div>
+        <h1 class="holiday-title">Add Holiday</h1>
 
-        <div>
-            <h1 class="page-title">Add Holiday</h1>
-
-            <div class="breadcrumb">
-                Home&nbsp; · &nbsp;Configuration&nbsp; · &nbsp;Org Calendar&nbsp; · &nbsp;Add Holiday
-            </div>
+        <div class="holiday-breadcrumb">
+            Home · Configuration · Org Calendar · Add Holiday
         </div>
+    </div>
 
-        <a href="{% url 'org_calendar' %}" class="back-btn">
+</div>
 
-            <svg width="16" height="16"
-                 viewBox="0 0 24 24"
-                 fill="none"
-                 stroke="currentColor"
-                 stroke-width="2"
-                 stroke-linecap="round"
-                 stroke-linejoin="round">
-                <path d="M19 12H5"></path>
-                <path d="M12 19l-7-7 7-7"></path>
-            </svg>
 
-            Back
-        </a>
+<!-- FORM -->
+<div class="holiday-card">
+
+    <div class="holiday-card-header">
+
+        <h2 class="holiday-card-title">
+            Holiday Information
+        </h2>
+
+        <button type="button"
+                class="close-btn"
+                onclick="window.location.href='{% url 'org_calendar' %}'">
+            ×
+        </button>
 
     </div>
 
 
-    <!-- FORM CARD -->
-    <div class="form-card">
+    <div class="holiday-card-body">
 
-        <div class="form-card-header">
-            <h2 class="form-card-title">
-                Holiday Information
-            </h2>
-        </div>
+        <form method="post">
 
-        <div class="form-card-body">
-
-            <form method="post">
-
-                {% csrf_token %}
+            {% csrf_token %}
 
 
-                <!-- DATE -->
-                <div class="form-group">
+            <!-- DATE -->
+            <div class="form-group">
 
-                    <label for="{{ form.date.id_for_label }}"
-                           class="form-label">
-                        Date
-                    </label>
+                <label for="{{ form.date.id_for_label }}"
+                       class="form-label">
+                    Date
+                </label>
 
-                    {{ form.date }}
+                {{ form.date }}
 
-                    {% if form.date.errors %}
-                        <div class="error-list">
-                            {{ form.date.errors }}
-                        </div>
-                    {% endif %}
-
-                </div>
-
-
-                <!-- NAME -->
-                <div class="form-group">
-
-                    <label for="{{ form.name.id_for_label }}"
-                           class="form-label">
-                        Holiday Name
-                    </label>
-
-                    {{ form.name }}
-
-                    {% if form.name.errors %}
-                        <div class="error-list">
-                            {{ form.name.errors }}
-                        </div>
-                    {% endif %}
-
-                </div>
-
-
-                <!-- TYPE -->
-                <div class="form-group">
-
-                    <label for="{{ form.htype.id_for_label }}"
-                           class="form-label">
-                        Holiday Type
-                    </label>
-
-                    {{ form.htype }}
-
-                    {% if form.htype.errors %}
-                        <div class="error-list">
-                            {{ form.htype.errors }}
-                        </div>
-                    {% endif %}
-
-                </div>
-
-
-                <!-- NON FIELD ERROR -->
-                {% if form.non_field_errors %}
+                {% if form.date.errors %}
                     <div class="error-list">
-                        {{ form.non_field_errors }}
+                        {{ form.date.errors }}
                     </div>
                 {% endif %}
 
-
-                <!-- ACTIONS -->
-                <div class="form-actions">
-
-                    <a href="{% url 'org_calendar' %}"
-                       class="cancel-btn">
-
-                        <svg width="15"
-                             height="15"
-                             viewBox="0 0 24 24"
-                             fill="none"
-                             stroke="currentColor"
-                             stroke-width="2"
-                             stroke-linecap="round"
-                             stroke-linejoin="round">
-                            <path d="M19 12H5"></path>
-                            <path d="M12 19l-7-7 7-7"></path>
-                        </svg>
-
-                        Cancel
-                    </a>
+            </div>
 
 
-                    <button type="submit"
-                            class="save-btn">
+            <!-- HOLIDAY NAME -->
+            <div class="form-group">
 
-                        <svg width="15"
-                             height="15"
-                             viewBox="0 0 24 24"
-                             fill="none"
-                             stroke="currentColor"
-                             stroke-width="2"
-                             stroke-linecap="round"
-                             stroke-linejoin="round">
-                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                            <polyline points="7 3 7 8 15 8"></polyline>
-                        </svg>
+                <label for="{{ form.name.id_for_label }}"
+                       class="form-label">
+                    Holiday Name
+                </label>
 
-                        Save Holiday
-                    </button>
+                {{ form.name }}
 
+                {% if form.name.errors %}
+                    <div class="error-list">
+                        {{ form.name.errors }}
+                    </div>
+                {% endif %}
+
+            </div>
+
+
+            <!-- HOLIDAY TYPE -->
+            <div class="form-group">
+
+                <label for="{{ form.htype.id_for_label }}"
+                       class="form-label">
+                    Holiday Type
+                </label>
+
+                {{ form.htype }}
+
+                {% if form.htype.errors %}
+                    <div class="error-list">
+                        {{ form.htype.errors }}
+                    </div>
+                {% endif %}
+
+            </div>
+
+
+            <!-- NON FIELD ERROR -->
+            {% if form.non_field_errors %}
+                <div class="error-list">
+                    {{ form.non_field_errors }}
                 </div>
+            {% endif %}
 
-            </form>
 
-        </div>
+            <!-- ACTIONS -->
+            <div class="form-actions">
+
+                <a href="{% url 'org_calendar' %}"
+                   class="cancel-btn">
+
+                    Cancel
+
+                </a>
+
+
+                <button type="submit"
+                        class="save-btn">
+
+                    Save Holiday
+
+                </button>
+
+            </div>
+
+        </form>
 
     </div>
+
+</div>
 
 </div>
 

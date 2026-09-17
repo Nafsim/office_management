@@ -76,6 +76,7 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from .models import BankAccount
 from .models import UploadedFile
+from .models import LeaveReport
 # ─────────────────────────────────────────────
 # PERMISSION HELPER
 # ─────────────────────────────────────────────
@@ -2860,8 +2861,66 @@ def leave_apply(request):
 
 
 
+@login_required
+def leave_report(request):
 
+    if not has_permission(request.user, "leave", "view"):
+        messages.error(
+            request,
+            "You don't have permission to access Leave Report."
+        )
+        return redirect("leave_list")
 
+    employees = Employee.objects.select_related("user").all()
+
+    # Only saved LeaveReport records are shown
+    reports = LeaveReport.objects.select_related(
+        "employee__user"
+    ).all()
+
+    if request.method == "POST":
+
+        employee_id = request.POST.get("employee")
+        from_date = request.POST.get("from_date")
+        to_date = request.POST.get("to_date")
+
+        if from_date and to_date:
+
+            employee = None
+
+            if employee_id:
+                employee = get_object_or_404(
+                    Employee,
+                    id=employee_id
+                )
+
+            LeaveReport.objects.create(
+                employee=employee,
+                from_date=from_date,
+                to_date=to_date
+            )
+
+            messages.success(
+                request,
+                "Leave report added successfully."
+            )
+
+            return redirect("leave_report")
+
+        messages.error(
+            request,
+            "Please fill in Leave From and Leave To."
+        )
+
+    return render(
+        request,
+        "hrm/leave_report.html",
+        _ctx(
+            request,
+            employees=employees,
+            reports=reports
+        )
+    )
 @manager_or_admin
 def leave_action(request, pk, action):
 

@@ -1,0 +1,244 @@
+{% extends 'hrm/base.html' %}
+
+{% block title %}Leave Report — Luminous HRM{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:12px;">
+
+  <div>
+    <h1 style="font-size:26px; font-weight:700; color:var(--ink); margin:0;">
+      Leave Report
+    </h1>
+
+    <div style="font-size:13px; color:var(--muted); margin-top:3px;">
+      Home · Time & Attendance · Leave Report
+    </div>
+  </div>
+
+  <a href="{% url 'leave_list' %}"
+     class="btn"
+     style="background:white; color:#374151; border:1px solid #E5E7EB; display:flex; align-items:center; gap:6px; border-radius:8px; padding:7px 14px; text-decoration:none;">
+
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24"
+         stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M15 19l-7-7 7-7"/>
+    </svg>
+
+    Back
+  </a>
+
+</div>
+
+
+<!-- Add Report Section -->
+<div style="background:white; border:1px solid #F3F4F6; border-radius:14px; padding:18px 20px; margin-bottom:20px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+
+  <div style="font-size:15px; font-weight:600; color:#111827; margin-bottom:15px;">
+    Add Leave Report
+  </div>
+
+  <form method="POST">
+    {% csrf_token %}
+
+    <div style="display:grid; grid-template-columns:1.2fr 1fr 1fr 1fr; gap:14px; align-items:end;">
+
+
+      <!-- Employee -->
+      <div>
+        <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:7px;">
+          Employee Name
+        </label>
+
+        <select name="employee"
+                class="form-control"
+                style="width:100%;">
+
+          <option value="">All Employees</option>
+
+          {% for emp in employees %}
+            <option value="{{ emp.id }}">
+              {% if emp.user.get_full_name %}
+                {{ emp.user.get_full_name }}
+              {% else %}
+                {{ emp.user.username }}
+              {% endif %}
+            </option>
+          {% endfor %}
+
+        </select>
+      </div>
+
+
+      <!-- Leave From -->
+      <div>
+        <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:7px;">
+          Leave From
+        </label>
+
+        <input type="date"
+               name="from_date"
+               class="form-control"
+               style="width:100%;"
+               required>
+      </div>
+
+
+      <!-- Leave To -->
+      <div>
+        <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:7px;">
+          Leave To
+        </label>
+
+        <input type="date"
+               name="to_date"
+               class="form-control"
+               style="width:100%;"
+               required>
+      </div>
+
+    </div>
+
+
+    <!-- Add Report Button -->
+    <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+
+      <button type="submit"
+              class="btn"
+              style="background:#FF6B00; color:white; border:none; border-radius:8px; padding:8px 20px; cursor:pointer; display:flex; align-items:center; gap:7px;">
+
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"
+             stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 4v16m8-8H4"/>
+        </svg>
+
+        Add Report
+
+      </button>
+
+    </div>
+
+  </form>
+
+</div>
+
+
+<!-- Saved Leave Reports -->
+<div style="background:white; border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,0.05); border:1px solid #F3F4F6; overflow:hidden;">
+
+  <div style="padding:14px 20px; border-bottom:1px solid #F3F4F6;">
+
+    <strong style="font-size:15px; color:#111827;">
+      Saved Leave Reports
+    </strong>
+
+  </div>
+
+
+  <div style="overflow-x:auto;">
+
+    <table style="width:100%; border-collapse:collapse;">
+
+      <thead>
+
+        <tr style="background:#FAFAFA;">
+
+          
+
+          <th style="padding:10px 16px; text-align:left; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase;">
+            Employee
+          </th>
+
+          <th style="padding:10px 16px; text-align:left; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase;">
+            Leave From
+          </th>
+
+          <th style="padding:10px 16px; text-align:left; font-size:11px; font-weight:600; color:#6B7280; text-transform:uppercase;">
+            Leave To
+          </th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody>
+
+        {% for report in reports %}
+
+        <tr style="border-top:1px solid #F3F4F6;">
+
+          
+
+
+          <!-- Employee -->
+          <td style="padding:12px 16px;">
+
+            {% if report.employee %}
+
+              <div style="display:flex; align-items:center; gap:10px;">
+
+                <div style="width:32px; height:32px; border-radius:50%; background:#8B5CF6; color:white; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:11px; flex-shrink:0;">
+                  {{ report.employee.user.get_full_name|slice:":2"|upper }}
+                </div>
+
+                <span style="font-weight:600; color:#111827; font-size:13px;">
+                  {{ report.employee.user.get_full_name }}
+                </span>
+
+              </div>
+
+            {% else %}
+
+              <span style="font-size:13px; color:#6B7280;">
+                All Employees
+              </span>
+
+            {% endif %}
+
+          </td>
+
+
+          <!-- Leave From -->
+          <td style="padding:12px 16px; color:#374151; font-size:13px;">
+            {{ report.from_date|date:"Y-m-d" }}
+          </td>
+
+
+          <!-- Leave To -->
+          <td style="padding:12px 16px; color:#374151; font-size:13px;">
+            {{ report.to_date|date:"Y-m-d" }}
+          </td>
+
+        </tr>
+
+
+        {% empty %}
+
+        <tr>
+
+          <td colspan="3"
+              style="text-align:center; padding:40px 16px; color:#9CA3AF; font-size:14px;">
+
+            No saved leave reports found.
+
+          </td>
+
+        </tr>
+
+        {% endfor %}
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>
+
+{% endblock %}
