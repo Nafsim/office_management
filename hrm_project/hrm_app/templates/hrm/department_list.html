@@ -200,26 +200,42 @@
           </td>
 
           <td>
-            <div class="head-cell">
-              {% if dept.head %}
-                <span class="avatar-circle" style="
-                  background: {% cycle '#3b82f6' '#8b5cf6' '#06b6d4' '#22c55e' '#f59e0b' %};
-                ">
-                  {% if dept.head.first_name %}
-                    {{ dept.head.first_name|slice:":1"|upper }}{{ dept.head.last_name|default:""|slice:":1"|upper }}
-                  {% else %}
-                    {{ dept.head.full_name|slice:":2"|upper }}
-                  {% endif %}
-                </span>
-                <span>
-                  {{ dept.head.full_name }}
-                </span>
-              {% else %}
-                <span style="color: #94a3b8;">—</span>
-              {% endif %}
-            </div>
-          </td>
+  <div class="head-cell">
 
+    {% if dept.head %}
+
+      <span class="avatar-circle" style="
+        background: {% cycle '#3b82f6' '#8b5cf6' '#06b6d4' '#22c55e' '#f59e0b' %};
+      ">
+        {% if dept.head.user.first_name %}
+          {{ dept.head.user.first_name|slice:":1"|upper }}{{ dept.head.user.last_name|default:""|slice:":1"|upper }}
+        {% elif dept.head.user.username %}
+          {{ dept.head.user.username|slice:":2"|upper }}
+        {% else %}
+          —
+        {% endif %}
+      </span>
+
+      <span>
+        {% if dept.head.user.get_full_name %}
+          {{ dept.head.user.get_full_name }}
+        {% elif dept.head.user.first_name %}
+          {{ dept.head.user.first_name }} {{ dept.head.user.last_name }}
+        {% elif dept.head.user.username %}
+          {{ dept.head.user.username }}
+        {% else %}
+          —
+        {% endif %}
+      </span>
+
+    {% else %}
+
+      <span style="color: #94a3b8;">—</span>
+
+    {% endif %}
+
+  </div>
+</td>
           <td>{{ dept.emp_count }}</td>
           <td>{{ dept.designations.count|default:"0" }}</td>
 

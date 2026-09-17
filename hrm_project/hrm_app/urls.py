@@ -585,9 +585,10 @@ path(
     name='email_template_delete'
 ),
 
-# Notification Rules
-path('config/notification-rules/',           views.notification_rules,   name='notification_rules'),
-path('config/notif/<int:pk>/toggle/',        views.notif_rule_toggle,    name='notif_rule_toggle'),
+# Notification Rules 
+path('config/notification-rules/',           views.notification_rules,        name='notification_rules'),
+path('config/notification-rules/create/',    views.notification_rule_create,  name='notification_rule_create'),
+path('config/notif/<int:pk>/toggle/',        views.notif_rule_toggle,          name='notif_rule_toggle'),
 
 # Bank
 path('config/banks/',                        views.bank_list,            name='bank_list'),

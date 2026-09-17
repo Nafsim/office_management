@@ -14,7 +14,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.mail import send_mail
 
-from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
+from django.http import JsonResponse, HttpResponseForbidden, HttpResponse, request
 
 from django.utils import timezone
 
@@ -6685,34 +6685,7 @@ def permissions_view(request):
     from .models import SiteSettings
     settings_obj, _ = SiteSettings.objects.get_or_create(id=1)
 
-    # Handle POST request to save permissions
-    if request.method == "POST":
-        # Build permissions matrix from form data
-        permissions_matrix = {}
-        for key, value in request.POST.items():
-            if key.startswith('perm_') and value == 'on':
-                # Parse key format: perm_{index}_{role}
-                parts = key.split('_')
-                if len(parts) == 3:
-                    index = int(parts[1])
-                    role = parts[2]
-                    if index not in permissions_matrix:
-                        permissions_matrix[index] = {}
-                    permissions_matrix[index][role] = True
-
-        # Save to site settings
-        settings_obj.permissions_matrix = permissions_matrix
-        settings_obj.save()
-
-        messages.success(request, "Permissions updated successfully.")
-        return redirect("permissions_view")
-
-    # Get role counts
-    from django.db.models import Count
-    role_counts = User.objects.values('role').annotate(count=Count('id')).order_by('role')
-    role_dict = {r['role']: r['count'] for r in role_counts}
-
-    # Define permissions matrix (default values)
+    # Define permissions matrix
     all_permissions = [
         {'name': 'View Dashboard', 'super_admin': True, 'manager': True, 'employee': True},
         {'name': 'Manage Employees', 'super_admin': True, 'manager': False, 'employee': False},
@@ -6730,46 +6703,102 @@ def permissions_view(request):
         {'name': 'Calendar View', 'super_admin': True, 'manager': True, 'employee': True},
     ]
 
+    # Handle POST request to save permissions
+    if request.method == "POST":
+        permissions_matrix = {}
+
+        for index, perm in enumerate(all_permissions):
+            permissions_matrix[index] = {
+                "admin": request.POST.get(f"perm_{index}_admin") == "on",
+                "manager": request.POST.get(f"perm_{index}_manager") == "on",
+                "employee": request.POST.get(f"perm_{index}_employee") == "on",
+            }
+
+        settings_obj.permissions_matrix = permissions_matrix
+        settings_obj.save()
+
+        messages.success(request, "Permissions updated successfully.")
+        return redirect("permissions_view")
+
+    # Get role counts
+    from django.db.models import Count
+
+    role_counts = (
+        User.objects
+        .values('role')
+        .annotate(count=Count('id'))
+        .order_by('role')
+    )
+
+    role_dict = {
+        r['role']: r['count']
+        for r in role_counts
+    }
+
     # Load saved permissions and override defaults
     saved_permissions = settings_obj.permissions_matrix or {}
+
     for index, perm in enumerate(all_permissions):
-        if index in saved_permissions:
-            for role, value in saved_permissions[index].items():
-                if role == 'admin':
-                    perm['super_admin'] = value
-                elif role == 'manager':
-                    perm['manager'] = value
-                elif role == 'employee':
-                    perm['employee'] = value
+        # JSONField keys may come back as strings
+        saved = saved_permissions.get(str(index))
+
+        if saved is None:
+            saved = saved_permissions.get(index)
+
+        if saved:
+            if 'admin' in saved:
+                perm['super_admin'] = saved['admin']
+
+            if 'manager' in saved:
+                perm['manager'] = saved['manager']
+
+            if 'employee' in saved:
+                perm['employee'] = saved['employee']
 
     # Pagination
-    page = int(request.GET.get('page', 1))
+    try:
+        page = int(request.GET.get('page', 1))
+    except (TypeError, ValueError):
+        page = 1
+
     per_page = 6
+
     total_items = len(all_permissions)
     total_pages = (total_items + per_page - 1) // per_page
 
+    # Keep page within valid range
+    if page < 1:
+        page = 1
+
+    if page > total_pages:
+        page = total_pages
+
     start_idx = (page - 1) * per_page
     end_idx = start_idx + per_page
+
     permissions = all_permissions[start_idx:end_idx]
 
-    # Add index to each permission for form field naming
+    # Add index for form field naming
     for idx, perm in enumerate(permissions):
         perm['index'] = start_idx + idx
 
-    # Generate page numbers for template
+    # Generate page numbers
     page_numbers = list(range(1, total_pages + 1))
 
-    return render(request, "hrm/permissions.html", _ctx(
+    return render(
         request,
-        role_counts=role_dict,
-        permissions=permissions,
-        page=page,
-        total_pages=total_pages,
-        total_items=total_items,
-        per_page=per_page,
-        page_numbers=page_numbers
-    ))
-
+        "hrm/permissions.html",
+        _ctx(
+            request,
+            role_counts=role_dict,
+            permissions=permissions,
+            page=page,
+            total_pages=total_pages,
+            total_items=total_items,
+            per_page=per_page,
+            page_numbers=page_numbers,
+        )
+    )
 #calendar view
 from datetime import date
 import calendar
@@ -6862,93 +6891,170 @@ def calendar_view(request):
         next_year=next_year,
         month_days=month_days,
     ))
-# ───upload center ─────────────────────────────────────────────────────────────
+# ─── UPLOAD CENTER ─────────────────────────────────────────────────────────────
 
 @login_required
 def upload_center(request):
+    # Keep the selected role when opening Upload Center
+    view_role = request.GET.get("view_role", request.user.role)
+
     if request.method == "POST":
         files = request.FILES.getlist("file")
 
         for uploaded_file in files:
             if uploaded_file.size > 25 * 1024 * 1024:
-                messages.error(request, f"{uploaded_file.name} is larger than 25 MB.")
+                messages.error(
+                    request,
+                    f"{uploaded_file.name} is larger than 25 MB."
+                )
                 continue
 
             UploadedFile.objects.create(
                 file=uploaded_file,
                 original_name=uploaded_file.name,
                 uploaded_by=request.user,
-                status="processing",          # or "Pending" – match your model choices
+                status="processing",
             )
 
         if files:
-            messages.success(request, "File(s) uploaded successfully.")
+            messages.success(
+                request,
+                "File(s) uploaded successfully."
+            )
 
-        return redirect("upload_center")
+        # Keep the selected role after upload
+        return redirect(
+            f"/upload-center/?view_role={view_role}"
+        )
 
     uploads = UploadedFile.objects.all().order_by("-uploaded_at")
 
     total_uploads = uploads.count()
-    approved_uploads = uploads.filter(status__in=["approved", "Active"]).count()
+
+    approved_uploads = uploads.filter(
+        status__in=["approved", "Active"]
+    ).count()
 
     total_size = sum(
         (u.file.size for u in uploads if u.file),
         0
     )
-    total_size_mb = round(total_size / (1024 * 1024), 2)
 
-    return render(request, "hrm/upload_center.html", {
-        "uploads": uploads,
-        "total_uploads": total_uploads,
-        "approved_uploads": approved_uploads,
-        "total_size_mb": total_size_mb,
-    })
+    total_size_mb = round(
+        total_size / (1024 * 1024),
+        2
+    )
+
+    return render(
+        request,
+        "hrm/upload_center.html",
+        {
+            "uploads": uploads,
+            "total_uploads": total_uploads,
+            "approved_uploads": approved_uploads,
+            "total_size_mb": total_size_mb,
+
+            # IMPORTANT:
+            # base.html uses this to show the correct sidebar
+            "view_role": view_role,
+        }
+    )
 
 
 @login_required
 def upload_file_view(request, pk):
-    """Used by the eye icon – just returns the file URL (modal handles display)."""
-    uploaded_file = get_object_or_404(UploadedFile, pk=pk)
+    """Used by the eye icon – just returns the file URL."""
+    uploaded_file = get_object_or_404(
+        UploadedFile,
+        pk=pk
+    )
+
     return redirect(uploaded_file.file.url)
 
 
 @login_required
 @require_POST
 def upload_file_delete(request, pk):
-    uploaded_file = get_object_or_404(UploadedFile, pk=pk)
+    uploaded_file = get_object_or_404(
+        UploadedFile,
+        pk=pk
+    )
 
     if uploaded_file.file:
         uploaded_file.file.delete(save=False)
+
     uploaded_file.delete()
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return JsonResponse({"success": True, "message": "File deleted successfully."})
+        return JsonResponse({
+            "success": True,
+            "message": "File deleted successfully."
+        })
 
-    messages.success(request, "File deleted successfully.")
-    return redirect("upload_center")
+    messages.success(
+        request,
+        "File deleted successfully."
+    )
+
+    # Keep selected role after delete
+    view_role = request.GET.get(
+        "view_role",
+        request.user.role
+    )
+
+    return redirect(
+        f"/upload-center/?view_role={view_role}"
+    )
 
 
 @login_required
 def upload_file_edit(request, pk):
-    uploaded_file = get_object_or_404(UploadedFile, pk=pk)
+    uploaded_file = get_object_or_404(
+        UploadedFile,
+        pk=pk
+    )
+
+    # Keep selected role
+    view_role = request.GET.get(
+        "view_role",
+        request.user.role
+    )
 
     if request.method == "POST":
+
         # AJAX edit from modal
-        new_name = request.POST.get("original_name", "").strip()
-        new_status = request.POST.get("status", "").strip()
-        new_description = request.POST.get("description", "").strip()
+        new_name = request.POST.get(
+            "original_name",
+            ""
+        ).strip()
+
+        new_status = request.POST.get(
+            "status",
+            ""
+        ).strip()
+
+        new_description = request.POST.get(
+            "description",
+            ""
+        ).strip()
 
         if new_name:
             uploaded_file.original_name = new_name
+
         if new_status:
             uploaded_file.status = new_status
-        # only set description if the field exists on the model
+
+        # Only set description if the field exists
+        # on the model
         if hasattr(uploaded_file, "description"):
             uploaded_file.description = new_description
 
         uploaded_file.save()
 
-        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        if request.headers.get(
+            "X-Requested-With"
+        ) == "XMLHttpRequest":
+
             return JsonResponse({
                 "success": True,
                 "message": "File updated successfully.",
@@ -6956,10 +7062,21 @@ def upload_file_edit(request, pk):
                 "status": uploaded_file.status,
             })
 
-        messages.success(request, "File updated successfully.")
-        return redirect("upload_center")
+        messages.success(
+            request,
+            "File updated successfully."
+        )
 
-    # Fallback (if someone hits the URL directly)
-    return render(request, "hrm/upload_file_edit.html", {
-        "uploaded_file": uploaded_file
-    })
+        return redirect(
+            f"/upload-center/?view_role={view_role}"
+        )
+
+    # Fallback if URL is opened directly
+    return render(
+        request,
+        "hrm/upload_file_edit.html",
+        {
+            "uploaded_file": uploaded_file,
+            "view_role": view_role,
+        }
+    )

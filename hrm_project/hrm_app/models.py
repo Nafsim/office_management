@@ -179,9 +179,7 @@ class Employee(models.Model):
             self.avatar_initials = ''.join(p[0].upper() for p in parts[:2])
         super().save(*args, **kwargs)
 
-# ─────────────────────────────────────────────
-# USER PERMISSIONS
-# ─────────────────────────────────────────────
+
 # ─────────────────────────────────────────────
 # USER PERMISSIONS
 # ─────────────────────────────────────────────

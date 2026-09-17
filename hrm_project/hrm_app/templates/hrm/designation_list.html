@@ -5,906 +5,742 @@
 {% block content %}
 
 <style>
+/* =========================================================
+   DESIGNATIONS PAGE
+========================================================= */
 
-  /* =========================================================
-     DESIGNATION PAGE
-     ========================================================= */
-
-  .designation-page {
+.designation-page {
     width: 100%;
-  }
+    color: #203b5b;
+}
 
-  /* PAGE HEADER */
+/* PAGE HEADER */
+.designation-page .page-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+}
 
-  .designation-page .page-head {
-    margin-bottom: 24px;
-  }
-
-  .designation-page .page-head h1 {
-    margin: 0 0 7px;
-    font-size: 34px;
-    line-height: 1.15;
+.designation-page .page-head h1 {
+    margin: 0 0 5px;
+    font-size: 27px;
+    line-height: 1.2;
     font-weight: 700;
     color: #203b5b;
-  }
+}
 
-  .designation-page .crumb {
-    font-size: 15px;
+.designation-page .crumb {
+    font-size: 13px;
+    line-height: 1.4;
     font-weight: 400;
     color: #71839b;
-  }
+}
 
-
-  /* =========================================================
-     TOP BUTTONS
-     ========================================================= */
-
-  .designation-top-actions {
+/* TOP BUTTONS */
+.designation-top-actions {
     display: flex;
     align-items: center;
-    gap: 14px;
-  }
+    gap: 10px;
+    flex-shrink: 0;
+}
 
-  .designation-top-btn {
-    min-height: 44px;
-    padding: 0 18px;
-
+.designation-top-btn {
+    height: 38px;
+    padding: 0 14px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-
     border: 1px solid #e0e6ed;
-    border-radius: 14px;
-
+    border-radius: 11px;
     background: #fff;
     color: #203653;
-
     text-decoration: none;
-
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
-
-    transition: .18s ease;
-  }
-
-  .designation-top-btn:hover {
-    background: #f8fafc;
-    border-color: #d2dbe5;
-  }
-
-
-  /* =========================================================
-     MAIN CARD
-     ========================================================= */
-
-  .designation-card {
-    background: #fff;
-
-    border: 1px solid #e3e8ee;
-    border-radius: 18px;
-
-    overflow: hidden;
-
-    box-shadow: 0 2px 8px rgba(15, 23, 42, .035);
-  }
-
-
-  /* =========================================================
-     CARD HEADER
-     ========================================================= */
-
-  .designation-card-head {
-    min-height: 102px;
-    padding: 0 30px;
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .designation-card-title {
-    margin: 0;
-
-    font-size: 22px;
-    line-height: 1.3;
-
-    font-weight: 600;
-
-    color: #203b5b;
-  }
-
-
-  /* =========================================================
-     ADD DESIGNATION
-     ========================================================= */
-
-  .designation-add-btn {
-    min-height: 44px;
-    padding: 0 18px;
-
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 7px;
-
-    border-radius: 14px;
-
-    background: #f46b55;
-    color: #fff;
-
-    text-decoration: none;
-
-    font-size: 14px;
-    font-weight: 600;
-
-    transition: .18s ease;
-  }
-
-  .designation-add-btn:hover {
-    background: #e95e49;
-    color: #fff;
-  }
-
-  .designation-add-btn svg {
-    width: 17px;
-    height: 17px;
-  }
-
-
-  /* =========================================================
-     TABLE
-     ========================================================= */
-
-  .designation-table-wrap {
-    width: 100%;
-    overflow-x: auto;
-  }
-
-  .designation-table {
-    width: 100%;
-    min-width: 700px;
-
-    border-collapse: collapse;
-    table-layout: fixed;
-  }
-
-
-  /* TABLE HEADER */
-
-  .designation-table thead th {
-    padding: 15px 21px;
-
-    text-align: left;
-
-    background: #fff;
-
-    color: #71839b;
-
-    font-size: 13px;
-    line-height: 1.3;
-
-    font-weight: 600;
-
-    letter-spacing: .01em;
-
-    border-bottom: 1px solid #e1e7ee;
-
     white-space: nowrap;
-  }
+    transition: all .18s ease;
+}
 
-
-  /* COLUMN WIDTHS */
-
-  .designation-table th:nth-child(1) {
-    width: 30%;
-  }
-
-  .designation-table th:nth-child(2) {
-    width: 28%;
-  }
-
-  .designation-table th:nth-child(3) {
-    width: 22%;
-  }
-
-  .designation-table th:nth-child(4) {
-    width: 20%;
-  }
-
-
-  /* TABLE BODY */
-
-  .designation-table tbody td {
-    padding: 18px 21px;
-
-    color: #304968;
-
-    font-size: 15px;
-    line-height: 1.4;
-
-    font-weight: 400;
-
-    border-bottom: 1px solid #e2e8ef;
-
-    vertical-align: middle;
-  }
-
-  .designation-table tbody tr:last-child td {
-    border-bottom: none;
-  }
-
-
-  /* ROW HOVER */
-
-  .designation-table tbody tr:hover {
-    background: #fffaf8;
-  }
-
-
-  /* =========================================================
-     DESIGNATION TEXT
-     ========================================================= */
-
-  .designation-title {
-    display: inline-block;
-
-    color: #193b5e;
-
-    font-size: 15px;
-    line-height: 1.4;
-
-    font-weight: 600;
-  }
-
-
-  /* DEPARTMENT */
-
-  .designation-department {
-    color: #304968;
-
-    font-size: 15px;
-    line-height: 1.4;
-
-    font-weight: 400;
-  }
-
-
-  /* =========================================================
-     GRADE
-     ========================================================= */
-
-  .grade-badge {
-    min-width: 48px;
-    height: 34px;
-
-    padding: 0 12px;
-
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 18px;
-
-    background: #dbeafe;
-    color: #2563eb;
-
-    font-size: 13px;
-    font-weight: 600;
-  }
-
-  .grade-empty {
-    color: #94a3b8;
-    font-size: 14px;
-    font-weight: 400;
-  }
-
-
-  /* =========================================================
-     ACTION
-     ========================================================= */
-
-  .designation-actions {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-  }
-
-  .designation-action {
-    width: 48px;
-    height: 48px;
-
-    padding: 0;
-
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-
-    border: 1px solid #dfe6ee;
-    border-radius: 13px;
-
-    background: #fff;
-    color: #314966;
-
-    text-decoration: none;
-
-    cursor: pointer;
-
-    transition: .18s ease;
-  }
-
-  .designation-action:hover {
+.designation-top-btn:hover {
     background: #f8fafc;
     border-color: #cfd8e3;
-  }
+}
 
-  .designation-action svg {
-    width: 21px;
-    height: 21px;
-  }
+/* MAIN CARD */
+.designation-card {
+    width: 100%;
+    background: #fff;
+    border: 1px solid #e3e8ee;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, .035);
+}
 
-  .designation-delete:hover {
-    background: #fff5f5;
-    border-color: #fecaca;
-    color: #dc2626;
-  }
-
-
-  /* =========================================================
-     EMPTY
-     ========================================================= */
-
-  .designation-empty {
-    text-align: center;
-
-    padding: 55px 20px !important;
-  }
-
-  .designation-empty-title {
-    display: block;
-
-    margin-bottom: 5px;
-
-    color: #334155;
-
-    font-size: 15px;
-    font-weight: 600;
-  }
-
-  .designation-empty-text {
-    display: block;
-
-    color: #94a3b8;
-
-    font-size: 13px;
-    font-weight: 400;
-  }
-
-
-  /* =========================================================
-     FOOTER
-     ========================================================= */
-
-  .designation-footer {
+/* CARD HEADER */
+.designation-card-head {
     min-height: 76px;
-
-    padding: 0 24px;
-
+    padding: 0 22px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 16px;
+}
 
-    border-top: 1px solid #e2e8ef;
-  }
+.designation-card-title {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.3;
+    font-weight: 600;
+    color: #203b5b;
+}
 
-  .designation-record-info {
-    color: #7890aa;
-
+/* ADD BUTTON */
+.designation-add-btn {
+    height: 38px;
+    padding: 0 15px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 11px;
+    background: #f46b55;
+    color: #fff;
+    text-decoration: none;
     font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: all .18s ease;
+}
+
+.designation-add-btn:hover {
+    background: #e95e49;
+    color: #fff;
+}
+
+.designation-add-btn svg {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+}
+
+/* TABLE */
+.designation-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.designation-table {
+    width: 100%;
+    min-width: 650px;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+/* TABLE HEADER */
+.designation-table thead th {
+    height: 48px;
+    padding: 0 18px;
+    text-align: left;
+    background: #fff;
+    color: #71839b;
+    font-size: 11px;
+    line-height: 1.3;
+    font-weight: 600;
+    letter-spacing: .02em;
+    border-top: 1px solid #eef1f5;
+    border-bottom: 1px solid #e1e7ee;
+    white-space: nowrap;
+}
+
+/* COLUMN WIDTHS */
+.designation-table th:nth-child(1) {
+    width: 30%;
+}
+
+.designation-table th:nth-child(2) {
+    width: 28%;
+}
+
+.designation-table th:nth-child(3) {
+    width: 22%;
+}
+
+.designation-table th:nth-child(4) {
+    width: 20%;
+}
+
+/* TABLE BODY */
+.designation-table tbody td {
+    height: 62px;
+    padding: 0 18px;
+    color: #304968;
+    font-size: 13px;
+    line-height: 1.4;
     font-weight: 400;
-  }
+    border-bottom: 1px solid #e5eaf0;
+    vertical-align: middle;
+}
 
+.designation-table tbody tr:last-child td {
+    border-bottom: none;
+}
 
-  /* =========================================================
-     PAGINATION
-     ========================================================= */
+.designation-table tbody tr {
+    transition: background .15s ease;
+}
 
-  .designation-pagination {
+.designation-table tbody tr:hover {
+    background: #fffaf8;
+}
+
+/* DESIGNATION */
+.designation-title {
+    display: inline-block;
+    color: #193b5e;
+    font-size: 13px;
+    line-height: 1.4;
+    font-weight: 600;
+}
+
+/* DEPARTMENT */
+.designation-department {
+    color: #304968;
+    font-size: 13px;
+    line-height: 1.4;
+    font-weight: 400;
+}
+
+/* GRADE */
+.grade-badge {
+    min-width: 38px;
+    height: 26px;
+    padding: 0 9px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    background: #dbeafe;
+    color: #2563eb;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.grade-empty {
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 400;
+}
+
+/* ACTION BUTTONS */
+.designation-actions {
     display: flex;
     align-items: center;
     gap: 6px;
-  }
+}
 
-  .designation-page-link {
-    min-width: 48px;
-    height: 48px;
-
-    padding: 0 13px;
-
+.designation-action {
+    width: 36px;
+    height: 36px;
+    padding: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    border: 1px solid #dfe6ee;
+    border-radius: 10px;
+    background: #fff;
+    color: #314966;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all .18s ease;
+}
 
+.designation-action:hover {
+    background: #f8fafc;
+    border-color: #cfd8e3;
+}
+
+.designation-action svg {
+    width: 17px;
+    height: 17px;
+}
+
+.designation-delete:hover {
+    background: #fff5f5;
+    border-color: #fecaca;
+    color: #dc2626;
+}
+
+/* EMPTY STATE */
+.designation-empty {
+    text-align: center;
+    padding: 40px 20px !important;
+}
+
+.designation-empty-title {
+    display: block;
+    margin-bottom: 4px;
+    color: #334155;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.designation-empty-text {
+    display: block;
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 400;
+}
+
+/* FOOTER */
+.designation-footer {
+    min-height: 58px;
+    padding: 0 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid #e2e8ef;
+}
+
+.designation-record-info {
+    color: #7890aa;
+    font-size: 11px;
+    font-weight: 400;
+}
+
+/* PAGINATION */
+.designation-pagination {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.designation-page-link {
+    min-width: 36px;
+    height: 34px;
+    padding: 0 9px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     border: 1px solid #e0e6ed;
-    border-radius: 12px;
-
+    border-radius: 9px;
     background: #fff;
     color: #304968;
-
     text-decoration: none;
-
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 500;
-  }
+}
 
-  .designation-page-link:hover {
+.designation-page-link:hover {
     background: #f8fafc;
-  }
+}
 
-  .designation-page-link.active {
+.designation-page-link.active {
     background: #f47a35;
     border-color: #f47a35;
-
     color: #fff;
-  }
+}
 
-  .designation-page-link.disabled {
+.designation-page-link.disabled {
     color: #9aa8b8;
     background: #f8fafc;
-
     pointer-events: none;
-  }
+}
 
-
-  /* =========================================================
-     MOBILE
-     ========================================================= */
-
-  @media (max-width: 800px) {
+/* MOBILE */
+@media (max-width: 800px) {
 
     .designation-page .page-head {
-      gap: 15px;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .designation-page .page-head h1 {
+        font-size: 24px;
     }
 
     .designation-top-actions {
-      gap: 7px;
+        width: 100%;
+        gap: 7px;
     }
 
     .designation-top-btn {
-      padding: 0 12px;
+        height: 36px;
+        padding: 0 12px;
     }
 
     .designation-card-head {
-      min-height: auto;
+        min-height: auto;
+        padding: 18px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
 
-      padding: 22px;
+    .designation-card-title {
+        font-size: 17px;
+    }
 
-      flex-direction: column;
-      align-items: flex-start;
-
-      gap: 18px;
+    .designation-add-btn {
+        width: 100%;
     }
 
     .designation-footer {
-      padding: 18px;
-
-      flex-direction: column;
-      align-items: flex-start;
-
-      gap: 15px;
+        padding: 14px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
     }
-
-  }
-
+}
 </style>
 
 
 <div class="designation-page">
 
+    <!-- PAGE HEADER -->
+    <div class="page-head">
 
-  <!-- =======================================================
-       PAGE HEADER
-       ======================================================= -->
+        <div>
+            <h1>Designations</h1>
 
-  <div class="page-head">
+            <div class="crumb">
+                Home · Configuration · Designations
+            </div>
+        </div>
 
-    <div>
+        <div class="designation-top-actions">
 
-      <h1>Designations</h1>
-
-      <div class="crumb">
-        Home · Configuration · Designations
-      </div>
-
-    </div>
-
-
-    <div class="designation-top-actions">
-
-      <!-- BACK -->
-      <a
-        href="javascript:history.back()"
-        class="designation-top-btn"
-      >
-        ← Back
-      </a>
-
-
-      <!-- ALL SETTINGS -->
-      <!-- IMPORTANT: your configuration URL name is config -->
-
-      <a
-        href="{% url 'config' %}"
-        class="designation-top-btn"
-      >
-        ← All Settings
-      </a>
-
-    </div>
-
-  </div>
-
-
-  <!-- =======================================================
-       MAIN CARD
-       ======================================================= -->
-
-  <div class="designation-card">
-
-
-    <!-- CARD HEADER -->
-
-    <div class="designation-card-head">
-
-      <h2 class="designation-card-title">
-        Job Titles &amp; Hierarchy
-      </h2>
-
-
-      {% if can_create %}
-
-      <a
-        href="{% url 'desig_create' %}"
-        class="designation-add-btn"
-      >
-
-        <svg
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          viewBox="0 0 24 24"
-        >
-          <path d="M12 5v14"/>
-          <path d="M5 12h14"/>
-        </svg>
-
-        Add Designation
-
-      </a>
-
-      {% endif %}
-
-    </div>
-
-
-    <!-- =======================================================
-         TABLE
-         ======================================================= -->
-
-    <div class="designation-table-wrap">
-
-      <table class="designation-table">
-
-        <thead>
-
-          <tr>
-
-            <th>DESIGNATION</th>
-
-            <th>DEPARTMENT</th>
-
-            <th>GRADE LEVEL</th>
-
-            <th>ACTION</th>
-
-          </tr>
-
-        </thead>
-
-
-        <tbody>
-
-          {% for designation in designations %}
-
-          <tr>
-
-            <!-- DESIGNATION -->
-
-            <td>
-
-              <span class="designation-title">
-                {{ designation.title }}
-              </span>
-
-            </td>
-
-
-            <!-- DEPARTMENT -->
-
-            <td>
-
-              <span class="designation-department">
-                {{ designation.department.name }}
-              </span>
-
-            </td>
-
-
-            <!-- GRADE -->
-
-            <td>
-
-              {% if designation.level %}
-
-                <span class="grade-badge">
-                  {{ designation.level }}
-                </span>
-
-              {% else %}
-
-                <span class="grade-empty">
-                  —
-                </span>
-
-              {% endif %}
-
-            </td>
-
-
-            <!-- ACTION -->
-
-            <td>
-
-              <div class="designation-actions">
-
-
-                {% if can_edit %}
-
-                <!-- EDIT -->
-
-                <a
-                  href="{% url 'desig_edit' designation.pk %}"
-                  class="designation-action"
-                  title="Edit Designation"
-                >
-
-                  <svg
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M12 20h9"/>
-                    <path d="M16.5 3.5a2.12 2.12 0 013 3L8 18l-4 1 1-4L16.5 3.5z"/>
-                  </svg>
-
-                </a>
-
-                {% endif %}
-
-
-                {% if can_delete %}
-
-                <!-- DELETE -->
-
-                <form
-                  method="post"
-                  action="{% url 'desig_delete' designation.pk %}"
-                  class="designation-delete-form"
-                  style="display:inline;"
-                >
-
-                  {% csrf_token %}
-
-                  <button
-                    type="button"
-                    class="designation-action designation-delete"
-                    title="Delete Designation"
-                    onclick="confirmDesignationDelete(this)"
-                  >
-
-                    <svg
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M3 6h18"/>
-                      <path d="M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2"/>
-                      <path d="M19 6l-1 15H6L5 6"/>
-                      <path d="M10 11v6"/>
-                      <path d="M14 11v6"/>
-                    </svg>
-
-                  </button>
-
-                </form>
-
-                {% endif %}
-
-
-              </div>
-
-            </td>
-
-          </tr>
-
-
-          {% empty %}
-
-          <tr>
-
-            <td
-              colspan="4"
-              class="designation-empty"
-            >
-
-              <span class="designation-empty-title">
-                No Designations Found
-              </span>
-
-              <span class="designation-empty-text">
-                Add your first designation to get started.
-              </span>
-
-            </td>
-
-          </tr>
-
-          {% endfor %}
-
-        </tbody>
-
-      </table>
-
-    </div>
-
-
-    <!-- =======================================================
-         PAGINATION
-         ======================================================= -->
-
-    {% if page_obj and page_obj.paginator.count %}
-
-    <div class="designation-footer">
-
-
-      <div class="designation-record-info">
-
-        Page {{ page_obj.number }}
-        of {{ page_obj.paginator.num_pages }}
-        ·
-        {{ page_obj.paginator.count }} records
-
-      </div>
-
-
-      <div class="designation-pagination">
-
-
-        {% if page_obj.has_previous %}
-
-          <a
-            href="?page={{ page_obj.previous_page_number }}"
-            class="designation-page-link"
-          >
-            ‹ Prev
-          </a>
-
-        {% else %}
-
-          <span class="designation-page-link disabled">
-            ‹ Prev
-          </span>
-
-        {% endif %}
-
-
-        {% for num in page_obj.paginator.page_range %}
-
-          {% if num == page_obj.number %}
-
-            <span class="designation-page-link active">
-              {{ num }}
-            </span>
-
-          {% else %}
-
+            <!-- BACK -->
             <a
-              href="?page={{ num }}"
-              class="designation-page-link"
+                href="javascript:history.back()"
+                class="designation-top-btn"
             >
-              {{ num }}
+                ← Back
             </a>
 
-          {% endif %}
+            <!-- ALL SETTINGS -->
+            <a
+                href="{% url 'config' %}"
+                class="designation-top-btn"
+            >
+                ← All Settings
+            </a>
 
-        {% endfor %}
+        </div>
+    </div>
 
 
-        {% if page_obj.has_next %}
+    <!-- MAIN CARD -->
+    <div class="designation-card">
 
-          <a
-            href="?page={{ page_obj.next_page_number }}"
-            class="designation-page-link"
-          >
-            Next ›
-          </a>
+        <!-- CARD HEADER -->
+        <div class="designation-card-head">
 
-        {% else %}
+            <h2 class="designation-card-title">
+                Job Titles &amp; Hierarchy
+            </h2>
 
-          <span class="designation-page-link disabled">
-            Next ›
-          </span>
+            {% if can_create %}
+            <a
+                href="{% url 'desig_create' %}"
+                class="designation-add-btn"
+            >
+
+                <svg
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+                    <path d="M12 5v14"/>
+                    <path d="M5 12h14"/>
+                </svg>
+
+                Add Designation
+
+            </a>
+            {% endif %}
+
+        </div>
+
+
+        <!-- TABLE -->
+        <div class="designation-table-wrap">
+
+            <table class="designation-table">
+
+                <thead>
+                    <tr>
+                        <th>DESIGNATION</th>
+                        <th>DEPARTMENT</th>
+                        <th>GRADE LEVEL</th>
+                        <th>ACTION</th>
+                    </tr>
+                </thead>
+
+
+                <tbody>
+
+                    {% for designation in designations %}
+
+                    <tr>
+
+                        <!-- DESIGNATION -->
+                        <td>
+                            <span class="designation-title">
+                                {{ designation.title }}
+                            </span>
+                        </td>
+
+
+                        <!-- DEPARTMENT -->
+                        <td>
+                            <span class="designation-department">
+                                {{ designation.department.name }}
+                            </span>
+                        </td>
+
+
+                        <!-- GRADE -->
+                        <td>
+
+                            {% if designation.level %}
+
+                                <span class="grade-badge">
+                                    {{ designation.level }}
+                                </span>
+
+                            {% else %}
+
+                                <span class="grade-empty">
+                                    —
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <!-- ACTION -->
+                        <td>
+
+                            <div class="designation-actions">
+
+                                {% if can_edit %}
+
+                                <!-- EDIT -->
+                                <a
+                                    href="{% url 'desig_edit' designation.pk %}"
+                                    class="designation-action"
+                                    title="Edit Designation"
+                                >
+
+                                    <svg
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="1.8"
+                                        viewBox="0 0 24 24"
+                                        aria-hidden="true"
+                                    >
+                                        <path d="M12 20h9"/>
+                                        <path d="M16.5 3.5a2.12 2.12 0 013 3L8 18l-4 1 1-4L16.5 3.5z"/>
+                                    </svg>
+
+                                </a>
+
+                                {% endif %}
+
+
+                                {% if can_delete %}
+
+                                <!-- DELETE -->
+                                <form
+                                    method="post"
+                                    action="{% url 'desig_delete' designation.pk %}"
+                                    class="designation-delete-form"
+                                    style="display:inline;"
+                                >
+
+                                    {% csrf_token %}
+
+                                    <button
+                                        type="button"
+                                        class="designation-action designation-delete"
+                                        title="Delete Designation"
+                                        onclick="confirmDesignationDelete(this)"
+                                    >
+
+                                        <svg
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="1.8"
+                                            viewBox="0 0 24 24"
+                                            aria-hidden="true"
+                                        >
+                                            <path d="M3 6h18"/>
+                                            <path d="M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2"/>
+                                            <path d="M19 6l-1 15H6L5 6"/>
+                                            <path d="M10 11v6"/>
+                                            <path d="M14 11v6"/>
+                                        </svg>
+
+                                    </button>
+
+                                </form>
+
+                                {% endif %}
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+
+                    {% empty %}
+
+                    <tr>
+
+                        <td
+                            colspan="4"
+                            class="designation-empty"
+                        >
+
+                            <span class="designation-empty-title">
+                                No Designations Found
+                            </span>
+
+                            <span class="designation-empty-text">
+                                Add your first designation to get started.
+                            </span>
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+        <!-- PAGINATION -->
+        {% if page_obj and page_obj.paginator.count %}
+
+        <div class="designation-footer">
+
+            <div class="designation-record-info">
+
+                Page {{ page_obj.number }}
+                of {{ page_obj.paginator.num_pages }}
+                ·
+                {{ page_obj.paginator.count }} records
+
+            </div>
+
+
+            <div class="designation-pagination">
+
+                {% if page_obj.has_previous %}
+
+                    <a
+                        href="?page={{ page_obj.previous_page_number }}"
+                        class="designation-page-link"
+                    >
+                        ‹ Prev
+                    </a>
+
+                {% else %}
+
+                    <span class="designation-page-link disabled">
+                        ‹ Prev
+                    </span>
+
+                {% endif %}
+
+
+                {% for num in page_obj.paginator.page_range %}
+
+                    {% if num == page_obj.number %}
+
+                        <span class="designation-page-link active">
+                            {{ num }}
+                        </span>
+
+                    {% else %}
+
+                        <a
+                            href="?page={{ num }}"
+                            class="designation-page-link"
+                        >
+                            {{ num }}
+                        </a>
+
+                    {% endif %}
+
+                {% endfor %}
+
+
+                {% if page_obj.has_next %}
+
+                    <a
+                        href="?page={{ page_obj.next_page_number }}"
+                        class="designation-page-link"
+                    >
+                        Next ›
+                    </a>
+
+                {% else %}
+
+                    <span class="designation-page-link disabled">
+                        Next ›
+                    </span>
+
+                {% endif %}
+
+            </div>
+
+        </div>
 
         {% endif %}
 
-
-      </div>
-
     </div>
-
-    {% endif %}
-
-
-  </div>
 
 </div>
 
 
-<!-- =========================================================
-     SWEETALERT2
-     ========================================================= -->
-
+<!-- SWEETALERT2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
 
 <script>
 
 function confirmDesignationDelete(button) {
 
-  const form = button.closest('.designation-delete-form');
+    const form = button.closest('.designation-delete-form');
 
-  Swal.fire({
+    Swal.fire({
+        title: 'Delete Designation?',
+        text: 'This designation will be permanently deleted.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete it',
+        cancelButtonText: 'Cancel',
+        reverseButtons: true,
+        focusCancel: true,
+    }).then((result) => {
 
-    title: 'Delete Designation?',
+        if (result.isConfirmed) {
+            form.submit();
+        }
 
-    text: 'This designation will be permanently deleted.',
-
-    icon: 'warning',
-
-    showCancelButton: true,
-
-    confirmButtonText: 'Yes, delete it',
-
-    cancelButtonText: 'Cancel',
-
-    reverseButtons: true,
-
-    focusCancel: true,
-
-  }).then((result) => {
-
-    if (result.isConfirmed) {
-
-      form.submit();
-
-    }
-
-  });
-
+    });
 }
 
 </script>
-
 
 {% endblock %}

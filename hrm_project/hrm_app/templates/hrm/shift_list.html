@@ -5,97 +5,69 @@
 {% block content %}
 
 <style>
-  /* ================================
-     PAGE
-  ================================= */
-
   .shift-page {
     width: 100%;
   }
 
+  /* PAGE HEADER */
   .shift-page .page-head {
-    margin-bottom: 28px;
+    margin-bottom: 20px;
   }
 
   .shift-page .page-head h1 {
-    margin: 0 0 6px;
-    font-size: 34px;
-    line-height: 1.15;
+    margin: 0 0 5px;
+    font-size: 28px;
+    line-height: 1.2;
     font-weight: 700;
     color: #203b5b;
   }
 
   .shift-page .crumb {
     margin: 0;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 400;
     color: #71839b;
   }
 
-
-  /* ================================
-     HEADER BUTTONS
-  ================================= */
-
+  /* TOP BUTTONS */
   .shift-top-actions {
     display: flex;
-    gap: 14px;
+    gap: 10px;
     align-items: center;
   }
 
   .shift-top-btn {
-    height: 44px;
-    padding: 0 18px;
-
+    height: 38px;
+    padding: 0 15px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-
     border: 1px solid #e1e7ee;
-    border-radius: 14px;
-
+    border-radius: 11px;
     background: #fff;
     color: #203b5b;
-
     text-decoration: none;
-
-    font-size: 14px;
-    font-weight: 500;
-
-    transition: .18s ease;
+    font-size: 13px;
+    font-weight: 600;
   }
 
   .shift-top-btn:hover {
     background: #f8fafc;
-    border-color: #d5dde7;
   }
 
-
-  /* ================================
-     MAIN CARD
-  ================================= */
-
+  /* MAIN CARD */
   .shift-card {
     background: #fff;
-
     border: 1px solid #e2e7ed;
-    border-radius: 18px;
-
+    border-radius: 15px;
     overflow: hidden;
-
-    box-shadow: 0 3px 12px rgba(15, 23, 42, .035);
+    box-shadow: 0 2px 10px rgba(15, 23, 42, .03);
   }
 
-
-  /* ================================
-     CARD TOP
-  ================================= */
-
+  /* CARD HEADER */
   .shift-card-head {
-    min-height: 92px;
-
-    padding: 0 30px;
-
+    min-height: 76px;
+    padding: 0 26px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -103,40 +75,26 @@
 
   .shift-card-head h2 {
     margin: 0;
-
-    font-size: 22px;
-    font-weight: 600;
-
+    font-size: 19px;
+    font-weight: 700;
     color: #203b5b;
   }
 
-
-  /* ================================
-     ADD SHIFT
-  ================================= */
-
+  /* ADD SHIFT */
   .add-shift-btn {
-    height: 44px;
-
-    padding: 0 20px;
-
+    height: 38px;
+    padding: 0 16px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-
+    gap: 6px;
     border: 0;
-    border-radius: 14px;
-
+    border-radius: 11px;
     background: #f46b55;
     color: #fff;
-
     text-decoration: none;
-
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
-
-    transition: .18s ease;
   }
 
   .add-shift-btn:hover {
@@ -144,16 +102,12 @@
   }
 
   .add-shift-btn .plus {
-    font-size: 22px;
+    font-size: 18px;
     line-height: 1;
-    font-weight: 300;
+    font-weight: 400;
   }
 
-
-  /* ================================
-     TABLE
-  ================================= */
-
+  /* TABLE */
   .shift-table-wrap {
     width: 100%;
     overflow-x: auto;
@@ -165,35 +119,23 @@
     table-layout: fixed;
   }
 
-
   /* TABLE HEADER */
-
   .shift-table thead th {
-    height: 58px;
-
-    padding: 0 20px;
-
+    height: 48px;
+    padding: 0 18px;
     text-align: left;
-
     background: #fff;
-
     border-top: 1px solid #edf0f3;
     border-bottom: 1px solid #e1e6ec;
-
     color: #71839b;
-
-    font-size: 13px;
+    font-size: 11px;
     line-height: 1.2;
-
-    font-weight: 600;
-
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .01em;
   }
 
-
   /* COLUMN WIDTH */
-
   .shift-table th:nth-child(1),
   .shift-table td:nth-child(1) {
     width: 21%;
@@ -224,9 +166,7 @@
     width: 15%;
   }
 
-
   /* TABLE BODY */
-
   .shift-table tbody tr {
     border-bottom: 1px solid #e7ebef;
     transition: background .15s ease;
@@ -240,94 +180,61 @@
     background: #fffaf8;
   }
 
-
   .shift-table td {
-    height: 86px;
-
-    padding: 0 20px;
-
+    height: 76px;
+    padding: 0 18px;
     vertical-align: middle;
-
     color: #304968;
-
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 400;
   }
-
 
   /* SHIFT NAME */
-
   .shift-name {
     color: #203b5b;
-
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 700;
   }
 
-
   /* NORMAL TEXT */
-
   .shift-normal {
     color: #304968;
-
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 400;
   }
 
-
-  /* ================================
-     LOCATION BADGE
-  ================================= */
-
+  /* LOCATION */
   .shift-location {
     display: inline-flex;
     align-items: center;
-
-    min-height: 32px;
-
-    padding: 0 14px;
-
-    border-radius: 18px;
-
+    min-height: 28px;
+    padding: 0 12px;
+    border-radius: 15px;
     background: #eef1f5;
-
     color: #64758b;
-
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
   }
 
-
-  /* ================================
-     ACTION BUTTONS
-  ================================= */
-
+  /* ACTION */
   .shift-actions {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
   }
 
   .shift-action-btn {
-    width: 48px;
-    height: 48px;
-
+    width: 42px;
+    height: 42px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-
     border: 1px solid #dfe6ee;
-    border-radius: 13px;
-
+    border-radius: 11px;
     background: #fff;
-
     color: #263d5a;
-
     text-decoration: none;
-
     cursor: pointer;
-
-    transition: .18s ease;
   }
 
   .shift-action-btn:hover {
@@ -336,64 +243,45 @@
   }
 
   .shift-action-btn svg {
-    width: 22px;
-    height: 22px;
-
+    width: 19px;
+    height: 19px;
     stroke: currentColor;
-
     stroke-width: 1.8;
+    fill: none;
   }
 
-
   /* DELETE */
-
   .shift-delete-btn:hover {
     color: #dc2626;
     border-color: #fecaca;
     background: #fff7f7;
   }
 
-
-  /* ================================
-     EMPTY
-  ================================= */
-
+  /* EMPTY */
   .shift-empty {
-    padding: 55px 20px;
-
+    padding: 45px 20px;
     text-align: center;
-
     color: #8a99aa;
-
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 400;
   }
 
-
-  /* ================================
-     RESPONSIVE
-  ================================= */
-
+  /* RESPONSIVE */
   @media (max-width: 900px) {
-
     .shift-card-head {
-      padding: 20px;
+      padding: 18px;
     }
 
     .shift-table {
-      min-width: 900px;
+      min-width: 850px;
     }
-
   }
-
 </style>
 
 
 <div class="shift-page">
 
-
   <!-- PAGE HEADER -->
-
   <div class="page-head">
 
     <div>
@@ -403,7 +291,6 @@
         Home · Configuration · Shift Management
       </div>
     </div>
-
 
     <div class="shift-top-actions">
 
@@ -427,12 +314,9 @@
 
 
   <!-- MAIN CARD -->
-
   <div class="shift-card">
 
-
     <!-- CARD HEADER -->
-
     <div class="shift-card-head">
 
       <h2>Shifts &amp; Duty Locations</h2>
@@ -449,24 +333,19 @@
 
 
     <!-- TABLE -->
-
     <div class="shift-table-wrap">
 
       <table class="shift-table">
 
         <thead>
-
           <tr>
-
             <th>Shift</th>
             <th>Start</th>
             <th>End</th>
             <th>Team</th>
             <th>Location</th>
             <th>Action</th>
-
           </tr>
-
         </thead>
 
 
@@ -477,7 +356,6 @@
           <tr>
 
             <!-- SHIFT -->
-
             <td>
               <span class="shift-name">
                 {{ shift.name }}
@@ -486,7 +364,6 @@
 
 
             <!-- START -->
-
             <td>
               <span class="shift-normal">
                 {{ shift.start_time|time:"h:i A" }}
@@ -495,7 +372,6 @@
 
 
             <!-- END -->
-
             <td>
               <span class="shift-normal">
                 {{ shift.end_time|time:"h:i A" }}
@@ -504,7 +380,6 @@
 
 
             <!-- TEAM -->
-
             <td>
               <span class="shift-normal">
                 {{ shift.team|default:"—" }}
@@ -513,7 +388,6 @@
 
 
             <!-- LOCATION -->
-
             <td>
 
               {% if shift.location %}
@@ -532,13 +406,11 @@
 
 
             <!-- ACTION -->
-
             <td>
 
               <div class="shift-actions">
 
                 <!-- EDIT -->
-
                 <a
                   href="{% url 'shift_edit' shift.pk %}"
                   class="shift-action-btn"
@@ -546,8 +418,8 @@
                 >
 
                   <svg
-                    fill="none"
                     viewBox="0 0 24 24"
+                    aria-hidden="true"
                   >
                     <path d="M12 20h9"/>
                     <path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
@@ -557,7 +429,6 @@
 
 
                 <!-- DELETE -->
-
                 <button
                   type="button"
                   class="shift-action-btn shift-delete-btn"
@@ -569,8 +440,8 @@
                 >
 
                   <svg
-                    fill="none"
                     viewBox="0 0 24 24"
+                    aria-hidden="true"
                   >
                     <path d="M3 6h18"/>
                     <path d="M8 6V4h8v2"/>
@@ -613,14 +484,10 @@
 </div>
 
 
-<!-- ==========================================================
-     SWEETALERT DELETE
-=========================================================== -->
-
+<!-- SWEETALERT DELETE -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-
 function deleteShift(deleteUrl, shiftName) {
 
   Swal.fire({
@@ -651,15 +518,12 @@ function deleteShift(deleteUrl, shiftName) {
   }).then((result) => {
 
     if (result.isConfirmed) {
-
       window.location.href = deleteUrl;
-
     }
 
   });
 
 }
-
 </script>
 
 {% endblock %}
