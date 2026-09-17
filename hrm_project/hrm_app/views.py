@@ -2157,28 +2157,72 @@ def support_ticket_create(request):
 @require_POST
 def support_chat_start(request):
     participant_id = request.POST.get('participant_id', '').strip()
-    participant = User.objects.filter(pk=participant_id, is_active=True).first()
+
+    participant = User.objects.filter(
+        pk=participant_id,
+        is_active=True
+    ).first()
+
     if not participant or participant.id == request.user.id:
-        return JsonResponse({'ok': False, 'error': 'Choose an employee to chat with.'}, status=400)
-    conversation, _ = SupportConversation.objects.get_or_create(
-        requester=request.user,
-        participant=participant,
+        return JsonResponse(
+            {
+                'ok': False,
+                'error': 'Choose an employee to chat with.'
+            },
+            status=400
+        )
+
+    # Find existing conversation in either direction
+    conversation = SupportConversation.objects.filter(
+        Q(
+            requester=request.user,
+            participant=participant
+        )
+        |
+        Q(
+            requester=participant,
+            participant=request.user
+        ),
         is_open=True,
-    )
+    ).first()
+
+    # Create a new conversation only if one does not exist
+    if not conversation:
+        conversation = SupportConversation.objects.create(
+            requester=request.user,
+            participant=participant,
+            is_open=True,
+        )
+
     messages_data = [
         {
             'id': message.id,
             'message': message.body,
-            'sender': message.sender.get_full_name() or message.sender.username,
+            'sender': (
+                message.sender.get_full_name()
+                or message.sender.username
+            ),
             'sender_id': message.sender_id,
             'created_at': message.created_at.isoformat(),
-            'attachment_url': message.attachment.url if message.attachment else '',
-            'attachment_name': message.attachment.name.rsplit('/', 1)[-1] if message.attachment else '',
+            'attachment_url': (
+                message.attachment.url
+                if message.attachment
+                else ''
+            ),
+            'attachment_name': (
+                message.attachment.name.rsplit('/', 1)[-1]
+                if message.attachment
+                else ''
+            ),
         }
         for message in conversation.messages.select_related('sender').all()
     ]
-    return JsonResponse({'ok': True, 'conversation_id': conversation.id, 'messages': messages_data})
 
+    return JsonResponse({
+        'ok': True,
+        'conversation_id': conversation.id,
+        'messages': messages_data,
+    })
 
 @login_required
 @require_POST

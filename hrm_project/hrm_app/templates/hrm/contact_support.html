@@ -301,7 +301,7 @@
 <script>
 const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 let chatSocket = null;
-let chatUserId = {{ request.user.id }};
+let chatUserId = Number({{ request.user.id }});
 let activeConversationId = null;
 
 // Show selected file name
@@ -427,15 +427,55 @@ async function loadChatHistory() {
 }
 
 function renderMessage(message) {
+  if (!message) return;
+
   const wrapper = document.createElement('div');
-  const isMine = message.sender_id === chatUserId;
-  wrapper.className = `chat-message${isMine ? ' mine' : ''}`;
-  const time = message.created_at ? new Date(message.created_at).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}) : '';
-  const timeMarkup = `<span class="chat-time">${escapeHtml(time)}</span>`;
-  const bubbleMarkup = `<span class="chat-bubble">${escapeHtml(message.message)}<small style="display:block; margin-top:4px; opacity:.7;">${escapeHtml(message.sender)}</small></span>`;
-  wrapper.innerHTML = isMine ? `${bubbleMarkup}${timeMarkup}` : `${timeMarkup}${bubbleMarkup}`;
+
+  const senderId = Number(message.sender_id);
+  const currentUserId = Number(chatUserId);
+
+  const isMine = senderId === currentUserId;
+
+  wrapper.className = isMine
+    ? 'chat-message mine'
+    : 'chat-message';
+
+  const time = message.created_at
+    ? new Date(message.created_at).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    : '';
+
+  const senderName = message.sender || (
+    isMine ? 'You' : 'Support'
+  );
+
+  const messageText = message.message || '';
+
+  const timeMarkup = `
+    <span class="chat-time">
+      ${escapeHtml(time)}
+    </span>
+  `;
+
+  const bubbleMarkup = `
+    <span class="chat-bubble">
+      ${escapeHtml(messageText)}
+      <small style="display:block; margin-top:4px; opacity:.7;">
+        ${escapeHtml(senderName)}
+      </small>
+    </span>
+  `;
+
+  wrapper.innerHTML = isMine
+    ? `${bubbleMarkup}${timeMarkup}`
+    : `${timeMarkup}${bubbleMarkup}`;
+
   const messages = document.getElementById('chatMessages');
+
   messages.appendChild(wrapper);
+
   messages.scrollTop = messages.scrollHeight;
 }
 
