@@ -179,12 +179,32 @@ class ShiftForm(forms.ModelForm):
             'end_time':   forms.TimeInput(attrs={'type': 'time'}),
         }
 
-
 class HolidayForm(forms.ModelForm):
     class Meta:
-        model  = Holiday
-        fields = ['date', 'name', 'htype']
-        widgets = {'date': forms.DateInput(attrs={'type': 'date'})}
+        model = Holiday
+        fields = ['name', 'from_date', 'to_date', 'htype']
+
+        widgets = {
+            'from_date': forms.DateInput(
+                attrs={'type': 'date'}
+            ),
+            'to_date': forms.DateInput(
+                attrs={'type': 'date'}
+            ),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        from_date = cleaned_data.get('from_date')
+        to_date = cleaned_data.get('to_date')
+
+        if from_date and to_date and to_date < from_date:
+            raise forms.ValidationError(
+                "Holiday To date cannot be earlier than Holiday From date."
+            )
+
+        return cleaned_data
 
 
 class NotificationRuleForm(forms.ModelForm):

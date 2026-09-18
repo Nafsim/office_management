@@ -1030,18 +1030,26 @@ class EmailTemplate(models.Model):
 #  HOLIDAY CALENDAR
 # ─────────────────────────────────────────────
 class Holiday(models.Model):
-    TYPE_CHOICES = [('Public', 'Public'), ('Religious', 'Religious'), ('Optional', 'Optional')]
-    date  = models.DateField(unique=True)
-    name  = models.CharField(max_length=200)
-    htype = models.CharField(max_length=15, choices=TYPE_CHOICES, default='Public')
+    TYPE_CHOICES = [
+        ('Public', 'Public'),
+        ('Religious', 'Religious'),
+        ('Optional', 'Optional'),
+    ]
+
+    from_date = models.DateField(null=True, blank=True)   # ← added null=True, blank=True
+    to_date   = models.DateField(null=True, blank=True)   # ← added null=True, blank=True
+    name      = models.CharField(max_length=200)
+    htype     = models.CharField(
+        max_length=15,
+        choices=TYPE_CHOICES,
+        default='Public'
+    )
 
     class Meta:
-        ordering = ['date']
+        ordering = ['from_date']
 
     def __str__(self):
-        return f"{self.date} — {self.name}"
-
-
+        return f"{self.from_date} → {self.to_date} — {self.name}"
 # ─────────────────────────────────────────────
 #  NOTIFICATION RULE
 # ─────────────────────────────────────────────

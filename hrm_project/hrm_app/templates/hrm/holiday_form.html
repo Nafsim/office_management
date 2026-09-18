@@ -6,51 +6,59 @@
 {% block content %}
 
 <style>
-    .holiday-page {
-        padding: 28px;
-    }
-
-    .holiday-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-
-    .holiday-title {
-        margin: 0;
-        font-size: 24px;
-        font-weight: 700;
-        color: #1f2937;
-    }
-
-    .holiday-breadcrumb {
-        margin-top: 5px;
-        font-size: 13px;
-        color: #8a94a6;
-    }
-
-    .holiday-card {
-        background: #fff;
-        border: 1px solid #edf0f4;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,.03);
-        max-width: 720px;
-    }
-
-    .holiday-card-header {
+    /* ========== OVERLAY ========== */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.45);
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        padding: 16px 20px;
-        border-bottom: 1px solid #edf0f4;
+        justify-content: center;
+        z-index: 1050;
+        padding: 20px;
+        animation: fadeIn 0.2s ease;
     }
 
-    .holiday-card-title {
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+
+    /* ========== MODAL CARD ========== */
+    .modal-card {
+        width: 100%;
+        max-width: 480px;
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        overflow: hidden;
+        animation: slideUp 0.25s ease;
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(16px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Header */
+    .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px 24px 8px;
+    }
+
+    .modal-title {
         margin: 0;
-        font-size: 16px;
+        font-size: 18px;
         font-weight: 700;
-        color: #1f2937;
+        color: #111827;
     }
 
     .close-btn {
@@ -60,241 +68,237 @@
         font-size: 22px;
         line-height: 1;
         cursor: pointer;
-        padding: 2px 5px;
+        padding: 4px 8px;
+        border-radius: 8px;
+        transition: all 0.15s;
     }
 
     .close-btn:hover {
         color: #374151;
+        background: #f3f4f6;
     }
 
-    .holiday-card-body {
-        padding: 22px 20px;
+    /* Body */
+    .modal-body {
+        padding: 8px 24px 24px;
     }
 
     .form-group {
-        margin-bottom: 17px;
+        margin-bottom: 18px;
     }
 
     .form-label {
         display: block;
-        margin-bottom: 7px;
-        font-size: 13px;
+        margin-bottom: 6px;
+        font-size: 13.5px;
         font-weight: 600;
         color: #374151;
     }
 
-    .form-control,
-    .form-select {
-        width: 100%;
-        height: 40px;
-        padding: 0 11px;
-        border: 1px solid #dfe3e8;
-        border-radius: 7px;
-        background: #fff;
-        color: #374151;
-        font-size: 13px;
-        outline: none;
-        box-sizing: border-box;
+    /* ========== FORCE EXACT SAME INPUT STYLE ========== */
+    .modal-body input[type="text"],
+    .modal-body input[type="date"],
+    .modal-body input[type="time"],
+    .modal-body select,
+    .modal-body textarea,
+    .modal-body .form-control,
+    .modal-body .form-select {
+        width: 100% !important;
+        height: 42px !important;
+        padding: 0 14px !important;
+        border: 1px solid #e5e7eb !important;
+        border-radius: 10px !important;
+        background-color: #ffffff !important;
+        color: #111827 !important;
+        font-size: 14px !important;
+        outline: none !important;
+        box-shadow: none !important;
+        box-sizing: border-box !important;
+        transition: border-color 0.15s, box-shadow 0.15s !important;
+        appearance: none !important;
+        -webkit-appearance: none !important;
     }
 
-    .form-control:focus,
-    .form-select:focus {
-        border-color: #ff6b00;
-        box-shadow: 0 0 0 2px rgba(255,107,0,.08);
+    /* Textarea taller */
+    .modal-body textarea {
+        height: auto !important;
+        min-height: 90px !important;
+        padding: 12px 14px !important;
+        resize: vertical;
     }
 
+    /* Focus state - same orange glow */
+    .modal-body input:focus,
+    .modal-body select:focus,
+    .modal-body textarea:focus,
+    .modal-body .form-control:focus,
+    .modal-body .form-select:focus {
+        border-color: #ff6b00 !important;
+        box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.12) !important;
+    }
+
+    /* Placeholder color */
+    .modal-body input::placeholder,
+    .modal-body textarea::placeholder {
+        color: #9ca3af !important;
+        opacity: 1;
+    }
+
+    /* Select arrow (clean) */
+    .modal-body select {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M2 4l4 4 4-4'/%3E%3C/svg%3E") !important;
+        background-repeat: no-repeat !important;
+        background-position: right 14px center !important;
+        padding-right: 36px !important;
+    }
+
+    /* Error */
     .error-list {
         margin-top: 5px;
         color: #dc2626;
-        font-size: 12px;
+        font-size: 12.5px;
     }
 
+    /* Buttons */
     .form-actions {
         display: flex;
         justify-content: flex-end;
         gap: 10px;
-        margin-top: 22px;
-        padding-top: 16px;
-        border-top: 1px solid #f1f3f5;
+        margin-top: 28px;
     }
 
     .cancel-btn,
     .save-btn {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        height: 36px;
-        padding: 0 15px;
-        border-radius: 7px;
-        font-size: 13px;
+        justify-content: center;
+        height: 40px;
+        padding: 0 20px;
+        border-radius: 10px;
+        font-size: 14px;
         font-weight: 600;
         cursor: pointer;
         text-decoration: none;
+        transition: all 0.15s;
     }
 
     .cancel-btn {
-        background: #fff;
+        background: #ffffff;
         color: #4b5563;
-        border: 1px solid #dfe3e8;
+        border: 1px solid #e5e7eb;
     }
 
     .cancel-btn:hover {
         background: #f9fafb;
+        border-color: #d1d5db;
     }
 
     .save-btn {
         background: #ff6b00;
-        color: #fff;
+        color: #ffffff;
         border: 1px solid #ff6b00;
     }
 
     .save-btn:hover {
         background: #ea580c;
+        border-color: #ea580c;
     }
 
-    @media (max-width: 700px) {
-        .holiday-page {
-            padding: 18px;
+    /* Mobile */
+    @media (max-width: 520px) {
+        .modal-overlay {
+            padding: 12px;
+            align-items: flex-end;
         }
-
-        .holiday-card {
+        .modal-card {
             max-width: 100%;
+            border-radius: 20px 20px 0 0;
         }
     }
 </style>
 
-<div class="holiday-page">
+<!-- ==================== MODAL ==================== -->
+<div class="modal-overlay">
 
-<!-- PAGE HEADER -->
-<div class="holiday-header">
+    <div class="modal-card">
 
-    <div>
-        <h1 class="holiday-title">Add Holiday</h1>
+        <!-- Header -->
+        <div class="modal-header">
+            <h2 class="modal-title">Add Holiday</h2>
+            <button type="button"
+                    class="close-btn"
+                    onclick="window.location.href='{% url 'org_calendar' %}'"
+                    title="Close">
+                ×
+            </button>
+        </div>
 
-        <div class="holiday-breadcrumb">
-            Home · Configuration · Org Calendar · Add Holiday
+        <!-- Body -->
+        <div class="modal-body">
+
+            <form method="post">
+                {% csrf_token %}
+
+                <!-- Holiday Name -->
+                <div class="form-group">
+                    <label for="{{ form.name.id_for_label }}" class="form-label">
+                        Holiday Name
+                    </label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        <div class="error-list">{{ form.name.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Holiday From -->
+                <div class="form-group">
+                    <label for="{{ form.from_date.id_for_label }}" class="form-label">
+                        Holiday From
+                    </label>
+                    {{ form.from_date }}
+                    {% if form.from_date.errors %}
+                        <div class="error-list">{{ form.from_date.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Holiday To -->
+                <div class="form-group">
+                    <label for="{{ form.to_date.id_for_label }}" class="form-label">
+                        Holiday To
+                    </label>
+                    {{ form.to_date }}
+                    {% if form.to_date.errors %}
+                        <div class="error-list">{{ form.to_date.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Holiday Type -->
+                <div class="form-group">
+                    <label for="{{ form.htype.id_for_label }}" class="form-label">
+                        Holiday Type
+                    </label>
+                    {{ form.htype }}
+                    {% if form.htype.errors %}
+                        <div class="error-list">{{ form.htype.errors }}</div>
+                    {% endif %}
+                </div>
+
+                {% if form.non_field_errors %}
+                    <div class="error-list">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                <!-- Buttons -->
+                <div class="form-actions">
+                    <a href="{% url 'org_calendar' %}" class="cancel-btn">Cancel</a>
+                    <button type="submit" class="save-btn">Save Holiday</button>
+                </div>
+
+            </form>
+
         </div>
     </div>
-
-</div>
-
-
-<!-- FORM -->
-<div class="holiday-card">
-
-    <div class="holiday-card-header">
-
-        <h2 class="holiday-card-title">
-            Holiday Information
-        </h2>
-
-        <button type="button"
-                class="close-btn"
-                onclick="window.location.href='{% url 'org_calendar' %}'">
-            ×
-        </button>
-
-    </div>
-
-
-    <div class="holiday-card-body">
-
-        <form method="post">
-
-            {% csrf_token %}
-
-
-            <!-- DATE -->
-            <div class="form-group">
-
-                <label for="{{ form.date.id_for_label }}"
-                       class="form-label">
-                    Date
-                </label>
-
-                {{ form.date }}
-
-                {% if form.date.errors %}
-                    <div class="error-list">
-                        {{ form.date.errors }}
-                    </div>
-                {% endif %}
-
-            </div>
-
-
-            <!-- HOLIDAY NAME -->
-            <div class="form-group">
-
-                <label for="{{ form.name.id_for_label }}"
-                       class="form-label">
-                    Holiday Name
-                </label>
-
-                {{ form.name }}
-
-                {% if form.name.errors %}
-                    <div class="error-list">
-                        {{ form.name.errors }}
-                    </div>
-                {% endif %}
-
-            </div>
-
-
-            <!-- HOLIDAY TYPE -->
-            <div class="form-group">
-
-                <label for="{{ form.htype.id_for_label }}"
-                       class="form-label">
-                    Holiday Type
-                </label>
-
-                {{ form.htype }}
-
-                {% if form.htype.errors %}
-                    <div class="error-list">
-                        {{ form.htype.errors }}
-                    </div>
-                {% endif %}
-
-            </div>
-
-
-            <!-- NON FIELD ERROR -->
-            {% if form.non_field_errors %}
-                <div class="error-list">
-                    {{ form.non_field_errors }}
-                </div>
-            {% endif %}
-
-
-            <!-- ACTIONS -->
-            <div class="form-actions">
-
-                <a href="{% url 'org_calendar' %}"
-                   class="cancel-btn">
-
-                    Cancel
-
-                </a>
-
-
-                <button type="submit"
-                        class="save-btn">
-
-                    Save Holiday
-
-                </button>
-
-            </div>
-
-        </form>
-
-    </div>
-
-</div>
-
 </div>
 
 {% endblock %}

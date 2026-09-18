@@ -411,8 +411,12 @@
                     {% for holiday in holidays %}
                     <tr>
                         <td class="holiday-date">
-                            {{ holiday.date|date:"Y-m-d" }}
-                        </td>
+    {{ holiday.from_date|date:"Y-m-d" }}
+
+    {% if holiday.to_date != holiday.from_date %}
+        → {{ holiday.to_date|date:"Y-m-d" }}
+    {% endif %}
+</td>
                         <td class="holiday-name">
                             {{ holiday.name }}
                         </td>

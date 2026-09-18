@@ -6459,29 +6459,88 @@ def org_calendar(request):
         return redirect("dashboard")
 
     year = int(request.GET.get('year', timezone.now().year))
-    holidays = Holiday.objects.filter(date__year=year).order_by('date')
 
-    public_count = holidays.filter(htype='Public').count()
-    religious_count = holidays.filter(htype='Religious').count()
-    # Approximate working days (you can improve this later)
-    working_days = 365 - public_count - religious_count - 104  # rough weekend calculation
+    year_start = date(year, 1, 1)
+    year_end   = date(year, 12, 31)
 
-    # Generate years for dropdown (current year ± 5)
+    holidays = Holiday.objects.filter(
+        from_date__lte=year_end,
+        to_date__gte=year_start
+    ).order_by('from_date')
+
+    public_count = 0
+    religious_count = 0
+
+   
+
+    for holiday in holidays:
+        start = max(
+            holiday.from_date,
+            date(year, 1, 1)
+        )
+        end = min(
+            holiday.to_date,
+            date(year, 12, 31)
+        )
+
+        days = (end - start).days + 1
+
+        if holiday.htype == 'Public':
+            public_count += days
+        elif holiday.htype == 'Religious':
+            religious_count += days
+
+    # Calculate working days
+    start_date = date(year, 1, 1)
+    end_date = date(year, 12, 31)
+
+    working_days = 0
+    current_date = start_date
+
+    while current_date <= end_date:
+
+        # Friday = 4, Saturday = 5
+        if current_date.weekday() not in [4, 5]:
+
+            is_holiday = False
+
+            for holiday in holidays:
+                if holiday.from_date <= current_date <= holiday.to_date:
+                    is_holiday = True
+                    break
+
+            if not is_holiday:
+                working_days += 1
+
+        current_date += timedelta(days=1)
+
+    # Year dropdown
     current_year = timezone.now().year
     years = list(range(current_year - 5, current_year + 6))
 
-    return render(request, 'hrm/org_calendar.html', _ctx(
+    return render(
         request,
-        holidays=holidays,
-        year=year,
-        years=years,
-        public_count=public_count,
-        religious_count=religious_count,
-        working_days=working_days,
-        can_create=has_permission(request.user, "configuration", "create"),
-        can_delete=has_permission(request.user, "configuration", "delete")
-    ))
-
+        'hrm/org_calendar.html',
+        _ctx(
+            request,
+            holidays=holidays,
+            year=year,
+            years=years,
+            public_count=public_count,
+            religious_count=religious_count,
+            working_days=working_days,
+            can_create=has_permission(
+                request.user,
+                "configuration",
+                "create"
+            ),
+            can_delete=has_permission(
+                request.user,
+                "configuration",
+                "delete"
+            )
+        )
+    )
 
 @login_required
 def holiday_create(request):
@@ -6935,15 +6994,25 @@ def calendar_view(request):
     else:
         next_month, next_year = month + 1, year
 
-    # Approved + Pending leaves for this month
+    # Month range
+    month_start = date(year, month, 1)
+    if month == 12:
+        month_end = date(year + 1, 1, 1) - timedelta(days=1)
+    else:
+        month_end = date(year, month + 1, 1) - timedelta(days=1)
+
+    # Approved + Pending leaves that overlap this month
     leaves = LeaveRequest.objects.filter(
         status__in=['Approved', 'Pending'],
-        from_date__year=year,
-        from_date__month=month
+        from_date__lte=month_end,
+        to_date__gte=month_start
     ).select_related('employee__user')
 
-    # Holidays for this month
-    holidays = Holiday.objects.filter(date__year=year, date__month=month)
+    # Holidays that overlap this month (multi-day supported)
+    holidays = Holiday.objects.filter(
+        from_date__lte=month_end,
+        to_date__gte=month_start
+    )
 
     cal = calendar.Calendar(firstweekday=6)  # Sunday first
     month_days = []
@@ -6955,24 +7024,27 @@ def calendar_view(request):
                 week_data.append({'day': 0})
                 continue
 
+            current_date = date(year, month, day)
+
+            # Leaves for this specific day
             day_leaves = []
             for leave in leaves:
-                # Check if this day falls inside the leave range
-                if leave.from_date.day <= day <= leave.to_date.day:
+                if leave.from_date <= current_date <= leave.to_date:
                     emp_name = leave.employee.user.get_full_name() or leave.employee.user.username
                     leave_type = getattr(leave, 'leave_type', None) or getattr(leave, 'type', 'Leave')
                     if hasattr(leave_type, 'name'):
                         leave_type = leave_type.name
                     day_leaves.append({
-                        'employee_name': emp_name.split()[0],  # first name only
+                        'employee_name': emp_name.split()[0],
                         'leave_type': str(leave_type),
                         'status': leave.status,
                     })
 
+            # Holidays for this specific day (supports multi-day holidays)
             day_holidays = [
                 {'name': h.name}
                 for h in holidays
-                if h.date.day == day
+                if h.from_date <= current_date <= h.to_date
             ]
 
             week_data.append({
